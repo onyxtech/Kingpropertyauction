@@ -38,6 +38,17 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useTheme } from "../hooks/useTheme";
 import { usePropertyApi } from "../hooks/api";
+import type { PropertyFormData } from "../hooks/api";
+
+type LocalPropertyFormData = Omit<
+  PropertyFormData,
+  "propertyImages" | "propertyVideo" | "floorPlan" | "legalDocuments"
+> & {
+  propertyImages: File[];
+  propertyVideo: File | null;
+  floorPlan: File | null;
+  legalDocuments: File[];
+};
 
 export default function AddProperty() {
   const navigate = useNavigate();
@@ -47,7 +58,7 @@ export default function AddProperty() {
   const totalSteps = 10;
 
   // Comprehensive Form State
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<LocalPropertyFormData>({
     // 1. Basic Property Information
     propertyTitle: "",
     propertyDescription: "",
@@ -186,9 +197,9 @@ export default function AddProperty() {
       }
 
       // Prepare property data for API
-      const propertyData = {
+      const propertyData: PropertyFormData = {
         ...formData,
-        propertyImages: imageUrls,
+        propertyImages: imageUrls.length > 0 ? imageUrls : undefined,
         propertyVideo: formData.propertyVideo ? "video-url-placeholder" : undefined,
         floorPlan: formData.floorPlan ? "floorplan-url-placeholder" : undefined,
         legalDocuments: formData.legalDocuments.length > 0 ? ["doc1", "doc2"] : undefined,

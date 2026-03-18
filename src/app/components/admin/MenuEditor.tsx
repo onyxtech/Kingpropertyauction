@@ -254,7 +254,7 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <label className="md:block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
                       <Layers className="size-3" />
                       Parent Menu (Submenu)
                     </label>
