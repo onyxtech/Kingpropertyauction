@@ -48,6 +48,8 @@ import {
   UserCheck,
   Home,
   Plus,
+  X,
+  Briefcase,
 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { useTheme } from "../hooks/useTheme";

@@ -39,7 +39,7 @@ export default function Header() {
   const [showSellingMenu, setShowSellingMenu] = useState(false);
 
   return (
-    <header className="relative bg-gradient-to-r from-white via-blue-50/50 to-indigo-50/50 backdrop-blur-xl border-b border-white/60 sticky top-0 z-50 shadow-lg">
+    <header className="relative bg-gradient-to-r from-white via-blue-50/50 to-indigo-50/50 backdrop-blur-xl border-b border-white/60 top-0 z-50 shadow-lg">
       {/* Gradient Overlay for Header */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-indigo-500/3 to-purple-500/5 pointer-events-none" />
       <div className="absolute top-0 right-0 size-96 bg-gradient-to-br from-blue-400/10 to-transparent rounded-full blur-3xl pointer-events-none" />
