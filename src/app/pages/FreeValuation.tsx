@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router";
 import { 
-  FileText, 
   Calculator, 
   CheckCircle,
   Sparkles,
