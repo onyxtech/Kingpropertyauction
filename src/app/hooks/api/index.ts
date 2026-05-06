@@ -5,16 +5,16 @@
  * Import like: import { usePropertyApi, useAuctionApi } from '../hooks/api';
  */
 
-export { usePropertyApi } from './usePropertyApi';
-export { useAuctionApi } from './useAuctionApi';
+export { usePropertyApi } from '@/features/property/api/usePropertyApi';
+export { useAuctionApi } from '@/features/auction/api/useAuctionApi';
 export { useCampaignApi } from './useCampaignApi';
 export { useReportApi } from './useReportApi';
 export { useUserApi } from './useUserApi';
 export { useAgentApi } from './useAgentApi';
 export { useDashboardApi } from './useDashboardApi';
 export { useSettingsApi } from './useSettingsApi';
-export { useAuthApi } from './useAuthApi';
-export { useBiddingApi } from './useBiddingApi';
+export { useAuthApi } from '@/features/auth/api/useAuthApi';
+export { useBiddingApi } from '@/features/bid/api/useBiddingApi';
 export { useLeadApi } from './useLeadApi';
 export { usePageApi } from './usePageApi';
 

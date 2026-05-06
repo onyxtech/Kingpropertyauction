@@ -1,6 +1,6 @@
 import { RouterProvider } from 'react-router';
 import { router } from './routes';
-import ColorThemeSelector from './components/ColorThemeSelector';
+import ColorThemeSelector from "../features/shared/ui/ColorThemeSelector";
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
 
