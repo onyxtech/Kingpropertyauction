@@ -14,30 +14,37 @@ export const apiClient = {
       },
     });
 
-    // If token expired, try refreshing it
-    if (response.status === 401 && retry && this.getToken()) {
+    // If token expired, try refreshing it - but only if we have a token
+    if (response.status === 401 && retry && token) {
       const refreshed = await this.refreshToken();
       if (refreshed) {
-        // Retry original request with new token (no infinite retry)
         return this.fetch(url, options, false);
       }
-      // Refresh failed - redirect to login
-      this.clearAuth();
-      window.location.href = "/login";
+    }
+
+    // Only clear auth if we actually had a token (not if token wasn't loaded yet)
+    if (response.status === 401) {
+      if (token) {
+        this.clearAuth();
+      }
       return {
         success: false,
         message: "Session expired. Please login again.",
       };
     }
 
-    return response.json();
+    try {
+      return await response.json();
+    } catch {
+      return { success: false, message: `Server error (${response.status})` };
+    }
   },
 
   async refreshToken() {
     try {
       const response = await fetch(`${API_BASE}/auth/refresh`, {
         method: "POST",
-        credentials: "include", // Sends HTTP-only cookie
+        credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();

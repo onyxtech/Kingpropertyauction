@@ -25,7 +25,7 @@ const menuItems = [
   { id: "menuManager", icon: Menu, label: "Menu Manager" },
   { id: "properties", icon: Building2, label: "Properties" },
   { id: "auctions", icon: Gavel, label: "Auctions" },
-    { id: "bids", icon: TrendingUp, label: "Bids" },  
+  { id: "bids", icon: TrendingUp, label: "Bids" },
   { id: "marketing", icon: Send, label: "Marketing" },
   { id: "social", icon: Share2, label: "Social & Sync" },
   { id: "investors", icon: TrendingUp, label: "Investors" },
@@ -34,6 +34,12 @@ const menuItems = [
   { id: "financial", icon: CreditCard, label: "Financial" },
   { id: "users", icon: Users, label: "Users" },
   { id: "analytics", icon: BarChart3, label: "Analytics" },
+  {
+    id: "settings",
+    icon: Settings,
+    label: "Settings",
+    path: "/admin/settings/email",
+  },
 ];
 
 interface SidebarProps {
@@ -51,9 +57,15 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     navigate("/");
   };
 
-  const handleNavigation = (tab: string) => {
+  const handleNavigation = (item: any) => {
+    const tab = typeof item === "string" ? item : item.id;
+    const customPath = typeof item === "object" ? item.path : null;
     onTabChange(tab);
-    navigate(`/admin/${tab}`);
+    if (customPath) {
+      navigate(customPath);
+    } else {
+      navigate(`/admin/${tab}`);
+    }
   };
 
   return (
@@ -85,7 +97,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             return (
               <button
                 key={item.id}
-                onClick={() => handleNavigation(item.id)}
+                onClick={() => handleNavigation(item)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
                   activeTab === item.id
                     ? `bg-gradient-to-r ${theme.secondary} text-white shadow-lg`
@@ -101,12 +113,6 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       </nav>
 
       <div className="p-4 border-t-2 border-slate-100 space-y-2">
-        <button
-          onClick={() => handleNavigation("/settings")}
-          className="w-full flex items-center gap-3 px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-xl text-sm font-bold transition-all"
-        >
-          <Settings className="size-5" /> Settings
-        </button>
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl text-sm font-bold transition-all"

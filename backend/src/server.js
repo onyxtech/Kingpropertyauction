@@ -10,6 +10,9 @@ const PORT = process.env.PORT || 5000;
 
 connectDB();
 
+import { warmCache } from './modules/settings/settings.service.js';
+await warmCache();
+
 // ─── SMART AUCTION SCHEDULER ───
 const scheduleNextCompletion = async () => {
   try {

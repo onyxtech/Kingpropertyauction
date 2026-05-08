@@ -88,6 +88,12 @@ app.use("/api/dashboard", dashboardRoutes);
 // Serve uploaded files
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
+import notificationsRoutes from './modules/notifications/notifications.routes.js';
+app.use('/api/notifications', notificationsRoutes);
+
+import settingsRoutes from './modules/settings/settings.routes.js';
+app.use('/api/settings', settingsRoutes);
+
 // 404 handler
 app.use(notFound);
 
