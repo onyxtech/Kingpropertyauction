@@ -4,6 +4,7 @@ import {
 } from "./auction.validation.js";
 import * as auctionService from "./auction.service.js";
 import Auction from "./auction.model.js";
+import { completeAuction, checkAndCompleteEndedAuctions } from './auction.service.js';
 
 export const create = async (req, res) => {
   try {
@@ -115,6 +116,29 @@ export const cancel = async (req, res) => {
     res
       .status(200)
       .json({ success: true, data: auction, message: "Auction cancelled" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+export const completeAuctionController = async (req, res) => {
+  try {
+    const result = await completeAuction(req.params.id);
+    res.status(200).json({ success: true, data: result, message: 'Auction completed successfully' });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const checkEndedAuctionsController = async (req, res) => {
+  try {
+    const results = await checkAndCompleteEndedAuctions();
+    res.status(200).json({ 
+      success: true, 
+      data: results, 
+      message: `Checked ended auctions. ${results.length} completed.` 
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

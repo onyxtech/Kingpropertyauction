@@ -39,12 +39,23 @@ import { useBiddingApi } from "@/features/bid/api/useBiddingApi";
 import { useAuthStore } from "@/stores/authStore";
 import { useAuthApi } from "@/features/auth/api/useAuthApi";
 import { useQueryClient } from "@tanstack/react-query";
+import AuthModal from "@/features/shared/components/AuthModal";
+import BidModal from "@/features/shared/components/BidModal";
 
 // ─── Countdown Timer Component ───
-function AuctionCountdown({ endTime }: { endTime: Date }) {
+function AuctionCountdown({
+  endTime,
+  onEnded,
+}: {
+  endTime: Date;
+  onEnded?: () => void;
+}) {
   const [timeLeft, setTimeLeft] = useState("");
   const endRef = useRef(endTime);
   endRef.current = endTime;
+  const onEndedRef = useRef(onEnded);
+  onEndedRef.current = onEnded;
+  const hasTriggered = useRef(false);
 
   useEffect(() => {
     const update = () => {
@@ -53,6 +64,10 @@ function AuctionCountdown({ endTime }: { endTime: Date }) {
       const distance = end - now;
       if (distance <= 0) {
         setTimeLeft("ENDED");
+        if (!hasTriggered.current && onEndedRef.current) {
+          hasTriggered.current = true;
+          onEndedRef.current();
+        }
         return;
       }
       const d = Math.floor(distance / (1000 * 60 * 60 * 24));
@@ -67,6 +82,10 @@ function AuctionCountdown({ endTime }: { endTime: Date }) {
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  if (timeLeft === "ENDED") {
+    return <span className="font-bold text-slate-500">Auction Completed</span>;
+  }
 
   return (
     <span className="font-bold text-red-600 animate-pulse">
@@ -417,221 +436,24 @@ export default function AuctionDetail() {
       </AnimatePresence>
 
       {/* ─── AUTH MODAL ─── */}
-      <AnimatePresence>
-        {showAuthModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
-            onClick={() => setShowAuthModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden"
-            >
-              <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 text-white relative">
-                <button
-                  onClick={() => setShowAuthModal(false)}
-                  className="absolute top-4 right-4 size-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center"
-                >
-                  <X className="size-4" />
-                </button>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="size-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                    <User className="size-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black">
-                      {isLogin ? "Welcome Back! 👋" : "Create Account 🚀"}
-                    </h3>
-                    <p className="text-white/80 text-sm">
-                      {isLogin
-                        ? "Sign in to place bids"
-                        : "Register to start bidding"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <form onSubmit={handleAuthSubmit} className="p-6 space-y-4">
-                {authError && (
-                  <div className="p-3 bg-red-50 border-2 border-red-200 rounded-xl flex items-center gap-2 text-sm text-red-700 font-bold">
-                    <AlertCircle className="size-4 flex-shrink-0" />
-                    {authError}
-                  </div>
-                )}
-                {!isLogin && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={authFormData.firstName}
-                        onChange={(e) =>
-                          setAuthFormData({
-                            ...authFormData,
-                            firstName: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="John"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={authFormData.lastName}
-                        onChange={(e) =>
-                          setAuthFormData({
-                            ...authFormData,
-                            lastName: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Doe"
-                      />
-                    </div>
-                  </div>
-                )}
-                {!isLogin && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Phone
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                      <input
-                        type="tel"
-                        value={authFormData.phone}
-                        onChange={(e) =>
-                          setAuthFormData({
-                            ...authFormData,
-                            phone: e.target.value,
-                          })
-                        }
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="+44 7700 900000"
-                      />
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <input
-                      type="email"
-                      required
-                      value={authFormData.email}
-                      onChange={(e) =>
-                        setAuthFormData({
-                          ...authFormData,
-                          email: e.target.value,
-                        })
-                      }
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="john@example.com"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={authFormData.password}
-                      onChange={(e) =>
-                        setAuthFormData({
-                          ...authFormData,
-                          password: e.target.value,
-                        })
-                      }
-                      className="w-full pl-10 pr-12 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="••••••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="size-4" />
-                      ) : (
-                        <Eye className="size-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                {!isLogin && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Confirm Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={authFormData.confirmPassword}
-                        onChange={(e) =>
-                          setAuthFormData({
-                            ...authFormData,
-                            confirmPassword: e.target.value,
-                          })
-                        }
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                  </div>
-                )}
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="w-full py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl font-bold hover:shadow-xl transition-all disabled:opacity-50"
-                >
-                  {authLoading
-                    ? "Please wait..."
-                    : isLogin
-                      ? "Sign In"
-                      : "Create Account"}
-                </button>
-                <p className="text-center text-sm text-slate-600">
-                  {isLogin
-                    ? "Don't have an account?"
-                    : "Already have an account?"}{" "}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsLogin(!isLogin);
-                      setAuthError("");
-                    }}
-                    className="text-blue-600 font-bold hover:underline"
-                  >
-                    {isLogin ? "Register" : "Sign In"}
-                  </button>
-                </p>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AuthModal
+        show={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        isLogin={isLogin}
+        onToggleLogin={() => {
+          setIsLogin(!isLogin);
+          setAuthError("");
+        }}
+        showPassword={showPassword}
+        onTogglePassword={() => setShowPassword(!showPassword)}
+        authError={authError}
+        authLoading={authLoading}
+        formData={authFormData}
+        onFormChange={(field, value) =>
+          setAuthFormData((prev) => ({ ...prev, [field]: value }))
+        }
+        onSubmit={handleAuthSubmit}
+      />
 
       <Header />
 
@@ -670,7 +492,33 @@ export default function AuctionDetail() {
                 <div className="text-right">
                   <p className="text-sm text-slate-500">Ends in</p>
                   <p className="text-xl">
-                    <AuctionCountdown endTime={new Date(auction.endDateTime)} />
+                    {auction.status === "live" ? (
+                      <AuctionCountdown
+                        endTime={new Date(auction.endDateTime)}
+                        onEnded={async () => {
+                          try {
+                            await fetch(`/api/auctions/check-ended-public`, {
+                              method: "POST",
+                            });
+                          } catch (e) {}
+                          queryClient.invalidateQueries({
+                            queryKey: ["auctions"],
+                          });
+                          queryClient.invalidateQueries({
+                            queryKey: ["properties"],
+                          });
+                        }}
+                      />
+                    ) : auction.status === "completed" ? (
+                      <span className="font-bold text-slate-500">
+                        Auction Completed
+                      </span>
+                    ) : (
+                      <span className="font-bold text-blue-600">
+                        Starts{" "}
+                        {new Date(auction.startDateTime).toLocaleDateString()}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -828,12 +676,20 @@ export default function AuctionDetail() {
 
                       {/* ─── ACTION BUTTONS ─── */}
                       <div className="flex gap-3">
-                        <button
-                          onClick={() => handlePlaceBid(property)}
-                          className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold hover:shadow-xl transition-all flex items-center justify-center gap-2"
-                        >
-                          <Gavel className="size-4" /> Place Bid
-                        </button>
+                        {auction.status === "live" ? (
+                          <button
+                            onClick={() => handlePlaceBid(property)}
+                            className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold..."
+                          >
+                            <Gavel className="size-5" /> Place Bid
+                          </button>
+                        ) : (
+                          <div className="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-xl font-bold text-center">
+                            {auction.status === "completed"
+                              ? "Auction Ended"
+                              : "Not Started"}
+                          </div>
+                        )}
                         <button
                           onClick={() => loadBidHistory(property._id)}
                           className={`px-4 py-3.5 rounded-xl font-bold transition-all flex items-center gap-2 ${
@@ -1017,226 +873,51 @@ export default function AuctionDetail() {
       </div>
 
       {/* ─── BID MODAL ─── */}
-      <AnimatePresence>
-        {selectedLot && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-6"
-            onClick={() => setSelectedLot(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto"
-            >
-              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-500 to-orange-500" />
-              <button
-                className="absolute top-6 right-6 size-10 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center transition-all"
-                onClick={() => setSelectedLot(null)}
-              >
-                <X className="size-5 text-slate-600" />
-              </button>
-
-              <div className="mb-6">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full mb-4">
-                  <Gavel className="size-4" />
-                  <span className="text-sm font-bold">Place Bid</span>
-                </div>
-                <h3 className="text-2xl font-black text-slate-900 mb-2">
-                  {selectedLot.propertyTitle}
-                </h3>
-                <div className="flex items-center gap-2 text-slate-600">
-                  <MapPin className="size-4" />
-                  <span className="text-sm font-medium">
-                    {selectedLot.location?.city}, {selectedLot.location?.area}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mb-6 rounded-2xl overflow-hidden">
-                <ImageWithFallback
-                  src={getPropertyImage(selectedLot)}
-                  alt={selectedLot.propertyTitle}
-                  className="w-full h-48 object-cover"
-                />
-              </div>
-
-              {/* Bid Info */}
-              {(() => {
-                const currentBid =
-                  selectedLot.currentBid ||
-                  selectedLot.pricing?.startingAuctionPrice ||
-                  0;
-                const bidIncrement =
-                  selectedLot.pricing?.minimumBidIncrement ||
-                  auction.bidIncrement ||
-                  1000;
-                const nextMinBid = currentBid + bidIncrement;
-                const reservePrice = selectedLot.pricing?.reservePrice || 0;
-                const reserveMet = currentBid >= reservePrice;
-                return (
-                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-5 mb-6 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold text-slate-600 uppercase">
-                          Current Bid
-                        </p>
-                        <p className="text-2xl font-black text-green-600">
-                          £{currentBid.toLocaleString()}
-                        </p>
-                      </div>
-                      {selectedLot.totalBids > 0 && (
-                        <div className="text-right">
-                          <p className="text-xl font-black text-slate-900">
-                            {selectedLot.totalBids}
-                          </p>
-                          <p className="text-xs font-semibold text-slate-600">
-                            Total Bids
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-slate-500">Next Minimum Bid</span>
-                      <span className="text-slate-900 font-bold">
-                        £{nextMinBid.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-slate-500">Bid Increment</span>
-                      <span className="text-slate-900 font-bold">
-                        £{bidIncrement.toLocaleString()}
-                      </span>
-                    </div>
-                    {reservePrice > 0 && (
-                      <div
-                        className={`flex items-center gap-1.5 text-xs font-bold ${reserveMet ? "text-green-600" : "text-amber-600"}`}
-                      >
-                        {reserveMet ? (
-                          <CheckCircle className="size-3.5" />
-                        ) : (
-                          <AlertCircle className="size-3.5" />
-                        )}
-                        {reserveMet
-                          ? "Reserve Price Met"
-                          : `Reserve Not Met (£${reservePrice.toLocaleString()})`}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              <div className="mb-6">
-                <label className="block text-sm font-bold text-slate-900 mb-2">
-                  Your Bid Amount (£)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-400">
-                    £
-                  </span>
-                  <input
-                    type="number"
-                    value={bidAmount}
-                    onChange={(e) => setBidAmount(e.target.value)}
-                    className="w-full pl-12 pr-6 py-4 bg-white border-3 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-2xl placeholder:text-slate-300 shadow-sm"
-                    placeholder="0"
-                  />
-                </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  💡 Your bid must be at least the next minimum bid
-                </p>
-              </div>
-
-              {/* Auto-Bid Toggle */}
-              {selectedLot?.auctionDetails?.autoBidEnabled && (
-                <div className="mt-4 space-y-3">
-                  <label className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border-2 border-amber-200 cursor-pointer hover:bg-amber-100 transition-all">
-                    <input
-                      type="checkbox"
-                      checked={useAutoBid}
-                      onChange={(e) => setUseAutoBid(e.target.checked)}
-                      className="size-5 rounded accent-amber-600"
-                    />
-                    <div>
-                      <span className="text-sm font-bold text-amber-900">
-                        Enable Auto-Bidding 🤖
-                      </span>
-                      <p className="text-xs text-amber-700">
-                        System will automatically bid for you up to your max
-                      </p>
-                    </div>
-                  </label>
-
-                  {useAutoBid && (
-                    <div>
-                      <label className="block text-sm font-bold text-slate-900 mb-2">
-                        Maximum Bid Limit (£)
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl font-black text-slate-400">
-                          £
-                        </span>
-                        <input
-                          type="number"
-                          value={maxBidAmount}
-                          onChange={(e) => setMaxBidAmount(e.target.value)}
-                          className="w-full pl-12 pr-6 py-3 bg-white border-2 border-amber-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all font-bold text-lg"
-                          placeholder="Your absolute maximum"
-                        />
-                      </div>
-                      <p className="text-xs text-amber-600 mt-1">
-                        💡 You'll only pay what's needed to win
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {bidSuccess ? (
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 mb-6 border-2 border-green-200">
-                  <div className="flex items-center gap-3">
-                    <div className="size-12 bg-green-500 rounded-full flex items-center justify-center">
-                      <CheckCircle className="size-7 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-green-900 text-lg">
-                        Bid Placed! 🎉
-                      </p>
-                      <p className="text-sm text-green-700">
-                        You're now the highest bidder
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex gap-3">
-                  <button
-                    className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold"
-                    onClick={() => setSelectedLot(null)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="flex-1 py-4 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold hover:shadow-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                    onClick={handleSubmitBid}
-                    disabled={!bidAmount || placeBidMutation.isPending}
-                  >
-                    <Gavel className="size-5" />
-                    {placeBidMutation.isPending ? "Placing..." : "Place Bid"}
-                  </button>
-                </div>
-              )}
-              <p className="text-xs text-center text-slate-500 mt-4">
-                🔒 By placing a bid, you agree to our terms
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <BidModal
+        show={!!selectedLot}
+        onClose={() => setSelectedLot(null)}
+        property={selectedLot}
+        currentBid={
+          selectedLot?.currentBid ||
+          selectedLot?.pricing?.startingAuctionPrice ||
+          0
+        }
+        nextMinBid={
+          (selectedLot?.currentBid ||
+            selectedLot?.pricing?.startingAuctionPrice ||
+            0) +
+          (selectedLot?.pricing?.minimumBidIncrement ||
+            auction?.bidIncrement ||
+            1000)
+        }
+        bidIncrement={
+          selectedLot?.pricing?.minimumBidIncrement ||
+          auction?.bidIncrement ||
+          1000
+        }
+        reservePrice={selectedLot?.pricing?.reservePrice || 0}
+        reserveMet={
+          (selectedLot?.currentBid || 0) >=
+          (selectedLot?.pricing?.reservePrice || 0)
+        }
+        bidAmount={bidAmount}
+        onBidAmountChange={setBidAmount}
+        autoBidEnabled={selectedLot?.auctionDetails?.autoBidEnabled}
+        useAutoBid={useAutoBid}
+        onAutoBidToggle={setUseAutoBid}
+        maxBidAmount={maxBidAmount}
+        onMaxBidChange={setMaxBidAmount}
+        bidSuccess={bidSuccess}
+        isPending={placeBidMutation.isPending}
+        onSubmit={() => handleSubmitBid()}
+        formatPrice={(val) => `£${val.toLocaleString()}`}
+        getPropertyImage={(p) =>
+          p?.media?.propertyImages?.[0]?.startsWith("http")
+            ? p.media.propertyImages[0]
+            : `http://localhost:5000${p?.media?.propertyImages?.[0]}` ||
+              "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600"
+        }
+      />
 
       <Footer />
     </div>

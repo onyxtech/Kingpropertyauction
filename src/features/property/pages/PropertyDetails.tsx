@@ -46,6 +46,8 @@ import { useAuthStore } from "@/stores/authStore";
 import { useAuthApi } from "@/features/auth/api/useAuthApi";
 import { useQueryClient } from "@tanstack/react-query";
 import CountdownTimer from "../../shared/ui/CountdownTimer";
+import AuthModal from "@/features/shared/components/AuthModal";
+import BidModal from "@/features/shared/components/BidModal";
 
 export default function PropertyDetails() {
   const navigate = useNavigate();
@@ -57,7 +59,6 @@ export default function PropertyDetails() {
   const { isAuthenticated, user, login } = useAuthStore();
   const authApi = useAuthApi();
 
-  // ─── State ───
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showBidModal, setShowBidModal] = useState(false);
@@ -71,7 +72,6 @@ export default function PropertyDetails() {
   const [bidHistory, setBidHistory] = useState<any>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // ─── Auth Modal ───
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -86,7 +86,6 @@ export default function PropertyDetails() {
     confirmPassword: "",
   });
 
-  // ─── Notification ───
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error";
@@ -96,7 +95,6 @@ export default function PropertyDetails() {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  // ─── API ───
   const { useGetPropertyById } = usePropertyApi();
   const { data: apiProperty, isLoading: loading } =
     useGetPropertyById(propertyId);
@@ -106,10 +104,8 @@ export default function PropertyDetails() {
   const { usePlaceBid } = useBiddingApi();
   const placeBidMutation = usePlaceBid();
 
-  // ─── Derived Data ───
   const property = apiProperty || null;
 
-  // Find which auction this property belongs to
   const matchingAuction =
     allAuctions.find((a: any) =>
       a.properties?.some(
@@ -117,12 +113,12 @@ export default function PropertyDetails() {
       ),
     ) || null;
 
-  // Determine property type display
   const isAuctionType = property?.listingType === "auction";
-  const isInLiveAuction = matchingAuction && matchingAuction.status === "live";
+  const isInLiveAuction = matchingAuction !== null;
+  const isLiveNow = matchingAuction?.status === "live";
+  const isCompleted = matchingAuction?.status === "completed";
   const isDirectSale = property?.listingType === "direct_sale";
 
-  // Pricing
   const currentBid =
     property?.currentBid || property?.pricing?.startingAuctionPrice || 0;
   const startingPrice = property?.pricing?.startingAuctionPrice || 0;
@@ -135,7 +131,6 @@ export default function PropertyDetails() {
   const reserveMet = currentBid >= reservePrice;
   const buyNowPrice = property?.pricing?.buyNowPrice || 0;
 
-  // Images
   const images =
     property?.media?.propertyImages?.length > 0
       ? property.media.propertyImages.map((img: string) =>
@@ -143,7 +138,6 @@ export default function PropertyDetails() {
         )
       : ["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200"];
 
-  // Features
   const features = property?.features
     ? Object.entries(property.features)
         .filter(([, v]) => v)
@@ -164,7 +158,6 @@ export default function PropertyDetails() {
       maximumFractionDigits: 0,
     }).format(val);
 
-  // ─── Auth Handler ───
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
@@ -218,14 +211,13 @@ export default function PropertyDetails() {
     }
   };
 
-  // ─── Bid Handler ───
   const handlePlaceBidClick = () => {
     if (!isAuthenticated) {
       setShowAuthModal(true);
       return;
     }
     if (user?.role === "admin" || user?.role === "agent") {
-      showNotification("Admins and agents cannot place bids.", "error");
+      showNotification("Admins/agents cannot bid.", "error");
       return;
     }
     setBidAmount("");
@@ -253,7 +245,6 @@ export default function PropertyDetails() {
       showNotification("Bid placed! 🎉", "success");
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       queryClient.invalidateQueries({ queryKey: ["auctions"] });
-      // Force refresh bid history if it's open
       setBidHistory(null);
       setShowBidHistory(false);
       setTimeout(() => {
@@ -267,7 +258,6 @@ export default function PropertyDetails() {
     }
   };
 
-  // ─── Load Bid History ───
   const loadBidHistory = async () => {
     if (showBidHistory) {
       setShowBidHistory(false);
@@ -294,13 +284,11 @@ export default function PropertyDetails() {
     }
   };
 
-  // ─── Image Navigation ───
   const nextImage = () =>
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   const prevImage = () =>
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
 
-  // ─── Loading State ───
   if (loading || !property) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
@@ -320,7 +308,6 @@ export default function PropertyDetails() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
-      {/* ─── NOTIFICATION TOAST ─── */}
       <AnimatePresence>
         {notification && (
           <motion.div
@@ -343,226 +330,26 @@ export default function PropertyDetails() {
         )}
       </AnimatePresence>
 
-      {/* ─── AUTH MODAL ─── */}
-      <AnimatePresence>
-        {showAuthModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
-            onClick={() => setShowAuthModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden"
-            >
-              <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 text-white relative">
-                <button
-                  onClick={() => setShowAuthModal(false)}
-                  className="absolute top-4 right-4 size-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center"
-                >
-                  <X className="size-4" />
-                </button>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="size-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                    <User className="size-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black">
-                      {isLogin ? "Welcome Back! 👋" : "Create Account 🚀"}
-                    </h3>
-                    <p className="text-white/80 text-sm">
-                      {isLogin
-                        ? "Sign in to place bids"
-                        : "Register to start bidding"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <form onSubmit={handleAuthSubmit} className="p-6 space-y-4">
-                {authError && (
-                  <div className="p-3 bg-red-50 border-2 border-red-200 rounded-xl flex items-center gap-2 text-sm text-red-700 font-bold">
-                    <AlertCircle className="size-4 flex-shrink-0" />
-                    {authError}
-                  </div>
-                )}
-                {!isLogin && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={authFormData.firstName}
-                        onChange={(e) =>
-                          setAuthFormData({
-                            ...authFormData,
-                            firstName: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="John"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={authFormData.lastName}
-                        onChange={(e) =>
-                          setAuthFormData({
-                            ...authFormData,
-                            lastName: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Doe"
-                      />
-                    </div>
-                  </div>
-                )}
-                {!isLogin && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Phone
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                      <input
-                        type="tel"
-                        value={authFormData.phone}
-                        onChange={(e) =>
-                          setAuthFormData({
-                            ...authFormData,
-                            phone: e.target.value,
-                          })
-                        }
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="+44 7700 900000"
-                      />
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <input
-                      type="email"
-                      required
-                      value={authFormData.email}
-                      onChange={(e) =>
-                        setAuthFormData({
-                          ...authFormData,
-                          email: e.target.value,
-                        })
-                      }
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="john@example.com"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={authFormData.password}
-                      onChange={(e) =>
-                        setAuthFormData({
-                          ...authFormData,
-                          password: e.target.value,
-                        })
-                      }
-                      className="w-full pl-10 pr-12 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="••••••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="size-4" />
-                      ) : (
-                        <Eye className="size-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                {!isLogin && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Confirm Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={authFormData.confirmPassword}
-                        onChange={(e) =>
-                          setAuthFormData({
-                            ...authFormData,
-                            confirmPassword: e.target.value,
-                          })
-                        }
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                  </div>
-                )}
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="w-full py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl font-bold hover:shadow-xl transition-all disabled:opacity-50"
-                >
-                  {authLoading
-                    ? "Please wait..."
-                    : isLogin
-                      ? "Sign In"
-                      : "Create Account"}
-                </button>
-                <p className="text-center text-sm text-slate-600">
-                  {isLogin
-                    ? "Don't have an account?"
-                    : "Already have an account?"}{" "}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsLogin(!isLogin);
-                      setAuthError("");
-                    }}
-                    className="text-blue-600 font-bold hover:underline"
-                  >
-                    {isLogin ? "Register" : "Sign In"}
-                  </button>
-                </p>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AuthModal
+        show={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        isLogin={isLogin}
+        onToggleLogin={() => {
+          setIsLogin(!isLogin);
+          setAuthError("");
+        }}
+        showPassword={showPassword}
+        onTogglePassword={() => setShowPassword(!showPassword)}
+        authError={authError}
+        authLoading={authLoading}
+        formData={authFormData}
+        onFormChange={(field, value) =>
+          setAuthFormData((prev) => ({ ...prev, [field]: value }))
+        }
+        onSubmit={handleAuthSubmit}
+      />
 
       <Header />
-
-      {/* Back Button */}
       <div className="container mx-auto px-6 py-6">
         <button
           onClick={() => navigate(-1)}
@@ -584,23 +371,23 @@ export default function PropertyDetails() {
               />
               <button
                 onClick={prevImage}
-                className="absolute left-4 top-1/2 -translate-y-1/2 size-12 bg-white/90 backdrop-blur-lg rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-all"
+                className="absolute left-4 top-1/2 -translate-y-1/2 size-12 bg-white/90 rounded-full flex items-center justify-center shadow-xl hover:scale-110"
               >
                 <ChevronLeft className="size-6 text-slate-900" />
               </button>
               <button
                 onClick={nextImage}
-                className="absolute right-4 top-1/2 -translate-y-1/2 size-12 bg-white/90 backdrop-blur-lg rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-all"
+                className="absolute right-4 top-1/2 -translate-y-1/2 size-12 bg-white/90 rounded-full flex items-center justify-center shadow-xl hover:scale-110"
               >
                 <ChevronRight className="size-6 text-slate-900" />
               </button>
               <button
                 onClick={() => setShowImageModal(true)}
-                className="absolute bottom-4 right-4 px-5 py-3 bg-white/90 backdrop-blur-lg rounded-xl font-bold text-slate-900 flex items-center gap-2 shadow-xl hover:scale-105 transition-all"
+                className="absolute bottom-4 right-4 px-5 py-3 bg-white/90 rounded-xl font-bold text-slate-900 flex items-center gap-2 shadow-xl"
               >
                 View All {images.length} Photos
               </button>
-              <div className="absolute top-4 left-4 px-4 py-2 bg-black/60 backdrop-blur-lg rounded-full text-white font-bold text-sm">
+              <div className="absolute top-4 left-4 px-4 py-2 bg-black/60 rounded-full text-white font-bold text-sm">
                 {currentImageIndex + 1} / {images.length}
               </div>
               <div className="absolute top-4 right-4 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-black shadow-xl">
@@ -630,15 +417,18 @@ export default function PropertyDetails() {
       <div className="container mx-auto px-6 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {/* Title */}
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <div className="flex items-center gap-3 mb-3">
-                    {isInLiveAuction ? (
+                    {isLiveNow ? (
                       <span className="px-4 py-1.5 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full font-bold text-sm flex items-center gap-1.5">
                         <span className="size-2 bg-white rounded-full animate-pulse" />{" "}
                         Live Auction
+                      </span>
+                    ) : isCompleted ? (
+                      <span className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-full font-bold text-sm">
+                        Completed
                       </span>
                     ) : isAuctionType ? (
                       <span className="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-full font-bold text-sm">
@@ -666,19 +456,18 @@ export default function PropertyDetails() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setIsFavorite(!isFavorite)}
-                    className={`size-12 rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110 ${isFavorite ? "bg-gradient-to-br from-red-500 to-pink-500" : "bg-white/90 backdrop-blur-lg"}`}
+                    className={`size-12 rounded-full flex items-center justify-center transition-all shadow-lg ${isFavorite ? "bg-gradient-to-br from-red-500 to-pink-500" : "bg-white/90"}`}
                   >
                     <Heart
                       className={`size-5 ${isFavorite ? "text-white fill-white" : "text-slate-600"}`}
                     />
                   </button>
-                  <button className="size-12 bg-white/90 backdrop-blur-lg rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110">
+                  <button className="size-12 bg-white/90 rounded-full flex items-center justify-center transition-all shadow-lg">
                     <Share2 className="size-5 text-slate-600" />
                   </button>
                 </div>
               </div>
 
-              {/* Key Stats */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 pb-6 border-b-2 border-slate-100">
                 {[
                   {
@@ -732,7 +521,6 @@ export default function PropertyDetails() {
                 ))}
               </div>
 
-              {/* Price Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200">
                   <div className="text-sm font-bold text-blue-900 mb-2">
@@ -758,11 +546,9 @@ export default function PropertyDetails() {
                 </div>
               </div>
 
-              {/* Countdown + Bidding Info (only for auction properties) */}
               {isAuctionType && (
                 <div className="mt-6 space-y-4">
-                  {/* Countdown Timer */}
-                  {isInLiveAuction && matchingAuction?.endDateTime && (
+                  {isLiveNow && matchingAuction?.endDateTime && (
                     <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-4 border-2 border-red-200 flex items-center justify-between">
                       <span className="text-sm font-bold text-red-700">
                         ⏰ Auction Ends In:
@@ -771,6 +557,19 @@ export default function PropertyDetails() {
                         endDate={new Date(matchingAuction.endDateTime)}
                         compact={false}
                         gradient="from-red-500 to-orange-500"
+                        onEnded={async () => {
+                          try {
+                            await fetch(`/api/auctions/check-ended-public`, {
+                              method: "POST",
+                            });
+                          } catch (e) {}
+                          queryClient.invalidateQueries({
+                            queryKey: ["properties"],
+                          });
+                          queryClient.invalidateQueries({
+                            queryKey: ["auctions"],
+                          });
+                        }}
                       />
                     </div>
                   )}
@@ -792,8 +591,6 @@ export default function PropertyDetails() {
                         </span>
                       </div>
                     )}
-
-                  {/* Bidding Stats */}
                   <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200 space-y-2">
                     <div className="flex justify-between text-sm font-semibold">
                       <span className="text-slate-600">Next Min Bid</span>
@@ -830,9 +627,13 @@ export default function PropertyDetails() {
                     <div className="flex justify-between text-sm font-semibold">
                       <span className="text-slate-600">Status</span>
                       <span
-                        className={`font-bold ${isInLiveAuction ? "text-green-600" : "text-amber-600"}`}
+                        className={`font-bold ${isLiveNow ? "text-green-600" : isCompleted ? "text-slate-600" : "text-amber-600"}`}
                       >
-                        {isInLiveAuction ? "🟢 Live" : "🟡 Not in live auction"}
+                        {isLiveNow
+                          ? "🟢 Live"
+                          : isCompleted
+                            ? "✅ Completed"
+                            : "🟡 Not in live auction"}
                       </span>
                     </div>
                   </div>
@@ -840,7 +641,6 @@ export default function PropertyDetails() {
               )}
             </div>
 
-            {/* Description */}
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
               <h2 className="text-2xl font-black text-slate-900 mb-4 flex items-center gap-3">
                 <FileText className="size-6 text-blue-600" />
@@ -851,7 +651,6 @@ export default function PropertyDetails() {
               </p>
             </div>
 
-            {/* Features */}
             {features.length > 0 && (
               <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
                 <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
@@ -874,7 +673,6 @@ export default function PropertyDetails() {
               </div>
             )}
 
-            {/* Bid History (only if in auction) */}
             {isInLiveAuction && (
               <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
                 <div className="flex items-center justify-between mb-4">
@@ -948,18 +746,25 @@ export default function PropertyDetails() {
             )}
           </div>
 
-          {/* Right Column */}
+          {/* ─── RIGHT SIDEBAR ─── */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Auction/Property Actions */}
+            {/* Gradient Action Card */}
             <div
-              className={`rounded-3xl p-8 shadow-2xl sticky top-24 ${isInLiveAuction ? "bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600" : "bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900"}`}
+              className={`rounded-3xl p-8 shadow-2xl sticky top-24 z-10 ${isLiveNow ? "bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600" : isCompleted ? "bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600" : isAuctionType ? "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500" : "bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900"}`}
             >
               <div className="text-center mb-6">
-                {isInLiveAuction ? (
+                {isLiveNow ? (
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-lg rounded-full mb-4">
-                    <Gavel className="size-5 text-white" />
+                    <span className="size-2 bg-white rounded-full animate-pulse" />
                     <span className="text-sm font-bold text-white">
                       Live Auction
+                    </span>
+                  </div>
+                ) : isCompleted ? (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-lg rounded-full mb-4">
+                    <CheckCircle className="size-5 text-white" />
+                    <span className="text-sm font-bold text-white">
+                      Auction Completed
                     </span>
                   </div>
                 ) : isAuctionType ? (
@@ -979,21 +784,20 @@ export default function PropertyDetails() {
                 )}
               </div>
 
-              {/* Stats */}
               <div className="grid grid-cols-3 gap-3 mb-6">
-                <div className="bg-white/20 backdrop-blur-lg rounded-xl p-3 text-center border-2 border-white/30">
+                <div className="bg-white/20 rounded-xl p-3 text-center border-2 border-white/30">
                   <div className="text-2xl font-black text-white">0</div>
                   <div className="text-xs font-semibold text-white/80">
                     Views
                   </div>
                 </div>
-                <div className="bg-white/20 backdrop-blur-lg rounded-xl p-3 text-center border-2 border-white/30">
+                <div className="bg-white/20 rounded-xl p-3 text-center border-2 border-white/30">
                   <div className="text-2xl font-black text-white">0</div>
                   <div className="text-xs font-semibold text-white/80">
                     Saved
                   </div>
                 </div>
-                <div className="bg-white/20 backdrop-blur-lg rounded-xl p-3 text-center border-2 border-white/30">
+                <div className="bg-white/20 rounded-xl p-3 text-center border-2 border-white/30">
                   <div className="text-2xl font-black text-white">
                     {property.totalBids || 0}
                   </div>
@@ -1004,7 +808,7 @@ export default function PropertyDetails() {
               </div>
 
               <div className="space-y-3">
-                {isInLiveAuction ? (
+                {isLiveNow ? (
                   <>
                     <button
                       onClick={handlePlaceBidClick}
@@ -1014,29 +818,73 @@ export default function PropertyDetails() {
                       Place Bid
                     </button>
                   </>
+                ) : isCompleted ? (
+                  <>
+                    {property.propertyStatus === "sold" ? (
+                      <div className="bg-white/20 rounded-2xl p-4 text-center text-white border-2 border-white/30">
+                        <p className="text-sm text-white/80 mb-1">🎉 SOLD</p>
+                        <p className="text-4xl font-black">
+                          £
+                          {(
+                            property.soldPrice ||
+                            property.currentBid ||
+                            0
+                          ).toLocaleString()}
+                        </p>
+                        {property.soldTo && (
+                          <p className="text-xs text-white/70 mt-2">
+                            Winner ID:{" "}
+                            {typeof property.soldTo === "object"
+                              ? property.soldTo.name
+                              : property.soldTo.toString().slice(-6)}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-white/20 rounded-2xl p-4 text-center text-white border-2 border-white/30">
+                        <p className="text-sm text-white/80 mb-1">❌ UNSOLD</p>
+                        <p className="text-lg font-bold">Reserve Not Met</p>
+                        <p className="text-xs text-white/70 mt-2">
+                          Highest Bid: £
+                          {(property.currentBid || 0).toLocaleString()} |
+                          Reserve: £
+                          {(
+                            property.pricing?.reservePrice || 0
+                          ).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                    <button
+                      onClick={() =>
+                        navigate(`/auctions/${matchingAuction.slug}`)
+                      }
+                      className="w-full py-4 bg-white/20 text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all"
+                    >
+                      View Auction Results
+                    </button>
+                  </>
                 ) : isAuctionType ? (
                   <>
                     <p className="text-white/80 text-sm text-center py-2">
-                      This property is not currently in a live auction. Check
-                      back later or contact the agent.
+                      This property is not currently in a live auction.
                     </p>
                     <button
                       onClick={() => navigate("/auctions")}
-                      className="w-full py-4 bg-white/20 backdrop-blur-lg text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all"
+                      className="w-full py-4 bg-white/20 text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all"
                     >
                       View Live Auctions
                     </button>
                   </>
                 ) : (
                   <>
-                    <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-4 text-center text-white">
+                    <div className="bg-white/20 rounded-2xl p-4 text-center text-white">
                       <p className="text-3xl font-black">
                         {formatPrice(startingPrice)}
                       </p>
                       <p className="text-sm text-white/80">Asking Price</p>
                     </div>
                     {buyNowPrice > 0 && (
-                      <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-4 text-center text-white">
+                      <div className="bg-white/20 rounded-2xl p-4 text-center text-white">
                         <p className="text-3xl font-black">
                           {formatPrice(buyNowPrice)}
                         </p>
@@ -1045,13 +893,13 @@ export default function PropertyDetails() {
                     )}
                   </>
                 )}
-                <button className="w-full py-4 bg-white/20 backdrop-blur-lg text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all flex items-center justify-center gap-2">
+                <button className="w-full py-4 bg-white/20 text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all flex items-center justify-center gap-2">
                   Download Brochure
                 </button>
               </div>
             </div>
 
-            {/* Agent Contact */}
+            {/* Agent Contact Card */}
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border-2 border-white/60">
               <h3 className="text-xl font-black text-slate-900 mb-4">
                 Contact Agent
@@ -1105,7 +953,7 @@ export default function PropertyDetails() {
               </div>
             </div>
 
-            {/* Property Info */}
+            {/* Property Information Card */}
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border-2 border-white/60">
               <h3 className="text-xl font-black text-slate-900 mb-4">
                 Property Information
@@ -1160,182 +1008,40 @@ export default function PropertyDetails() {
       </div>
 
       {/* Bid Modal */}
-      <AnimatePresence>
-        {showBidModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-6"
-            onClick={() => setShowBidModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto"
-            >
-              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-500 to-orange-500" />
-              <button
-                className="absolute top-6 right-6 size-10 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center"
-                onClick={() => setShowBidModal(false)}
-              >
-                <X className="size-5 text-slate-600" />
-              </button>
-              <div className="mb-6">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full mb-4">
-                  <Gavel className="size-4" />
-                  <span className="text-sm font-bold">Place Bid</span>
-                </div>
-                <h3 className="text-2xl font-black text-slate-900">
-                  {property.propertyTitle}
-                </h3>
-              </div>
-              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-5 mb-6 space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-xs font-semibold text-slate-600">
-                    Current Bid
-                  </span>
-                  <span className="text-xl font-black text-green-600">
-                    {formatPrice(currentBid)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-slate-500">Next Min Bid</span>
-                  <span className="text-slate-900 font-bold">
-                    {formatPrice(nextMinBid)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-slate-500">Bid Increment</span>
-                  <span className="text-slate-900 font-bold">
-                    {formatPrice(bidIncrement)}
-                  </span>
-                </div>
-              </div>
-              {bidSuccess ? (
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 mb-6 border-2 border-green-200">
-                  <div className="flex items-center gap-3">
-                    <div className="size-12 bg-green-500 rounded-full flex items-center justify-center">
-                      <CheckCircle className="size-7 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-green-900 text-lg">
-                        Bid Placed! 🎉
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmitBid} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2">
-                      Your Bid Amount (£)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-400">
-                        £
-                      </span>
-                      <input
-                        type="number"
-                        value={bidAmount}
-                        onChange={(e) => setBidAmount(e.target.value)}
-                        className="w-full pl-12 pr-6 py-4 bg-white border-3 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-2xl"
-                        placeholder="0"
-                        required
-                      />
-                    </div>
-                    <p className="text-xs text-slate-500 mt-2">
-                      💡 Bid must be at least {formatPrice(nextMinBid)}
-                    </p>
-                  </div>
-
-                  {/* Auto-Bid Toggle */}
-                  {property?.auctionDetails?.autoBidEnabled && (
-                    <div className="mt-4 space-y-3">
-                      <label className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border-2 border-amber-200 cursor-pointer hover:bg-amber-100 transition-all">
-                        <input
-                          type="checkbox"
-                          checked={useAutoBid}
-                          onChange={(e) => setUseAutoBid(e.target.checked)}
-                          className="size-5 rounded accent-amber-600"
-                        />
-                        <div>
-                          <span className="text-sm font-bold text-amber-900">
-                            Enable Auto-Bidding 🤖
-                          </span>
-                          <p className="text-xs text-amber-700">
-                            System will automatically bid for you up to your max
-                          </p>
-                        </div>
-                      </label>
-
-                      {useAutoBid && (
-                        <div>
-                          <label className="block text-sm font-bold text-slate-900 mb-2">
-                            Maximum Bid Limit (£)
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl font-black text-slate-400">
-                              £
-                            </span>
-                            <input
-                              type="number"
-                              value={maxBidAmount}
-                              onChange={(e) => setMaxBidAmount(e.target.value)}
-                              className="w-full pl-12 pr-6 py-3 bg-white border-2 border-amber-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all font-bold text-lg"
-                              placeholder="Your absolute maximum"
-                              min={nextMinBid}
-                            />
-                          </div>
-                          <p className="text-xs text-amber-600 mt-1">
-                            💡 You'll only pay what's needed to win (current bid
-                            + increment)
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="bg-amber-50 rounded-xl p-4 border-2 border-amber-200 flex items-start gap-3">
-                    <AlertCircle className="size-5 text-amber-600 mt-0.5" />
-                    <div className="text-sm text-amber-900">
-                      <p className="font-bold mb-1">Important</p>
-                      <p>
-                        Bids are legally binding. Ensure you have financing in
-                        place.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold"
-                      onClick={() => setShowBidModal(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={!bidAmount || placeBidMutation.isPending}
-                      className="flex-1 py-4 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold hover:shadow-2xl transition-all disabled:opacity-50"
-                    >
-                      {placeBidMutation.isPending ? "Placing..." : "Place Bid"}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <BidModal
+        show={showBidModal}
+        onClose={() => setShowBidModal(false)}
+        property={property}
+        currentBid={currentBid}
+        nextMinBid={nextMinBid}
+        bidIncrement={bidIncrement}
+        reservePrice={reservePrice}
+        reserveMet={reserveMet}
+        bidAmount={bidAmount}
+        onBidAmountChange={setBidAmount}
+        autoBidEnabled={property?.auctionDetails?.autoBidEnabled}
+        useAutoBid={useAutoBid}
+        onAutoBidToggle={setUseAutoBid}
+        maxBidAmount={maxBidAmount}
+        onMaxBidChange={setMaxBidAmount}
+        bidSuccess={bidSuccess}
+        isPending={placeBidMutation.isPending}
+        onSubmit={handleSubmitBid}
+        formatPrice={formatPrice}
+        getPropertyImage={(p) =>
+          p?.media?.propertyImages?.[0]?.startsWith("http")
+            ? p.media.propertyImages[0]
+            : `http://localhost:5000${p.media?.propertyImages?.[0]}` ||
+              "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600"
+        }
+      />
 
       {/* Image Modal */}
       {showImageModal && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-6">
           <button
             onClick={() => setShowImageModal(false)}
-            className="absolute top-6 right-6 size-12 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center hover:bg-white/30 transition-all"
+            className="absolute top-6 right-6 size-12 bg-white/20 rounded-full flex items-center justify-center"
           >
             <X className="size-6 text-white" />
           </button>
@@ -1360,7 +1066,7 @@ export default function PropertyDetails() {
 
       {/* Map Modal */}
       {showMapModal && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-6">
           <div className="bg-white rounded-3xl overflow-hidden max-w-6xl w-full shadow-2xl relative">
             <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-6 relative">
               <div className="flex items-center justify-between">
@@ -1375,7 +1081,7 @@ export default function PropertyDetails() {
                 </div>
                 <button
                   onClick={() => setShowMapModal(false)}
-                  className="size-12 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30"
+                  className="size-12 bg-white/20 rounded-full flex items-center justify-center"
                 >
                   <X className="size-6 text-white" />
                 </button>
@@ -1394,9 +1100,9 @@ export default function PropertyDetails() {
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.location?.streetAddress + " " + property.location?.city)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold hover:scale-105 transition-all"
+                  className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold"
                 >
-                  <Map className="size-5" /> Open in Google Maps
+                  Open in Google Maps
                 </a>
               </div>
             </div>

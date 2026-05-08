@@ -1,53 +1,58 @@
-import Bid from './bid.model.js';
-import Auction from '../auction/auction.model.js';
-import Property from '../property/property.model.js';
+import Bid from "./bid.model.js";
+import Auction from "../auction/auction.model.js";
+import Property from "../property/property.model.js";
 
 // ─── Place Bid (Manual + Auto) ───
 export const placeBid = async (data, userId) => {
   // 1. Check auction exists and is live
   const auction = await Auction.findById(data.auction);
-  if (!auction) throw new Error('Auction not found');
-  if (auction.status !== 'live') throw new Error('Auction is not live');
+  if (!auction) throw new Error("Auction not found");
+  if (auction.status !== "live") throw new Error("Auction is not live");
 
   // 2. Check property exists and belongs to this auction
   const property = await Property.findById(data.property);
-  if (!property) throw new Error('Property not found');
+  if (!property) throw new Error("Property not found");
   if (!auction.properties.includes(property._id)) {
-    throw new Error('Property does not belong to this auction');
+    throw new Error("Property does not belong to this auction");
   }
 
   // 3. Check property listing type
-  if (property.listingType !== 'auction') {
-    throw new Error('This property is not available for auction bidding');
+  if (property.listingType !== "auction") {
+    throw new Error("This property is not available for auction bidding");
   }
 
   // 4. Check property has auto-bid enabled (if this is an auto-bid)
   if (data.isAutoBid && !property.auctionDetails?.autoBidEnabled) {
-    throw new Error('Auto-bidding is not enabled for this property');
+    throw new Error("Auto-bidding is not enabled for this property");
   }
 
   // 5. Check bid is higher than property's current bid
   if (data.amount <= property.currentBid) {
-    throw new Error(`Bid must be higher than current bid of £${property.currentBid.toLocaleString()}`);
+    throw new Error(
+      `Bid must be higher than current bid of £${property.currentBid.toLocaleString()}`,
+    );
   }
 
   // 6. Check bid increment
-  const bidIncrement = property.pricing?.minimumBidIncrement || auction.bidIncrement || 1000;
+  const bidIncrement =
+    property.pricing?.minimumBidIncrement || auction.bidIncrement || 1000;
   if (data.amount < property.currentBid + bidIncrement) {
-    throw new Error(`Minimum bid increment is £${bidIncrement.toLocaleString()}`);
+    throw new Error(
+      `Minimum bid increment is £${bidIncrement.toLocaleString()}`,
+    );
   }
 
   // 7. Mark all previous bids for THIS PROPERTY as outbid
   await Bid.updateMany(
-    { auction: data.auction, property: data.property, status: 'winning' },
-    { status: 'outbid' }
+    { auction: data.auction, property: data.property, status: "winning" },
+    { status: "outbid" },
   );
 
   // 8. Create new bid
   const bid = await Bid.create({
     ...data,
     bidder: userId,
-    status: 'winning',
+    status: "winning",
   });
 
   // 9. Update property's current bid
@@ -58,14 +63,14 @@ export const placeBid = async (data, userId) => {
   });
 
   // 10. Update auction counters
-  const allAuctionBids = await Bid.countDocuments({ 
+  const allAuctionBids = await Bid.countDocuments({
     auction: data.auction,
-    status: { $ne: 'retracted' }
+    status: { $ne: "retracted" },
   });
-  
-  const allAuctionBidders = await Bid.distinct('bidder', { 
+
+  const allAuctionBidders = await Bid.distinct("bidder", {
     auction: data.auction,
-    status: { $ne: 'retracted' }
+    status: { $ne: "retracted" },
   });
 
   await Auction.findByIdAndUpdate(data.auction, {
@@ -76,14 +81,14 @@ export const placeBid = async (data, userId) => {
   // 11. Process auto-bids AFTER placing this bid
   await processAutoBids(data.auction, data.property, data.amount);
 
-  return bid.populate(['bidder', 'auction', 'property']);
+  return bid.populate(["bidder", "auction", "property"]);
 };
 
 // ─── Auto-Bid Processing Engine ───
 const processAutoBids = async (auctionId, propertyId, currentBidAmount) => {
   const property = await Property.findById(propertyId);
   if (!property) return;
-  
+
   // Only process if auto-bidding is enabled for this property
   if (!property.auctionDetails?.autoBidEnabled) return;
 
@@ -91,10 +96,10 @@ const processAutoBids = async (auctionId, propertyId, currentBidAmount) => {
 
   // Find ALL auto-bids for this property (not just outbid ones)
   // We need to find any bidder who has an auto-bid with a max higher than current
-  const allBidders = await Bid.distinct('bidder', {
+  const allBidders = await Bid.distinct("bidder", {
     auction: auctionId,
     property: propertyId,
-    status: { $ne: 'retracted' }
+    status: { $ne: "retracted" },
   });
 
   let newCurrentBid = currentBidAmount;
@@ -106,9 +111,10 @@ const processAutoBids = async (auctionId, propertyId, currentBidAmount) => {
     const winningBid = await Bid.findOne({
       auction: auctionId,
       property: propertyId,
-      status: 'winning'
+      status: "winning",
     });
-    if (winningBid && winningBid.bidder.toString() === bidderId.toString()) continue;
+    if (winningBid && winningBid.bidder.toString() === bidderId.toString())
+      continue;
 
     // Find this bidder's highest auto-bid max
     const autoBidConfig = await Bid.findOne({
@@ -116,7 +122,7 @@ const processAutoBids = async (auctionId, propertyId, currentBidAmount) => {
       property: propertyId,
       bidder: bidderId,
       isAutoBid: true,
-      status: { $ne: 'retracted' }
+      status: { $ne: "retracted" },
     }).sort({ maxBid: -1 });
 
     if (!autoBidConfig || !autoBidConfig.maxBid) continue;
@@ -128,8 +134,8 @@ const processAutoBids = async (auctionId, propertyId, currentBidAmount) => {
       if (nextBid <= autoBidConfig.maxBid && nextBid > newCurrentBid) {
         // Place auto-bid on their behalf
         await Bid.updateMany(
-          { auction: auctionId, property: propertyId, status: 'winning' },
-          { status: 'outbid' }
+          { auction: auctionId, property: propertyId, status: "winning" },
+          { status: "outbid" },
         );
 
         const autoBid = await Bid.create({
@@ -139,7 +145,7 @@ const processAutoBids = async (auctionId, propertyId, currentBidAmount) => {
           amount: nextBid,
           maxBid: autoBidConfig.maxBid,
           isAutoBid: true,
-          status: 'winning',
+          status: "winning",
         });
 
         // Update property
@@ -158,7 +164,7 @@ const processAutoBids = async (auctionId, propertyId, currentBidAmount) => {
   // Recursively process - if we auto-bid, other auto-bidders might need to respond
   if (processedBidder) {
     // Allow a small delay to prevent infinite loops
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     await processAutoBids(auctionId, propertyId, newCurrentBid);
   }
 };
@@ -169,9 +175,9 @@ export const getBidHistory = async (auctionId, propertyId) => {
   if (propertyId) filter.property = propertyId;
 
   const bids = await Bid.find(filter)
-    .populate('bidder', 'name email')
-    .populate('property', 'propertyTitle currentBid')
-    .sort('-amount');
+    .populate("bidder", "name email")
+    .populate("property", "propertyTitle currentBid")
+    .sort("-amount");
 
   const currentHighBid = bids.length > 0 ? bids[0].amount : 0;
   const uniqueBidders = new Set(bids.map((b) => b.bidder._id.toString())).size;
@@ -187,45 +193,47 @@ export const getBidHistory = async (auctionId, propertyId) => {
 // ─── Get My Bids ───
 export const getMyBids = async (userId) => {
   return Bid.find({ bidder: userId })
-    .populate('auction', 'auctionTitle status')
-    .populate('property', 'propertyTitle')
-    .sort('-createdAt');
+    .populate("auction", "auctionTitle status")
+    .populate("property", "propertyTitle")
+    .sort("-createdAt");
 };
 
 // ─── Get Current High Bid ───
 export const getCurrentHighBid = async (auctionId, propertyId) => {
-  return Bid.findOne({ 
-    auction: auctionId, 
+  return Bid.findOne({
+    auction: auctionId,
     property: propertyId,
-    status: { $ne: 'retracted' } 
+    status: { $ne: "retracted" },
   })
-    .sort('-amount')
-    .populate('bidder', 'name');
+    .sort("-amount")
+    .populate("bidder", "name");
 };
 
 // ─── Retract Bid ───
 export const retractBid = async (bidId, userId) => {
   const bid = await Bid.findById(bidId);
-  if (!bid) throw new Error('Bid not found');
-  if (bid.bidder.toString() !== userId.toString()) throw new Error('Not your bid');
-  
+  if (!bid) throw new Error("Bid not found");
+  if (bid.bidder.toString() !== userId.toString())
+    throw new Error("Not your bid");
+
   // Check time limit (5 minutes)
   const bidAge = Date.now() - bid.createdAt.getTime();
-  if (bidAge > 5 * 60 * 1000) throw new Error('Bids can only be retracted within 5 minutes');
+  if (bidAge > 5 * 60 * 1000)
+    throw new Error("Bids can only be retracted within 5 minutes");
 
-  bid.status = 'retracted';
+  bid.status = "retracted";
   await bid.save();
 
   // Find new winning bid
   const nextBid = await Bid.findOne({
     auction: bid.auction,
     property: bid.property,
-    status: { $ne: 'retracted' },
+    status: { $ne: "retracted" },
     _id: { $ne: bidId },
-  }).sort('-amount');
+  }).sort("-amount");
 
   if (nextBid) {
-    nextBid.status = 'winning';
+    nextBid.status = "winning";
     await nextBid.save();
     await Property.findByIdAndUpdate(bid.property, {
       currentBid: nextBid.amount,
@@ -239,12 +247,12 @@ export const retractBid = async (bidId, userId) => {
 // ─── Get Bidding Stats ───
 export const getBiddingStats = async (auctionId, propertyId) => {
   const property = await Property.findById(propertyId);
-  if (!property) throw new Error('Property not found');
+  if (!property) throw new Error("Property not found");
 
-  const bids = await Bid.find({ 
-    auction: auctionId, 
+  const bids = await Bid.find({
+    auction: auctionId,
     property: propertyId,
-    status: { $ne: 'retracted' } 
+    status: { $ne: "retracted" },
   });
 
   const totalBids = bids.length;
@@ -255,8 +263,76 @@ export const getBiddingStats = async (auctionId, propertyId) => {
     uniqueBidders,
     currentHighBid: property.currentBid,
     startingBid: property.pricing?.startingAuctionPrice || 0,
-    averageBid: totalBids > 0
-      ? Math.round(bids.reduce((sum, b) => sum + b.amount, 0) / totalBids)
-      : 0,
+    averageBid:
+      totalBids > 0
+        ? Math.round(bids.reduce((sum, b) => sum + b.amount, 0) / totalBids)
+        : 0,
+  };
+};
+
+// ─── ADMIN: Get All Bids (Paginated, Filtered) ───
+export const getAllBids = async (query = {}) => {
+  const {
+    page = 1,
+    limit = 20,
+    auctionId,
+    propertyId,
+    bidderId,
+    status,
+    sortBy = "-createdAt",
+  } = query;
+
+  const filter = {};
+  if (auctionId) filter.auction = auctionId;
+  if (propertyId) filter.property = propertyId;
+  if (bidderId) filter.bidder = bidderId;
+  if (status) filter.status = status;
+
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+
+  const [bids, total] = await Promise.all([
+    Bid.find(filter)
+      .populate("bidder", "name email")
+      .populate("auction", "auctionTitle slug status")
+      .populate("property", "propertyTitle slug currentBid")
+      .sort(sortBy)
+      .skip(skip)
+      .limit(parseInt(limit)),
+    Bid.countDocuments(filter),
+  ]);
+
+  return {
+    bids,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      pages: Math.ceil(total / parseInt(limit)),
+    },
+  };
+};
+
+// ─── ADMIN: Get Bids Stats ───
+export const getBidsStats = async () => {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const [totalBids, todayBids, totalBidders, winningBids, outbidBids, wonBids] =
+    await Promise.all([
+      Bid.countDocuments(),
+      Bid.countDocuments({ createdAt: { $gte: todayStart } }),
+      Bid.distinct("bidder").then((ids) => ids.length),
+      Bid.countDocuments({ status: "winning" }),
+      Bid.countDocuments({ status: "outbid" }),
+      Bid.countDocuments({ status: "won" }), // ADD THIS
+    ]);
+
+  return {
+    totalBids,
+    todayBids,
+    totalBidders,
+    winningBids,
+    outbidBids,
+    wonBids,
   };
 };

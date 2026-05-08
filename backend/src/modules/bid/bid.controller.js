@@ -57,3 +57,21 @@ export const getStats = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const getAllBidsAdmin = async (req, res) => {
+  try {
+    const result = await bidService.getAllBids(req.query);
+    res.status(200).json({ success: true, data: result.bids, pagination: result.pagination });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getBidsStatsAdmin = async (req, res) => {
+  try {
+    const stats = await bidService.getBidsStats();
+    res.status(200).json({ success: true, data: stats });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

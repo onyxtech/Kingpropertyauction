@@ -51,7 +51,10 @@ export default function PropertiesTable() {
                 Price
               </th>
               <th className="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase">
-                Status
+                Approval
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase">
+                Sale Status
               </th>
               <th className="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase">
                 Actions
@@ -81,7 +84,23 @@ export default function PropertiesTable() {
                 </td>
                 <td className="px-6 py-4 text-sm font-bold text-slate-900">
                   {property.pricing?.currency}{" "}
-                  {property.pricing?.reservePrice?.toLocaleString()}
+                  {property.propertyStatus === "sold"
+                    ? (
+                        property.soldPrice ||
+                        property.currentBid ||
+                        0
+                      ).toLocaleString()
+                    : property.listingType === "direct_sale"
+                      ? (
+                          property.pricing?.buyNowPrice ||
+                          property.pricing?.startingAuctionPrice ||
+                          0
+                        ).toLocaleString()
+                      : (
+                          property.pricing?.startingAuctionPrice ||
+                          property.pricing?.reservePrice ||
+                          0
+                        ).toLocaleString()}
                 </td>
                 <td className="px-6 py-4">
                   <span
@@ -95,6 +114,30 @@ export default function PropertiesTable() {
                   >
                     {property.approvalStatus || "pending"}
                   </span>
+                </td>
+                <td className="px-6 py-4">
+                  {property.propertyStatus === "sold" ? (
+                    <span className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold">
+                      🎉 Sold - £
+                      {(
+                        property.soldPrice ||
+                        property.currentBid ||
+                        0
+                      ).toLocaleString()}
+                    </span>
+                  ) : property.propertyStatus === "unsold" ? (
+                    <span className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-bold">
+                      ❌ Unsold
+                    </span>
+                  ) : property.listingType === "auction" ? (
+                    <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold">
+                      🔴 In Auction
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold">
+                      🏷️ For Sale
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">

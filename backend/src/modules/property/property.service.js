@@ -53,7 +53,8 @@ export const getProperties = async (query = {}) => {
       .sort(sortBy)
       .skip(skip)
       .limit(limit)
-      .populate("createdBy", "name email"),
+      .populate("createdBy", "name email")
+      .populate("winningBidder", "name email"),
     Property.countDocuments(filter),
   ]);
 

@@ -25,6 +25,7 @@ const menuItems = [
   { id: "menuManager", icon: Menu, label: "Menu Manager" },
   { id: "properties", icon: Building2, label: "Properties" },
   { id: "auctions", icon: Gavel, label: "Auctions" },
+    { id: "bids", icon: TrendingUp, label: "Bids" },  
   { id: "marketing", icon: Send, label: "Marketing" },
   { id: "social", icon: Share2, label: "Social & Sync" },
   { id: "investors", icon: TrendingUp, label: "Investors" },

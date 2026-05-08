@@ -1,21 +1,21 @@
-const API_BASE = '/api';
+const API_BASE = "/api";
 
 export const apiClient = {
-  getToken: () => localStorage.getItem('token'),
+  getToken: () => localStorage.getItem("token"),
 
   async fetch(url: string, options: RequestInit = {}, retry = true) {
     const token = this.getToken();
     const response = await fetch(`${API_BASE}${url}`, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
     });
 
     // If token expired, try refreshing it
-    if (response.status === 401 && retry) {
+    if (response.status === 401 && retry && this.getToken()) {
       const refreshed = await this.refreshToken();
       if (refreshed) {
         // Retry original request with new token (no infinite retry)
@@ -23,8 +23,11 @@ export const apiClient = {
       }
       // Refresh failed - redirect to login
       this.clearAuth();
-      window.location.href = '/login';
-      return { success: false, message: 'Session expired. Please login again.' };
+      window.location.href = "/login";
+      return {
+        success: false,
+        message: "Session expired. Please login again.",
+      };
     }
 
     return response.json();
@@ -33,13 +36,13 @@ export const apiClient = {
   async refreshToken() {
     try {
       const response = await fetch(`${API_BASE}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include', // Sends HTTP-only cookie
+        method: "POST",
+        credentials: "include", // Sends HTTP-only cookie
       });
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.accessToken) {
-          localStorage.setItem('token', data.accessToken);
+          localStorage.setItem("token", data.accessToken);
           return true;
         }
       }
@@ -50,14 +53,14 @@ export const apiClient = {
   },
 
   clearAuth() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
   },
 
   async upload(url: string, formData: FormData) {
     const token = this.getToken();
     const response = await fetch(`${API_BASE}${url}`, {
-      method: 'POST',
+      method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
     });

@@ -270,7 +270,11 @@ export default function Admin() {
           ? Users
           : a.icon === "gavel"
             ? Gavel
-            : Clock,
+            : a.icon === "check"
+              ? CheckCircle
+              : a.icon === "x"
+                ? XCircle
+                : Clock,
     color: a.color || "blue",
   }));
 
@@ -393,6 +397,7 @@ export default function Admin() {
                       green: "from-green-500 to-emerald-600",
                       emerald: "from-emerald-500 to-teal-600",
                       red: "from-red-500 to-rose-600",
+                      orange: "from-orange-500 to-amber-600",
                     };
                     return (
                       <div

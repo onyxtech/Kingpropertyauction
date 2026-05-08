@@ -50,9 +50,10 @@ import { usePropertyApi } from "@/features/property/api/usePropertyApi";
 import { useAuctionApi } from "@/features/auction/api/useAuctionApi";
 import { useBiddingApi } from "@/features/bid/api/useBiddingApi";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAdminStats } from "@/features/admin/api/useAdminApi";
 import { useAuthStore } from "@/stores/authStore";
 import { useAuthApi } from "@/features/auth/api/useAuthApi";
+import AuthModal from "@/features/shared/components/AuthModal";
+import BidModal from "@/features/shared/components/BidModal";
 
 export default function Website() {
   const navigate = useNavigate();
@@ -121,20 +122,21 @@ export default function Website() {
   const allAuctionsData = useAuctionApi().useGetAuctions({});
   const allAuctions = allAuctionsData.data?.data || [];
 
-  const { data: stats } = useAdminStats();
   const { usePlaceBid } = useBiddingApi();
   const placeBidMutation = usePlaceBid();
   const queryClient = useQueryClient();
 
   // ──────────────── DERIVED COUNTS ────────────────
-  const totalProperties = stats?.totalProperties || properties.length || 0;
-  const liveAuctionCount = stats?.liveAuctions || liveAuctions.length || 0;
-  const totalUsers = stats?.totalUsers || 0;
+  const totalProperties = properties.length || 0;
+  const totalUsers =
+    allAuctions.reduce(
+      (sum: number, a: any) => sum + (a.totalBidders || 0),
+      0,
+    ) || 0;
   const totalBids =
-    stats?.totalBids ||
     allAuctions.reduce((sum: number, a: any) => sum + (a.totalBids || 0), 0) ||
     0;
-
+  const liveAuctionCount = liveAuctions.length || 0;
   // Calculate total auction value from live auctions
   const totalAuctionValue = liveAuctions.reduce((sum: number, auction: any) => {
     return sum + (auction.startingBid || 0);
@@ -241,25 +243,15 @@ export default function Website() {
   const handleSubmitBid = async () => {
     if (!bidAmount || !selectedProperty) return;
 
-    const startingBid = selectedProperty.pricing?.startingAuctionPrice || 0;
-    const bidIncrement =
-      selectedProperty.pricing?.minimumBidIncrement ||
-      selectedProperty.pricing?.bidIncrement ||
-      1000;
-
-    // Find matching auction to get current bid
-    const matchingAuction = allAuctions.find((auction: any) =>
-      auction.properties?.some(
-        (p: any) =>
-          (typeof p === "string" ? p : p._id) === selectedProperty._id,
-      ),
-    );
-
-    const currentBid = matchingAuction?.currentBid || startingBid;
+    const bidIncrement = selectedProperty.pricing?.minimumBidIncrement || 1000;
+    const currentBid =
+      selectedProperty.currentBid ||
+      selectedProperty.pricing?.startingAuctionPrice ||
+      0;
     const nextMinBid = currentBid + bidIncrement;
     const newBidValue = parseFloat(bidAmount);
 
-    // 3. Validate bid amount against next minimum bid
+    // Validate bid amount against next minimum bid
     if (newBidValue < nextMinBid) {
       showNotification(
         `Your bid must be at least £${nextMinBid.toLocaleString()} (current bid + £${bidIncrement.toLocaleString()} increment)`,
@@ -267,6 +259,14 @@ export default function Website() {
       );
       return;
     }
+
+    // Find matching auction
+    const matchingAuction = allAuctions.find((auction: any) =>
+      auction.properties?.some(
+        (p: any) =>
+          (typeof p === "string" ? p : p._id) === selectedProperty._id,
+      ),
+    );
 
     if (!matchingAuction) {
       showNotification(
@@ -284,22 +284,15 @@ export default function Website() {
       });
       setBidSuccess(true);
       showNotification("Bid placed successfully! 🎉", "success");
-
-      // Refresh data so cards update immediately
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       queryClient.invalidateQueries({ queryKey: ["auctions"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
-
       setTimeout(() => {
         setBidModalOpen(false);
         setBidSuccess(false);
         setBidAmount("");
       }, 2000);
     } catch (error: any) {
-      showNotification(
-        error.message || "Failed to place bid. Please try again.",
-        "error",
-      );
+      showNotification(error.message || "Failed to place bid.", "error");
     }
   };
 
@@ -492,229 +485,24 @@ export default function Website() {
       </AnimatePresence>
 
       {/* ──────────────── AUTH MODAL (like LiveAuctions) ──────────────── */}
-      <AnimatePresence>
-        {showAuthModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
-            onClick={() => setShowAuthModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden"
-            >
-              <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 text-white relative">
-                <button
-                  onClick={() => setShowAuthModal(false)}
-                  className="absolute top-4 right-4 size-8 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center transition-all"
-                >
-                  <X className="size-4" />
-                </button>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="size-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
-                    <User className="size-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black">
-                      {isLogin ? "Welcome Back! 👋" : "Create Account 🚀"}
-                    </h3>
-                    <p className="text-white/80 text-sm">
-                      {isLogin
-                        ? "Sign in to place bids"
-                        : "Register to start bidding"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <form onSubmit={handleAuthSubmit} className="p-6 space-y-4">
-                {authError && (
-                  <div className="p-3 bg-red-50 border-2 border-red-200 rounded-xl flex items-center gap-2 text-sm text-red-700 font-bold">
-                    <AlertCircle className="size-4 flex-shrink-0" />
-                    {authError}
-                  </div>
-                )}
-
-                {!isLogin && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={authFormData.firstName}
-                        onChange={(e) =>
-                          setAuthFormData({
-                            ...authFormData,
-                            firstName: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="John"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={authFormData.lastName}
-                        onChange={(e) =>
-                          setAuthFormData({
-                            ...authFormData,
-                            lastName: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Doe"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {!isLogin && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Phone
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                      <input
-                        type="tel"
-                        value={authFormData.phone}
-                        onChange={(e) =>
-                          setAuthFormData({
-                            ...authFormData,
-                            phone: e.target.value,
-                          })
-                        }
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="+44 7700 900000"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <input
-                      type="email"
-                      required
-                      value={authFormData.email}
-                      onChange={(e) =>
-                        setAuthFormData({
-                          ...authFormData,
-                          email: e.target.value,
-                        })
-                      }
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="john@example.com"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={authFormData.password}
-                      onChange={(e) =>
-                        setAuthFormData({
-                          ...authFormData,
-                          password: e.target.value,
-                        })
-                      }
-                      className="w-full pl-10 pr-12 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="••••••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="size-4" />
-                      ) : (
-                        <Eye className="size-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {!isLogin && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Confirm Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={authFormData.confirmPassword}
-                        onChange={(e) =>
-                          setAuthFormData({
-                            ...authFormData,
-                            confirmPassword: e.target.value,
-                          })
-                        }
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={authLoading}
-                  className="w-full py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl font-bold hover:shadow-xl transition-all disabled:opacity-50"
-                >
-                  {authLoading
-                    ? "Please wait..."
-                    : isLogin
-                      ? "Sign In"
-                      : "Create Account"}
-                </button>
-
-                <p className="text-center text-sm text-slate-600">
-                  {isLogin
-                    ? "Don't have an account?"
-                    : "Already have an account?"}{" "}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsLogin(!isLogin);
-                      setAuthError("");
-                    }}
-                    className="text-blue-600 font-bold hover:underline"
-                  >
-                    {isLogin ? "Register" : "Sign In"}
-                  </button>
-                </p>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AuthModal
+        show={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        isLogin={isLogin}
+        onToggleLogin={() => {
+          setIsLogin(!isLogin);
+          setAuthError("");
+        }}
+        showPassword={showPassword}
+        onTogglePassword={() => setShowPassword(!showPassword)}
+        authError={authError}
+        authLoading={authLoading}
+        formData={authFormData}
+        onFormChange={(field, value) =>
+          setAuthFormData((prev) => ({ ...prev, [field]: value }))
+        }
+        onSubmit={handleAuthSubmit}
+      />
 
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -1087,7 +875,7 @@ export default function Website() {
 
                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <label className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                       <Home className="size-4 text-blue-600" />
                       Property Type
                     </label>
@@ -1107,7 +895,7 @@ export default function Website() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <label className=" text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                       <span className="text-emerald-600">£</span>
                       Min Price
                     </label>
@@ -1123,7 +911,7 @@ export default function Website() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <label className=" text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                       <span className="text-emerald-600">£</span>
                       Max Price
                     </label>
@@ -1139,7 +927,7 @@ export default function Website() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <label className=" text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                       <MapPin className="size-4 text-red-600" />
                       Location
                     </label>
@@ -1155,7 +943,7 @@ export default function Website() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <label className=" text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                       <Bed className="size-4 text-purple-600" />
                       Min Bedrooms
                     </label>
@@ -1176,7 +964,7 @@ export default function Website() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <label className=" text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                       <Bath className="size-4 text-cyan-600" />
                       Min Bathrooms
                     </label>
@@ -1419,13 +1207,15 @@ export default function Website() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProperties.map((property: any) => {
               const imageUrl = getPropertyImage(property);
+              const auctionInfo = getAuctionInfo(property);
               const isAuction =
                 property.listingType === "auction" &&
-                getAuctionInfo(property) !== null;
+                auctionInfo !== null &&
+                auctionInfo.status === "live";
+              const isLiveAuction = isAuction;
               const auction = getAuctionInfo(property);
-              const auctionEndDate = isAuction
-                ? property.auctionDetails?.auctionEndDate
-                : null;
+              const auctionEndDate =
+                isAuction && auctionInfo ? auctionInfo.endDateTime : null;
               const gradient = isAuction
                 ? "from-red-500 to-orange-500"
                 : "from-blue-500 to-cyan-500";
@@ -1495,6 +1285,17 @@ export default function Website() {
                               <Clock className="size-3" />
                               Live Auction
                             </div>
+                          ) : auctionInfo &&
+                            auctionInfo.status === "completed" ? (
+                            property.propertyStatus === "sold" ? (
+                              <div className="px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full shadow-xl">
+                                🎉 Sold
+                              </div>
+                            ) : (
+                              <div className="px-3 py-2 bg-gradient-to-r from-slate-500 to-slate-700 text-white text-xs font-bold rounded-full shadow-xl">
+                                Unsold
+                              </div>
+                            )
                           ) : (
                             <div className="px-3 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-xl">
                               <Clock className="size-3" />
@@ -1502,7 +1303,9 @@ export default function Website() {
                             </div>
                           )
                         ) : (
-                          <div className="px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs font-bold rounded-full shadow-xl">
+                          <div
+                            className={`px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs font-bold rounded-full shadow-xl`}
+                          >
                             For Sale
                           </div>
                         )}
@@ -1545,6 +1348,19 @@ export default function Website() {
                           endDate={new Date(auctionEndDate)}
                           compact={true}
                           gradient={gradient}
+                          onEnded={async () => {
+                            try {
+                              await fetch(`/api/auctions/check-ended-public`, {
+                                method: "POST",
+                              });
+                            } catch (e) {}
+                            queryClient.invalidateQueries({
+                              queryKey: ["properties"],
+                            });
+                            queryClient.invalidateQueries({
+                              queryKey: ["auctions"],
+                            });
+                          }}
                         />
                       </div>
                     )}
@@ -1674,7 +1490,7 @@ export default function Website() {
                           {displayPrice}
                         </p>
                         <button
-                          className={`w-full py-3.5 border-3 border-gradient bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-border text-slate-900 rounded-xl font-bold hover:bg-gradient-to-r hover:text-white transition-all flex items-center justify-center gap-2 border-2`}
+                          className={`w-full py-3.5 border-gradient bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-border text-slate-900 rounded-xl font-bold hover:bg-gradient-to-r hover:text-white transition-all flex items-center justify-center gap-2 border-2`}
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(
@@ -1696,188 +1512,34 @@ export default function Website() {
       </div>
 
       {/* Bid Modal */}
-      <AnimatePresence>
-        {bidModalOpen && selectedProperty && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-6"
-            onClick={() => setBidModalOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-500 to-orange-500" />
-
-              <button
-                className="absolute top-6 right-6 size-10 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center transition-all hover:rotate-90"
-                onClick={() => setBidModalOpen(false)}
-              >
-                <X className="size-5 text-slate-600" />
-              </button>
-
-              <div className="mb-6">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full mb-4">
-                  <Gavel className="size-4" />
-                  <span className="text-sm font-bold">Live Auction</span>
-                </div>
-                <h3 className="text-2xl font-black text-slate-900 mb-2">
-                  {selectedProperty.propertyTitle}
-                </h3>
-                <div className="flex items-center gap-2 text-slate-600">
-                  <MapPin className="size-4" />
-                  <span className="text-sm font-medium">
-                    {selectedProperty.location?.city},{" "}
-                    {selectedProperty.location?.area}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mb-6 rounded-2xl overflow-hidden">
-                <ImageWithFallback
-                  src={getPropertyImage(selectedProperty)}
-                  alt={selectedProperty.propertyTitle}
-                  className="w-full h-48 object-cover"
-                />
-              </div>
-
-              {/* Bid Info (like LiveAuctions) */}
-              {(() => {
-                const currentBid =
-                  selectedProperty.currentBid ||
-                  selectedProperty.pricing?.startingAuctionPrice ||
-                  0;
-                const bidIncrement =
-                  selectedProperty.pricing?.minimumBidIncrement || 1000;
-                const nextMinBid = currentBid + bidIncrement;
-                const reservePrice =
-                  selectedProperty.pricing?.reservePrice || 0;
-                const reserveMet = currentBid >= reservePrice;
-
-                return (
-                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-5 mb-6 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                          Current Bid
-                        </p>
-                        <p className="text-2xl font-black bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
-                          £{currentBid.toLocaleString()}
-                        </p>
-                      </div>
-                      {selectedProperty.totalBids > 0 && (
-                        <div className="text-right">
-                          <p className="text-xl font-black text-slate-900">
-                            {selectedProperty.totalBids}
-                          </p>
-                          <p className="text-xs font-semibold text-slate-600">
-                            Total Bids
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-slate-500">Next Minimum Bid</span>
-                      <span className="text-slate-900 font-bold">
-                        £{nextMinBid.toLocaleString()}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-slate-500">Bid Increment</span>
-                      <span className="text-slate-900 font-bold">
-                        £{bidIncrement.toLocaleString()}
-                      </span>
-                    </div>
-
-                    {reservePrice > 0 && (
-                      <div
-                        className={`flex items-center gap-1.5 text-xs font-bold ${reserveMet ? "text-green-600" : "text-amber-600"}`}
-                      >
-                        {reserveMet ? (
-                          <CheckCircle className="size-3.5" />
-                        ) : (
-                          <AlertCircle className="size-3.5" />
-                        )}
-                        {reserveMet
-                          ? "Reserve Price Met"
-                          : `Reserve Not Met (£${reservePrice.toLocaleString()})`}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Bid Input */}
-              <div className="mb-6">
-                <label className="block text-sm font-bold text-slate-900 mb-2">
-                  Your Bid Amount (£)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-400">
-                    £
-                  </span>
-                  <input
-                    type="number"
-                    value={bidAmount}
-                    onChange={(e) => setBidAmount(e.target.value)}
-                    className="w-full pl-12 pr-6 py-4 bg-white border-3 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-2xl placeholder:text-slate-300 shadow-sm"
-                    placeholder="0"
-                  />
-                </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  💡 Your bid must be at least the next minimum bid shown above
-                </p>
-              </div>
-
-              {bidSuccess ? (
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 mb-6 border-2 border-green-200">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="size-12 bg-green-500 rounded-full flex items-center justify-center">
-                      <CheckCircle className="size-7 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-green-900 text-lg">
-                        Bid Placed Successfully! 🎉
-                      </p>
-                      <p className="text-sm text-green-700">
-                        You're now the highest bidder
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex gap-3">
-                  <button
-                    className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all"
-                    onClick={() => setBidModalOpen(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="flex-1 py-4 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={handleSubmitBid}
-                    disabled={!bidAmount || placeBidMutation.isPending}
-                  >
-                    <Gavel className="size-5" />
-                    {placeBidMutation.isPending ? "Placing..." : "Place Bid"}
-                  </button>
-                </div>
-              )}
-
-              <p className="text-xs text-center text-slate-500 mt-4">
-                🔒 By placing a bid, you agree to our terms and conditions
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <BidModal
+        show={bidModalOpen}
+        onClose={() => setBidModalOpen(false)}
+        property={selectedProperty}
+        currentBid={
+          selectedProperty?.currentBid ||
+          selectedProperty?.pricing?.startingAuctionPrice ||
+          0
+        }
+        nextMinBid={
+          (selectedProperty?.currentBid ||
+            selectedProperty?.pricing?.startingAuctionPrice ||
+            0) + (selectedProperty?.pricing?.minimumBidIncrement || 1000)
+        }
+        bidIncrement={selectedProperty?.pricing?.minimumBidIncrement || 1000}
+        reservePrice={selectedProperty?.pricing?.reservePrice || 0}
+        reserveMet={
+          (selectedProperty?.currentBid || 0) >=
+          (selectedProperty?.pricing?.reservePrice || 0)
+        }
+        bidAmount={bidAmount}
+        onBidAmountChange={setBidAmount}
+        bidSuccess={bidSuccess}
+        isPending={placeBidMutation.isPending}
+        onSubmit={handleSubmitBid}
+        formatPrice={formatPrice}
+        getPropertyImage={getPropertyImage}
+      />
 
       {/* Virtual Tour Modal */}
       <AnimatePresence>
