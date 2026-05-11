@@ -104,4 +104,98 @@ notificationService.on(NotificationEvents.USER_REJECTED, async ({ userId, reason
   });
 });
 
+
+// ─── Bidding Events ───
+
+// Bid Confirmation
+notificationService.on(NotificationEvents.BID_PLACED, async ({ userId, propertyId, auctionId, amount }) => {
+  const enabled = await isNotificationEnabled('bidConfirmation');
+  if (!enabled) return;
+
+  const user = await User.findById(userId);
+  const property = await Property.findById(propertyId);
+  if (!user || !property) return;
+
+  await sendEmail({
+    to: user.email,
+    subject: `Bid Confirmed - ${property.propertyTitle}`,
+    templateKey: 'bidConfirmation',
+    variables: {
+      user_name: user.name,
+      property_title: property.propertyTitle,
+      bid_amount: `£${amount.toLocaleString()}`,
+      current_bid: `£${amount.toLocaleString()}`,
+      property_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/properties/${property.slug || property._id}`,
+    },
+  });
+});
+
+// Outbid Alert
+notificationService.on(NotificationEvents.BID_OUTBID, async ({ userId, propertyId, auctionId, newAmount, previousAmount }) => {
+  const enabled = await isNotificationEnabled('outbidAlert');
+  if (!enabled) return;
+
+  const user = await User.findById(userId);
+  const property = await Property.findById(propertyId);
+  if (!user || !property) return;
+
+  await sendEmail({
+    to: user.email,
+    subject: `⚠️ You've been outbid on ${property.propertyTitle}`,
+    templateKey: 'outbidAlert',
+    variables: {
+      user_name: user.name,
+      property_title: property.propertyTitle,
+      your_bid: `£${previousAmount.toLocaleString()}`,
+      current_bid: `£${newAmount.toLocaleString()}`,
+      property_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/properties/${property.slug || property._id}`,
+    },
+  });
+});
+
+// Auction Won
+notificationService.on(NotificationEvents.AUCTION_WON, async ({ userId, propertyId, auctionId, finalPrice }) => {
+  const enabled = await isNotificationEnabled('auctionWon');
+  if (!enabled) return;
+
+  const user = await User.findById(userId);
+  const property = await Property.findById(propertyId);
+  const auction = await Auction.findById(auctionId);
+  if (!user || !property) return;
+
+  await sendEmail({
+    to: user.email,
+    subject: `🎉 Congratulations! You won ${property.propertyTitle}`,
+    templateKey: 'auctionWon',
+    variables: {
+      user_name: user.name,
+      property_title: property.propertyTitle,
+      final_price: `£${finalPrice.toLocaleString()}`,
+      auction_name: auction?.auctionTitle || 'Auction',
+    },
+  });
+});
+
+// Auction Lost
+notificationService.on(NotificationEvents.AUCTION_LOST, async ({ userId, propertyId, auctionId, finalPrice }) => {
+  const enabled = await isNotificationEnabled('auctionLost');
+  if (!enabled) return;
+
+  const user = await User.findById(userId);
+  const property = await Property.findById(propertyId);
+  if (!user || !property) return;
+
+  await sendEmail({
+    to: user.email,
+    subject: `Auction Ended - ${property.propertyTitle}`,
+    templateKey: 'auctionLost',
+    variables: {
+      user_name: user.name,
+      property_title: property.propertyTitle,
+      final_price: `£${finalPrice.toLocaleString()}`,
+      site_url: process.env.CLIENT_URL || 'http://localhost:5173',
+    },
+  });
+});
+
 export default notificationService;

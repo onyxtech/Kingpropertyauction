@@ -1,6 +1,7 @@
 import Bid from "./bid.model.js";
 import Auction from "../auction/auction.model.js";
 import Property from "../property/property.model.js";
+import notificationService, { NotificationEvents } from '../notifications/trigger.service.js';
 
 // ─── Place Bid (Manual + Auto) ───
 export const placeBid = async (data, userId) => {
@@ -54,6 +55,37 @@ export const placeBid = async (data, userId) => {
     bidder: userId,
     status: "winning",
   });
+
+    // Emit bid confirmation event
+  notificationService.emit(NotificationEvents.BID_PLACED, {
+    userId,
+    propertyId: data.property,
+    auctionId: data.auction,
+    amount: data.amount,
+  }).catch(e => console.error('Bid confirmation event failed:', e.message));
+
+  // Notify previous winners they've been outbid
+  const outbidders = await Bid.find({
+    auction: data.auction,
+    property: data.property,
+    status: 'outbid',
+    bidder: { $ne: userId },
+  }).populate('bidder', 'name email');
+
+  const notifiedBidders = new Set();
+  for (const oldBid of outbidders) {
+    const bidderId = oldBid.bidder?._id?.toString();
+    if (bidderId && !notifiedBidders.has(bidderId)) {
+      notifiedBidders.add(bidderId);
+      notificationService.emit(NotificationEvents.BID_OUTBID, {
+        userId: bidderId,
+        propertyId: data.property,
+        auctionId: data.auction,
+        newAmount: data.amount,
+        previousAmount: oldBid.amount,
+      }).catch(e => console.error('Outbid event failed:', e.message));
+    }
+  }
 
   // 9. Update property's current bid
   await Property.findByIdAndUpdate(data.property, {

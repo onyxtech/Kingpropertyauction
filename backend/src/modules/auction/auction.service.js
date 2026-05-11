@@ -1,10 +1,10 @@
 import Auction from "./auction.model.js";
+import notificationService, {
+  NotificationEvents,
+} from "../notifications/trigger.service.js";
 
 export const createAuction = async (data, userId) => {
-  const auction = await Auction.create({
-    ...data,
-    createdBy: userId,
-  });
+  const auction = await Auction.create({ ...data, createdBy: userId });
   return auction.populate(["properties", "createdBy", "winningBidder"]);
 };
 
@@ -17,14 +17,10 @@ export const getAuctions = async (query = {}) => {
     search,
     sortBy = "-createdAt",
   } = query;
-
   const filter = {};
-
   if (status) filter.status = status;
   if (type) filter.auctionType = type;
-
   const skip = (page - 1) * limit;
-
   const [auctions, total] = await Promise.all([
     Auction.find(filter)
       .populate(
@@ -38,15 +34,9 @@ export const getAuctions = async (query = {}) => {
       .limit(limit),
     Auction.countDocuments(filter),
   ]);
-
   return {
     auctions,
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.ceil(total / limit),
-    },
+    pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   };
 };
 
@@ -55,7 +45,6 @@ export const getAuctionById = async (id) => {
     .populate("properties")
     .populate("createdBy", "name email")
     .populate("winningBidder", "name email");
-
   if (!auction) throw new Error("Auction not found");
   return auction;
 };
@@ -65,7 +54,6 @@ export const updateAuction = async (id, data) => {
     new: true,
     runValidators: true,
   }).populate(["properties", "createdBy"]);
-
   if (!auction) throw new Error("Auction not found");
   return auction;
 };
@@ -113,45 +101,43 @@ import Property from "../property/property.model.js";
 export const completeAuction = async (auctionId) => {
   const auction = await Auction.findById(auctionId).populate("properties");
   if (!auction) throw new Error("Auction not found");
-  if (auction.status !== "live") throw new Error("Auction is not live");
+  // Prevent duplicate completion
+  if (auction.status !== "live") {
+    console.log(`Auction ${auctionId} already completed, skipping.`);
+    return { auction: auction.auctionTitle, alreadyCompleted: true };
+  }
 
   const results = [];
 
   for (const property of auction.properties) {
-    // Try to find a winning bid
     const winningBid = await Bid.findOne({
       auction: auctionId,
       property: property._id,
       status: "winning",
     }).populate("bidder", "name email");
 
-    // Get FRESH property data from DB
     const freshProperty = await Property.findById(property._id);
     const reservePrice = freshProperty?.pricing?.reservePrice || 0;
     const currentBid = freshProperty?.currentBid || property?.currentBid || 0;
     const freshWinningBidder = freshProperty?.winningBidder || null;
 
-    // Determine winner info
     const winner = winningBid?.bidder || freshWinningBidder || null;
     const winnerName = winner?.name || winner?.toString() || "Unknown";
     const winnerEmail = winningBid?.bidder?.email || "";
 
     if (currentBid >= reservePrice && reservePrice > 0) {
-      // SOLD - Reserve met
       await Property.findByIdAndUpdate(property._id, {
         propertyStatus: "sold",
         soldTo: winner?._id || winner || null,
         soldPrice: currentBid,
         "auctionDetails.auctionStatus": "closed",
       });
-
       if (winningBid) {
         await Bid.updateMany(
           { auction: auctionId, property: property._id, status: "winning" },
           { status: "won" },
         );
       }
-
       results.push({
         property: property.propertyTitle,
         status: "SOLD",
@@ -160,20 +146,29 @@ export const completeAuction = async (auctionId) => {
         price: currentBid,
         reserve: reservePrice,
       });
+
+      // Notify winner
+      if (winner?._id) {
+        notificationService
+          .emit(NotificationEvents.AUCTION_WON, {
+            userId: winner._id,
+            propertyId: property._id,
+            auctionId,
+            finalPrice: currentBid,
+          })
+          .catch((e) => console.error("Auction won event failed:", e.message));
+      }
     } else if (currentBid > 0 && currentBid < reservePrice) {
-      // UNSOLD - Had bids but reserve not met
       await Property.findByIdAndUpdate(property._id, {
         propertyStatus: "unsold",
         "auctionDetails.auctionStatus": "closed",
       });
-
       if (winningBid) {
         await Bid.updateMany(
           { auction: auctionId, property: property._id, status: "winning" },
           { status: "lost" },
         );
       }
-
       results.push({
         property: property.propertyTitle,
         status: "UNSOLD",
@@ -182,21 +177,39 @@ export const completeAuction = async (auctionId) => {
         reserve: reservePrice,
       });
     } else {
-      // NO BIDS at all
       await Property.findByIdAndUpdate(property._id, {
         propertyStatus: "unsold",
         "auctionDetails.auctionStatus": "closed",
       });
-
       results.push({
         property: property.propertyTitle,
         status: "UNSOLD",
         reason: "No bids placed",
       });
     }
+
+    // Notify losing bidders for THIS property (inside main loop - runs once per property)
+    const allBidders = await Bid.find({
+      auction: auctionId,
+      property: property._id,
+      status: { $ne: "retracted" },
+    }).distinct("bidder");
+
+    const winnerStr = winner?._id?.toString();
+    for (const bidderId of allBidders) {
+      if (bidderId.toString() !== winnerStr) {
+        notificationService
+          .emit(NotificationEvents.AUCTION_LOST, {
+            userId: bidderId,
+            propertyId: property._id,
+            auctionId,
+            finalPrice: currentBid,
+          })
+          .catch((e) => console.error("Auction lost event failed:", e.message));
+      }
+    }
   }
 
-  // Update auction status
   auction.status = "completed";
   await auction.save();
 
@@ -218,12 +231,10 @@ export const completeAuction = async (auctionId) => {
 // ─── CRON: Check for ended auctions ───
 export const checkAndCompleteEndedAuctions = async () => {
   const now = new Date();
-
   const endedAuctions = await Auction.find({
     status: "live",
     endDateTime: { $lte: now },
   });
-
   const results = [];
   for (const auction of endedAuctions) {
     try {
@@ -237,6 +248,5 @@ export const checkAndCompleteEndedAuctions = async () => {
       );
     }
   }
-
   return results;
 };

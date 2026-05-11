@@ -927,104 +927,104 @@ export default function AdminSettings() {
                   <Save className="size-4" />{" "}
                   {isSaving ? "Saving..." : "Save OAuth Settings"}
                 </button>
+
+                {/* Setup Guide */}
+                <div className="mt-8 p-6 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl border-2 border-amber-200">
+                  <h4 className="font-black text-slate-900 mb-4">
+                    📖 How to Get OAuth Keys
+                  </h4>
+
+                  <div className="space-y-4">
+                    <details className="group">
+                      <summary className="font-bold text-blue-700 cursor-pointer hover:text-blue-900">
+                        🔵 Google OAuth Setup
+                      </summary>
+                      <div className="mt-2 text-sm text-slate-600 space-y-2 pl-4">
+                        <p>
+                          1. Go to{" "}
+                          <a
+                            href="https://console.cloud.google.com"
+                            target="_blank"
+                            className="text-blue-600 underline"
+                          >
+                            Google Cloud Console
+                          </a>
+                        </p>
+                        <p>
+                          2. Create a project → Enable OAuth consent screen
+                          (External)
+                        </p>
+                        <p>
+                          3. Go to Credentials → Create OAuth Client ID → Web
+                          application
+                        </p>
+                        <p>
+                          4. Add redirect URI:{" "}
+                          <code className="bg-blue-100 px-1 rounded">
+                            {window.location.origin}/api/auth/google/callback
+                          </code>
+                        </p>
+                        <p>5. Copy Client ID and Client Secret</p>
+                      </div>
+                    </details>
+
+                    <details className="group">
+                      <summary className="font-bold text-slate-700 cursor-pointer hover:text-slate-900">
+                        🐙 GitHub OAuth Setup
+                      </summary>
+                      <div className="mt-2 text-sm text-slate-600 space-y-2 pl-4">
+                        <p>
+                          1. Go to{" "}
+                          <a
+                            href="https://github.com/settings/developers"
+                            target="_blank"
+                            className="text-blue-600 underline"
+                          >
+                            GitHub Developer Settings
+                          </a>
+                        </p>
+                        <p>2. Click New OAuth App</p>
+                        <p>
+                          3. Set callback URL:{" "}
+                          <code className="bg-gray-100 px-1 rounded">
+                            {window.location.origin}/api/auth/github/callback
+                          </code>
+                        </p>
+                        <p>4. Register → Generate Client Secret</p>
+                        <p>5. Copy Client ID and Client Secret</p>
+                      </div>
+                    </details>
+
+                    <details className="group">
+                      <summary className="font-bold text-blue-800 cursor-pointer hover:text-blue-900">
+                        📘 Facebook OAuth Setup
+                      </summary>
+                      <div className="mt-2 text-sm text-slate-600 space-y-2 pl-4">
+                        <p>
+                          1. Go to{" "}
+                          <a
+                            href="https://developers.facebook.com"
+                            target="_blank"
+                            className="text-blue-600 underline"
+                          >
+                            Meta for Developers
+                          </a>
+                        </p>
+                        <p>2. Create App → Consumer → Set name</p>
+                        <p>3. Add Product → Facebook Login → Web</p>
+                        <p>
+                          4. Set redirect URI:{" "}
+                          <code className="bg-blue-100 px-1 rounded">
+                            {window.location.origin}/api/auth/facebook/callback
+                          </code>
+                        </p>
+                        <p>5. Settings → Basic → Copy App ID and App Secret</p>
+                      </div>
+                    </details>
+                  </div>
+                </div>
               </div>
             )}
-
-            {/* Setup Guide */}
-            <div className="mt-8 p-6 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl border-2 border-amber-200">
-              <h4 className="font-black text-slate-900 mb-4">
-                📖 How to Get OAuth Keys
-              </h4>
-
-              <div className="space-y-4">
-                <details className="group">
-                  <summary className="font-bold text-blue-700 cursor-pointer hover:text-blue-900">
-                    🔵 Google OAuth Setup
-                  </summary>
-                  <div className="mt-2 text-sm text-slate-600 space-y-2 pl-4">
-                    <p>
-                      1. Go to{" "}
-                      <a
-                        href="https://console.cloud.google.com"
-                        target="_blank"
-                        className="text-blue-600 underline"
-                      >
-                        Google Cloud Console
-                      </a>
-                    </p>
-                    <p>
-                      2. Create a project → Enable OAuth consent screen
-                      (External)
-                    </p>
-                    <p>
-                      3. Go to Credentials → Create OAuth Client ID → Web
-                      application
-                    </p>
-                    <p>
-                      4. Add redirect URI:{" "}
-                      <code className="bg-blue-100 px-1 rounded">
-                        {window.location.origin}/api/auth/google/callback
-                      </code>
-                    </p>
-                    <p>5. Copy Client ID and Client Secret</p>
-                  </div>
-                </details>
-
-                <details className="group">
-                  <summary className="font-bold text-slate-700 cursor-pointer hover:text-slate-900">
-                    🐙 GitHub OAuth Setup
-                  </summary>
-                  <div className="mt-2 text-sm text-slate-600 space-y-2 pl-4">
-                    <p>
-                      1. Go to{" "}
-                      <a
-                        href="https://github.com/settings/developers"
-                        target="_blank"
-                        className="text-blue-600 underline"
-                      >
-                        GitHub Developer Settings
-                      </a>
-                    </p>
-                    <p>2. Click New OAuth App</p>
-                    <p>
-                      3. Set callback URL:{" "}
-                      <code className="bg-gray-100 px-1 rounded">
-                        {window.location.origin}/api/auth/github/callback
-                      </code>
-                    </p>
-                    <p>4. Register → Generate Client Secret</p>
-                    <p>5. Copy Client ID and Client Secret</p>
-                  </div>
-                </details>
-
-                <details className="group">
-                  <summary className="font-bold text-blue-800 cursor-pointer hover:text-blue-900">
-                    📘 Facebook OAuth Setup
-                  </summary>
-                  <div className="mt-2 text-sm text-slate-600 space-y-2 pl-4">
-                    <p>
-                      1. Go to{" "}
-                      <a
-                        href="https://developers.facebook.com"
-                        target="_blank"
-                        className="text-blue-600 underline"
-                      >
-                        Meta for Developers
-                      </a>
-                    </p>
-                    <p>2. Create App → Consumer → Set name</p>
-                    <p>3. Add Product → Facebook Login → Web</p>
-                    <p>
-                      4. Set redirect URI:{" "}
-                      <code className="bg-blue-100 px-1 rounded">
-                        {window.location.origin}/api/auth/facebook/callback
-                      </code>
-                    </p>
-                    <p>5. Settings → Basic → Copy App ID and App Secret</p>
-                  </div>
-                </details>
-              </div>
-            </div>
           </div>
         </div>
 
