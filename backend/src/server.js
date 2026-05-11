@@ -5,6 +5,8 @@ import app from './app.js';
 import { connectDB } from './config/db.js';
 import { checkAndCompleteEndedAuctions } from './modules/auction/auction.service.js';
 import Auction from './modules/auction/auction.model.js';
+import notificationService from './modules/notifications/trigger.service.js';
+console.log('📧 Notification service initialized');
 
 const PORT = process.env.PORT || 5000;
 

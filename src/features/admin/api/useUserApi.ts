@@ -1,17 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
+import { useAuthStore } from "@/stores/authStore";
 
 export const useUserApi = () => {
   const queryClient = useQueryClient();
 
   const useGetUsers = () => {
+    const { isAuthenticated } = useAuthStore();
     return useQuery({
       queryKey: ["users"],
       queryFn: async () => {
         const result = await apiClient.fetch("/users");
-        if (!result.success) throw new Error(result.message);
+        if (!result.success) return [];
         return result.data;
       },
+      enabled: isAuthenticated,
+      retry: false,
     });
   };
 

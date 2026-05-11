@@ -38,7 +38,7 @@ const menuItems = [
     id: "settings",
     icon: Settings,
     label: "Settings",
-    path: "/admin/settings/email",
+    path: "/admin/settings",
   },
 ];
 

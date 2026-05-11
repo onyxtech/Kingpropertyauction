@@ -19,6 +19,9 @@ import Online from "@/features/website/pages/Online";
 import About from "@/features/website/info/About";
 import Register from "@/features/auth/pages/Register";
 import Login from "@/features/auth/pages/Login";
+import ForgotPassword from "@/features/auth/pages/ForgotPassword";
+import ResetPassword from "@/features/auth/pages/ResetPassword";
+import OAuthCallback from "@/features/auth/pages/OAuthCallback";
 import ContactUs from "@/features/website/info/ContactUs";
 import OnlineAuctions from "@/features/website/pages/OnlineAuctions";
 import FreeValuation from "@/features/website/info/FreeValuation";
@@ -66,7 +69,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/admin/settings/email",
+    path: "/admin/settings",
     Component: () => (
       <ProtectedRoute allowedRoles={["admin"]}>
         <AdminSettings />
@@ -207,6 +210,9 @@ export const router = createBrowserRouter([
   { path: "/about", Component: About },
   { path: "/register", Component: Register },
   { path: "/login", Component: Login },
+  { path: "/forgot-password", Component: ForgotPassword },
+  { path: "/reset-password/:token", Component: ResetPassword },
+  { path: "/oauth-callback", Component: OAuthCallback },
   { path: "/contact-us", Component: ContactUs },
   { path: "/online-auctions", Component: OnlineAuctions },
   { path: "/free-valuation", Component: FreeValuation },

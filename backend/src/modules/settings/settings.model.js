@@ -27,6 +27,7 @@ export const EmailConfigSchema = z.object({
 export const NotificationRulesSchema = z.object({
   welcome: z.boolean().default(true),
   accountApproved: z.boolean().default(true),
+  accountRejected: z.boolean().default(true),
   bidConfirmation: z.boolean().default(true),
   outbidAlert: z.boolean().default(true),
   auctionWon: z.boolean().default(true),
@@ -38,9 +39,24 @@ export const NotificationRulesSchema = z.object({
   valuationRequest: z.boolean().default(true),
 });
 
+// ─── OAuth Configuration Schema ───
+export const OAuthProviderSchema = z.object({
+  enabled: z.boolean().default(false),
+  clientId: z.string().default(""),
+  clientSecret: z.string().default(""),
+  callbackUrl: z.string().default(""),
+});
+
+export const OAuthConfigSchema = z.object({
+  google: OAuthProviderSchema.default({}),
+  github: OAuthProviderSchema.default({}),
+  facebook: OAuthProviderSchema.default({}),
+});
+
 export const SettingKeySchema = z.enum([
   "email_config",
   "notification_rules",
+  "oauth_config",
   "general",
 ]);
 

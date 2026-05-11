@@ -91,7 +91,15 @@ import {
 export default function Admin() {
   const navigate = useNavigate();
   const theme = useTheme();
+  const location = useLocation();
+  const queryClient = useQueryClient();
+
   const { data: stats, isLoading } = useAdminStats();
+  const { useGetUsers, useUpdateUserStatus, useDeleteUser } = useUserApi();
+  const { data: users, isLoading: usersLoading } = useGetUsers();
+  const updateUserStatus = useUpdateUserStatus();
+  const deleteUser = useDeleteUser();
+
   const getInitialTab = () => {
     const path = window.location.pathname
       .replace("/admin/", "")
@@ -105,27 +113,14 @@ export default function Admin() {
   const [editingMenu, setEditingMenu] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const { useGetUsers, useUpdateUserStatus } = useUserApi();
-  const { data: users, isLoading: usersLoading } = useGetUsers();
-  const updateUserStatus = useUpdateUserStatus();
   const [editingUser, setEditingUser] = useState<any>(null);
-  const { useDeleteUser } = useUserApi();
-  const deleteUser = useDeleteUser();
-  const queryClient = useQueryClient();
-
-  // Modal states
   const [showCreateAuctionModal, setShowCreateAuctionModal] = useState(false);
   const [showSendCampaignModal, setShowSendCampaignModal] = useState(false);
   const [showGenerateReportModal, setShowGenerateReportModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showAddAgentModal, setShowAddAgentModal] = useState(false);
-
-  // Pages data state - All 33 website pages
   const [pages, setPages] = useState(allWebsitePages);
 
-  const location = useLocation();
-
-  // Set active tab from URL
   useEffect(() => {
     let path = location.pathname.replace("/admin/", "").replace("/admin", "");
     if (!path || path === "/admin") path = "overview";

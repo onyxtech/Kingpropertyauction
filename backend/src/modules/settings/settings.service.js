@@ -1,4 +1,8 @@
-import Settings, { EmailConfigSchema, NotificationRulesSchema } from './settings.model.js';
+import Settings, {
+  EmailConfigSchema,
+  NotificationRulesSchema,
+  OAuthConfigSchema,
+} from "./settings.model.js";
 
 // ─── In-Memory Cache (Production: swap with Redis) ───
 const cache = new Map();
@@ -29,6 +33,8 @@ const clearCache = (key) => {
 const defaultEmailConfig = EmailConfigSchema.parse({});
 const defaultNotificationRules = NotificationRulesSchema.parse({});
 
+const defaultOAuthConfig = OAuthConfigSchema.parse({});
+
 // ─── Core Functions ───
 export const getSetting = async (key) => {
   // Check cache first
@@ -37,12 +43,13 @@ export const getSetting = async (key) => {
 
   // Fetch from DB
   const setting = await Settings.findOne({ key });
-  
+
   let value;
   if (!setting) {
     // Return defaults if not set
-    if (key === 'email_config') value = defaultEmailConfig;
-    else if (key === 'notification_rules') value = defaultNotificationRules;
+    if (key === "email_config") value = defaultEmailConfig;
+    else if (key === "notification_rules") value = defaultNotificationRules;
+    else if (key === "oauth_config") value = defaultOAuthConfig;
     else return null;
   } else {
     value = setting.value;
@@ -55,16 +62,19 @@ export const getSetting = async (key) => {
 
 export const updateSetting = async (key, value, userId) => {
   // Validate based on key
-  if (key === 'email_config') {
+  if (key === "email_config") {
     value = EmailConfigSchema.parse({ ...defaultEmailConfig, ...value });
-  } else if (key === 'notification_rules') {
-    value = NotificationRulesSchema.parse({ ...defaultNotificationRules, ...value });
+  } else if (key === "notification_rules") {
+    value = NotificationRulesSchema.parse({
+      ...defaultNotificationRules,
+      ...value,
+    });
   }
 
   const setting = await Settings.findOneAndUpdate(
     { key },
     { value, updatedBy: userId },
-    { upsert: true, new: true, runValidators: true }
+    { upsert: true, new: true, runValidators: true },
   );
 
   // Invalidate cache
@@ -75,27 +85,27 @@ export const updateSetting = async (key, value, userId) => {
 
 // ─── Convenience Functions ───
 export const getEmailSettings = async () => {
-  return await getSetting('email_config');
+  return await getSetting("email_config");
 };
 
 export const updateEmailSettings = async (data, userId) => {
-  const current = await getSetting('email_config');
+  const current = await getSetting("email_config");
   const updated = { ...current, ...data };
-  return await updateSetting('email_config', updated, userId);
+  return await updateSetting("email_config", updated, userId);
 };
 
 export const getNotificationRules = async () => {
-  return await getSetting('notification_rules');
+  return await getSetting("notification_rules");
 };
 
 export const updateNotificationRules = async (rules, userId) => {
-  const current = await getSetting('notification_rules');
+  const current = await getSetting("notification_rules");
   const updated = { ...current, ...rules };
-  return await updateSetting('notification_rules', updated, userId);
+  return await updateSetting("notification_rules", updated, userId);
 };
 
 export const isNotificationEnabled = async (ruleKey) => {
-  const rules = await getSetting('notification_rules');
+  const rules = await getSetting("notification_rules");
   return rules?.[ruleKey] !== false;
 };
 
@@ -110,7 +120,18 @@ export const invalidateCache = (key) => {
 };
 
 export const warmCache = async () => {
-  await getSetting('email_config');
-  await getSetting('notification_rules');
-  console.log('✅ Settings cache warmed');
+  await getSetting("email_config");
+  await getSetting("notification_rules");
+  console.log("✅ Settings cache warmed");
+};
+
+// ─── OAuth Convenience ───
+export const getOAuthConfig = async () => {
+  return await getSetting("oauth_config");
+};
+
+export const updateOAuthConfig = async (data, userId) => {
+  const current = await getSetting("oauth_config");
+  const updated = { ...current, ...data };
+  return await updateSetting("oauth_config", updated, userId);
 };

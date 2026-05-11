@@ -24,13 +24,20 @@ export const apiClient = {
 
     // Only clear auth if we actually had a token (not if token wasn't loaded yet)
     if (response.status === 401) {
-      if (token) {
+      // Don't clear auth for login/register/forgot-password endpoints
+      const isAuthEndpoint =
+        url.includes("/auth/login") ||
+        url.includes("/auth/register") ||
+        url.includes("/auth/forgot-password");
+      if (!isAuthEndpoint && token) {
         this.clearAuth();
       }
-      return {
-        success: false,
-        message: "Session expired. Please login again.",
-      };
+      // For auth endpoints, return the actual error from server
+      try {
+        return await response.json();
+      } catch {
+        return { success: false, message: "Invalid credentials" };
+      }
     }
 
     try {

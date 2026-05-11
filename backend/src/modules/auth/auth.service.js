@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../user/user.model.js";
+import notificationService, { NotificationEvents } from '../notifications/trigger.service.js';
 
 const generateAccessToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_ACCESS_SECRET, {
@@ -25,6 +26,11 @@ export const registerUser = async (userData) => {
 
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
+
+  // Fire-and-forget: Emit event (non-blocking)
+  notificationService.emit(NotificationEvents.USER_REGISTERED, { userId: user._id }).catch(e => 
+    console.error('Notification event failed:', e.message)
+  );
 
   return {
     user: {
