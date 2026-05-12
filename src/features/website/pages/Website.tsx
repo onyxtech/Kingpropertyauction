@@ -334,7 +334,7 @@ export default function Website() {
   const handleCopyLink = () => {
     const link = `${window.location.origin}/properties/${propertyToShare.slug || propertyToShare._id}`;
     navigator.clipboard.writeText(link);
-    alert("Property link copied to clipboard!");
+    showNotification("Property link copied!", "success");
   };
 
   // ──────────────── FILTER & SORT (from real data) ────────────────
@@ -430,7 +430,10 @@ export default function Website() {
   const getPropertyImage = (property: any) => {
     if (property.media?.propertyImages?.length > 0) {
       const img = property.media.propertyImages[0];
-      return img.startsWith("http") ? img : `/uploads/properties/${img}`;
+      if (img.startsWith("http")) return img;
+      return img.startsWith("/uploads")
+        ? img
+        : `/uploads/properties/${img}`;
     }
     return "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600";
   };

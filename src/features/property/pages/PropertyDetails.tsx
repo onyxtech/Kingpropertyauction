@@ -134,7 +134,7 @@ export default function PropertyDetails() {
   const images =
     property?.media?.propertyImages?.length > 0
       ? property.media.propertyImages.map((img: string) =>
-          img.startsWith("http") ? img : `http://localhost:5000${img}`,
+          img.startsWith("http") ? img : img,
         )
       : ["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200"];
 
@@ -1031,7 +1031,7 @@ export default function PropertyDetails() {
         getPropertyImage={(p) =>
           p?.media?.propertyImages?.[0]?.startsWith("http")
             ? p.media.propertyImages[0]
-            : `http://localhost:5000${p.media?.propertyImages?.[0]}` ||
+            : p.media?.propertyImages?.[0] ||
               "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600"
         }
       />

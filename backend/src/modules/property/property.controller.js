@@ -3,7 +3,10 @@ import {
   updatePropertySchema,
 } from "./property.validation.js";
 import * as propertyService from "./property.service.js";
-import Property from './property.model.js';
+import Property from "./property.model.js";
+import notificationService, {
+  NotificationEvents,
+} from "../notifications/trigger.service.js";
 
 export const create = async (req, res) => {
   console.log(
@@ -106,13 +109,11 @@ export const create = async (req, res) => {
     }
 
     const property = await propertyService.createProperty(value, req.user._id);
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: property,
-        message: "Property created successfully",
-      });
+    res.status(201).json({
+      success: true,
+      data: property,
+      message: "Property created successfully",
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -137,13 +138,15 @@ export const getAll = async (req, res) => {
 
 export const getById = async (req, res) => {
   try {
-    const { id } = req.params;  // ← Changed from slug to id
+    const { id } = req.params; // ← Changed from slug to id
     let property = await Property.findById(id).catch(() => null);
     if (!property) {
       property = await Property.findOne({ slug: id });
     }
     if (!property) {
-      return res.status(404).json({ success: false, message: "Property not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Property not found" });
     }
     res.status(200).json({ success: true, data: property });
   } catch (error) {
@@ -222,6 +225,26 @@ export const approve = async (req, res) => {
       data: property,
       message: `Property ${status}`,
     });
+
+    // Send notification
+    if (status === "approved") {
+      notificationService
+        .emit(NotificationEvents.PROPERTY_APPROVED, {
+          propertyId: req.params.id,
+        })
+        .catch((e) =>
+          console.error("Property approved event failed:", e.message),
+        );
+    } else if (status === "rejected") {
+      notificationService
+        .emit(NotificationEvents.PROPERTY_REJECTED, {
+          propertyId: req.params.id,
+          reason: req.body.reason || "Not specified",
+        })
+        .catch((e) =>
+          console.error("Property rejected event failed:", e.message),
+        );
+    }
   } catch (error) {
     res.status(500).json({
       success: false,

@@ -1,4 +1,8 @@
 import Property from "./property.model.js";
+import notificationService, {
+  NotificationEvents,
+} from "../notifications/trigger.service.js";
+import Auction from '../auction/auction.model.js';
 
 export const createProperty = async (propertyData, userId) => {
   const property = await Property.create({
@@ -6,6 +10,13 @@ export const createProperty = async (propertyData, userId) => {
     createdBy: userId,
     currentBid: propertyData.pricing?.startingAuctionPrice || 0, // Initialize currentBid
   });
+  // Notify admin
+  notificationService
+    .emit(NotificationEvents.PROPERTY_SUBMITTED, {
+      propertyId: property._id,
+      userId,
+    })
+    .catch((e) => console.error("Property submitted event failed:", e.message));
   return property;
 };
 
@@ -26,10 +37,11 @@ export const getProperties = async (query = {}) => {
 
   if (status) filter.propertyStatus = status;
   if (type) filter.propertyType = type;
-  // Public queries default to approved only; admins can override by passing approvalStatus explicitly
-  if (query.approvalStatus) {
+
+  // If approvalStatus is 'all', don't add filter → shows all statuses
+  if (query.approvalStatus && query.approvalStatus !== "all") {
     filter.approvalStatus = query.approvalStatus;
-  } else {
+  } else if (!query.approvalStatus || query.approvalStatus === "") {
     filter.approvalStatus = "approved";
   }
   if (category) filter.propertyCategory = category;
@@ -90,6 +102,10 @@ export const updateProperty = async (id, updateData) => {
 export const deleteProperty = async (id) => {
   const property = await Property.findByIdAndDelete(id);
   if (!property) throw new Error("Property not found");
+
+  // Remove this property from all auctions that reference it
+  await Auction.updateMany({ properties: id }, { $pull: { properties: id } });
+
   return property;
 };
 

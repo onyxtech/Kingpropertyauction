@@ -1,15 +1,20 @@
+import { useState } from "react";
 import { Eye, Edit, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
 import { apiClient } from "@/lib/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
+import ConfirmModal from "@/features/shared/components/ConfirmModal";
 
 export default function PropertiesTable() {
   const { useGetProperties } = usePropertyApi();
-  const { data: lotsData, isLoading } = useGetProperties();
+  const { data: lotsData, isLoading } = useGetProperties({
+    approvalStatus: "all",
+  });
   const properties = lotsData?.data || [];
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const handleApprove = async (id: string) => {
     await apiClient.fetch(`/properties/${id}/approve`, {
@@ -173,6 +178,12 @@ export default function PropertiesTable() {
                     >
                       <Edit className="size-4" />
                     </button>
+                    <button
+                      onClick={() => setDeleteTarget(property._id)}
+                      className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -185,6 +196,21 @@ export default function PropertiesTable() {
           </p>
         )}
       </div>
+      <ConfirmModal
+        show={!!deleteTarget}
+        title="Delete Property"
+        message="This property will be permanently deleted and removed from all auctions."
+        onConfirm={() => {
+          apiClient
+            .fetch(`/properties/${deleteTarget}`, { method: "DELETE" })
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ["properties"] });
+              queryClient.invalidateQueries({ queryKey: ["auctions"] });
+              setDeleteTarget(null);
+            });
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

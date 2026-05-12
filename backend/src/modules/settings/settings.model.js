@@ -37,6 +37,12 @@ export const NotificationRulesSchema = z.object({
   passwordReset: z.boolean().default(true),
   contactForm: z.boolean().default(true),
   valuationRequest: z.boolean().default(true),
+  propertySubmitted: z.boolean().default(true),
+  propertyApproved: z.boolean().default(true),
+  propertyRejected: z.boolean().default(true),
+  auctionStartingSoon: z.boolean().default(true),
+  auctionStarted: z.boolean().default(true),
+  auctionEnded: z.boolean().default(true),
 });
 
 // ─── OAuth Configuration Schema ───

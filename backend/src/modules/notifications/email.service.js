@@ -97,7 +97,6 @@ export const sendEmail = async ({
     // Send based on mailer type
     if (currentMailer === "sendgrid") {
       const [response] = await sgMail.send(mailOptions);
-      console.log(`✅ SendGrid email sent: ${response.statusCode}`);
       return { success: true, messageId: response.headers?.["x-message-id"] };
     } else if (currentMailer === "mailgun") {
       const result = await transport.messages.create(settings.mailgunDomain, {
@@ -106,7 +105,6 @@ export const sendEmail = async ({
         subject: mailOptions.subject,
         html: mailOptions.html,
       });
-      console.log(`✅ Mailgun email sent: ${result.id}`);
       return { success: true, messageId: result.id };
     } else if (currentMailer === "mailchimp") {
       const result = await transport.messages.send({
@@ -118,12 +116,10 @@ export const sendEmail = async ({
           html: emailHtml,
         },
       });
-      console.log(`✅ Mailchimp email sent: ${result[0]?._id}`);
       return { success: true, messageId: result[0]?._id };
     } else {
       // SMTP (nodemailer)
       const info = await transport.sendMail(mailOptions);
-      console.log(`✅ SMTP email sent: ${info.messageId}`);
       return { success: true, messageId: info.messageId };
     }
   } catch (error) {

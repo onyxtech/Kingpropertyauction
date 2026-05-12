@@ -248,4 +248,5 @@ export interface QueryParams {
   dateTo?: string;
   approvalStatus?: string; 
   auctionSlug?: string;
+    listingType?: string;
 }

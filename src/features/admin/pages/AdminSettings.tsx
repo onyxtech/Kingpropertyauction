@@ -191,6 +191,12 @@ export default function AdminSettings() {
     passwordReset: "Password Reset",
     contactForm: "Contact Form",
     valuationRequest: "Valuation Request",
+    propertySubmitted: "Property Submitted (Admin Alert)",
+    propertyApproved: "Property Approved",
+    propertyRejected: "Property Rejected",
+    auctionStartingSoon: "Auction Starting Soon",
+    auctionStarted: "Auction Started",
+    auctionEnded: "Auction Ended",
   };
 
   if (isLoading) {

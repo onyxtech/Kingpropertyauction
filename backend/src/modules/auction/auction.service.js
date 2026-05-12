@@ -2,8 +2,34 @@ import Auction from "./auction.model.js";
 import notificationService, {
   NotificationEvents,
 } from "../notifications/trigger.service.js";
+import Bid from "../bid/bid.model.js";
+import Property from "../property/property.model.js";
 
 export const createAuction = async (data, userId) => {
+  // Validate properties before creating
+  if (data.properties && data.properties.length > 0) {
+    // Check for sold properties
+    const soldProperty = await Property.findOne({
+      _id: { $in: data.properties },
+      propertyStatus: "sold",
+    });
+    if (soldProperty) {
+      throw new Error(
+        `Cannot add "${soldProperty.propertyTitle}" - it has already been sold.`,
+      );
+    }
+
+    // Check for properties already in ANY auction (not just live)
+    const existingAuction = await Auction.findOne({
+      properties: { $in: data.properties },
+    });
+    if (existingAuction) {
+      throw new Error(
+        `One or more properties are already in auction: "${existingAuction.auctionTitle}".`,
+      );
+    }
+  }
+
   const auction = await Auction.create({ ...data, createdBy: userId });
   return auction.populate(["properties", "createdBy", "winningBidder"]);
 };
@@ -50,10 +76,36 @@ export const getAuctionById = async (id) => {
 };
 
 export const updateAuction = async (id, data) => {
+  // If properties are being updated, validate them
+  if (data.properties && data.properties.length > 0) {
+    // Check no property is sold
+    const soldProperty = await Property.findOne({
+      _id: { $in: data.properties },
+      propertyStatus: "sold",
+    });
+    if (soldProperty) {
+      throw new Error(
+        `Cannot add "${soldProperty.propertyTitle}" - it has already been sold.`,
+      );
+    }
+
+    // Check no property is in another auction
+    const otherAuction = await Auction.findOne({
+      _id: { $ne: id },
+      properties: { $in: data.properties },
+    });
+    if (otherAuction) {
+      throw new Error(
+        `One or more properties are already in auction: "${otherAuction.auctionTitle}".`,
+      );
+    }
+  }
+
   const auction = await Auction.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
   }).populate(["properties", "createdBy"]);
+
   if (!auction) throw new Error("Auction not found");
   return auction;
 };
@@ -61,6 +113,18 @@ export const updateAuction = async (id, data) => {
 export const deleteAuction = async (id) => {
   const auction = await Auction.findByIdAndDelete(id);
   if (!auction) throw new Error("Auction not found");
+
+  // Reset properties that were in this auction back to available
+  if (auction.properties?.length > 0) {
+    await Property.updateMany(
+      { _id: { $in: auction.properties }, propertyStatus: { $ne: "sold" } },
+      {
+        propertyStatus: "available",
+        "auctionDetails.auctionStatus": "upcoming",
+      },
+    );
+  }
+
   return auction;
 };
 
@@ -91,19 +155,35 @@ export const cancelAuction = async (id) => {
     { new: true },
   );
   if (!auction) throw new Error("Auction not found");
+
+  // Reset properties back to available
+  if (auction.properties?.length > 0) {
+    await Property.updateMany(
+      { _id: { $in: auction.properties }, propertyStatus: { $ne: "sold" } },
+      {
+        propertyStatus: "available",
+        "auctionDetails.auctionStatus": "upcoming",
+      },
+    );
+  }
+
   return auction;
 };
 
 // ─── AUCTION COMPLETION ───
-import Bid from "../bid/bid.model.js";
-import Property from "../property/property.model.js";
 
 export const completeAuction = async (auctionId) => {
   const auction = await Auction.findById(auctionId).populate("properties");
   if (!auction) throw new Error("Auction not found");
-  // Prevent duplicate completion
-  if (auction.status !== "live") {
-    console.log(`Auction ${auctionId} already completed, skipping.`);
+
+  // Atomically mark as completing to prevent duplicate runs
+  const updated = await Auction.findOneAndUpdate(
+    { _id: auctionId, status: "live" },
+    { status: "completing" },
+    { new: true },
+  );
+
+  if (!updated) {
     return { auction: auction.auctionTitle, alreadyCompleted: true };
   }
 
@@ -158,9 +238,14 @@ export const completeAuction = async (auctionId) => {
           })
           .catch((e) => console.error("Auction won event failed:", e.message));
       }
+
+      // Notify seller
+      notificationService
+        .emit(NotificationEvents.PROPERTY_SOLD, { propertyId: property._id })
+        .catch((e) => console.error("Property sold event failed:", e.message));
     } else if (currentBid > 0 && currentBid < reservePrice) {
       await Property.findByIdAndUpdate(property._id, {
-        propertyStatus: "unsold",
+        propertyStatus: "available",
         "auctionDetails.auctionStatus": "closed",
       });
       if (winningBid) {
@@ -176,9 +261,16 @@ export const completeAuction = async (auctionId) => {
         highestBid: currentBid,
         reserve: reservePrice,
       });
+
+      // Notify seller
+      notificationService
+        .emit(NotificationEvents.PROPERTY_UNSOLD, { propertyId: property._id })
+        .catch((e) =>
+          console.error("Property unsold event failed:", e.message),
+        );
     } else {
       await Property.findByIdAndUpdate(property._id, {
-        propertyStatus: "unsold",
+        propertyStatus: "available",
         "auctionDetails.auctionStatus": "closed",
       });
       results.push({
@@ -186,6 +278,13 @@ export const completeAuction = async (auctionId) => {
         status: "UNSOLD",
         reason: "No bids placed",
       });
+
+      // Notify seller
+      notificationService
+        .emit(NotificationEvents.PROPERTY_UNSOLD, { propertyId: property._id })
+        .catch((e) =>
+          console.error("Property unsold event failed:", e.message),
+        );
     }
 
     // Notify losing bidders for THIS property (inside main loop - runs once per property)
@@ -210,8 +309,7 @@ export const completeAuction = async (auctionId) => {
     }
   }
 
-  auction.status = "completed";
-  await auction.save();
+  await Auction.findByIdAndUpdate(auctionId, { status: "completed" });
 
   return {
     auction: auction.auctionTitle,

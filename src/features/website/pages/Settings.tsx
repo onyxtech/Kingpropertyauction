@@ -24,18 +24,33 @@ import {
 import Header from "@/features/shared/layout/Header";
 import Footer from "@/features/shared/layout/Footer";
 import { useTheme } from "@/app/hooks/useTheme";
-import { useSettingsApi, type SelectOption, type SelectOptionFormData, type OptionCategory } from "@/app/hooks/api/useSettingsApi";
+import {
+  useSettingsApi,
+  type SelectOption,
+  type SelectOptionFormData,
+  type OptionCategory,
+} from "@/app/hooks/api/useSettingsApi";
 
 export default function Settings() {
   const navigate = useNavigate();
   const theme = useTheme();
-  const { loading, error, getOptionsByCategory, createOption, updateOption, deleteOption, toggleOptionStatus, getCategorySummary } = useSettingsApi();
+  const {
+    loading,
+    error,
+    getOptionsByCategory,
+    createOption,
+    updateOption,
+    deleteOption,
+    toggleOptionStatus,
+    getCategorySummary,
+  } = useSettingsApi();
 
   const [activeTab, setActiveTab] = useState<OptionCategory>("propertyType");
   const [options, setOptions] = useState<SelectOption[]>([]);
   const [categorySummary, setCategorySummary] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingOption, setEditingOption] = useState<SelectOption | null>(null);
+  const [toastMsg, setToastMsg] = useState("");
   const [formData, setFormData] = useState<SelectOptionFormData>({
     value: "",
     label: "",
@@ -108,35 +123,45 @@ export default function Settings() {
       // Update existing option
       const response = await updateOption(editingOption.id, formData);
       if (response.success) {
-        alert(`✅ ${response.message}`);
+        setToastMsg("Saved!");
+        setTimeout(() => setToastMsg(""), 3000);
         setShowAddModal(false);
         loadOptions();
       } else {
-        alert(`❌ Error: ${response.error}`);
+        setToastMsg("Error saving");
+        setTimeout(() => setToastMsg(""), 3000);
       }
     } else {
       // Create new option
       const response = await createOption(formData);
       if (response.success) {
-        alert(`✅ ${response.message}\nOption ID: ${response.data?.id}`);
+        setToastMsg("Saved successfully!");
+        setTimeout(() => setToastMsg(""), 3000);
         setShowAddModal(false);
         loadOptions();
         loadCategorySummary();
       } else {
-        alert(`❌ Error: ${response.error}`);
+        setToastMsg("Error saving");
+        setTimeout(() => setToastMsg(""), 3000);
       }
     }
   };
 
   const handleDeleteOption = async (id: string, label: string) => {
-    if (confirm(`Are you sure you want to delete "${label}"?\n\nThis cannot be undone.`)) {
+    if (
+      confirm(
+        `Are you sure you want to delete "${label}"?\n\nThis cannot be undone.`,
+      )
+    ) {
       const response = await deleteOption(id);
       if (response.success) {
-        alert(`✅ ${response.message}`);
+        setToastMsg("Saved!");
+        setTimeout(() => setToastMsg(""), 3000);
         loadOptions();
         loadCategorySummary();
       } else {
-        alert(`❌ Error: ${response.error}`);
+        setToastMsg("Error saving");
+        setTimeout(() => setToastMsg(""), 3000);
       }
     }
   };
@@ -146,20 +171,66 @@ export default function Settings() {
     if (response.success) {
       loadOptions();
     } else {
-      alert(`❌ Error: ${response.error}`);
+      setToastMsg("Error saving");
+      setTimeout(() => setToastMsg(""), 3000);
     }
   };
 
   const categories = [
-    { id: "propertyType", label: "Property Types", icon: Home, color: "from-blue-500 to-cyan-600" },
-    { id: "propertyCategory", label: "Property Categories", icon: Building, color: "from-purple-500 to-pink-600" },
-    { id: "listingType", label: "Listing Types", icon: Sparkles, color: "from-green-500 to-emerald-600" },
-    { id: "propertyStatus", label: "Property Status", icon: Map, color: "from-orange-500 to-red-600" },
-    { id: "furnishedStatus", label: "Furnished Status", icon: Home, color: "from-indigo-500 to-purple-600" },
-    { id: "currency", label: "Currencies", icon: DollarSign, color: "from-green-500 to-teal-600" },
-    { id: "auctionType", label: "Auction Types", icon: Gavel, color: "from-pink-500 to-rose-600" },
-    { id: "userRole", label: "User Roles", icon: Users, color: "from-blue-500 to-indigo-600" },
-    { id: "agentSpecialization", label: "Agent Specializations", icon: Briefcase, color: "from-amber-500 to-orange-600" },
+    {
+      id: "propertyType",
+      label: "Property Types",
+      icon: Home,
+      color: "from-blue-500 to-cyan-600",
+    },
+    {
+      id: "propertyCategory",
+      label: "Property Categories",
+      icon: Building,
+      color: "from-purple-500 to-pink-600",
+    },
+    {
+      id: "listingType",
+      label: "Listing Types",
+      icon: Sparkles,
+      color: "from-green-500 to-emerald-600",
+    },
+    {
+      id: "propertyStatus",
+      label: "Property Status",
+      icon: Map,
+      color: "from-orange-500 to-red-600",
+    },
+    {
+      id: "furnishedStatus",
+      label: "Furnished Status",
+      icon: Home,
+      color: "from-indigo-500 to-purple-600",
+    },
+    {
+      id: "currency",
+      label: "Currencies",
+      icon: DollarSign,
+      color: "from-green-500 to-teal-600",
+    },
+    {
+      id: "auctionType",
+      label: "Auction Types",
+      icon: Gavel,
+      color: "from-pink-500 to-rose-600",
+    },
+    {
+      id: "userRole",
+      label: "User Roles",
+      icon: Users,
+      color: "from-blue-500 to-indigo-600",
+    },
+    {
+      id: "agentSpecialization",
+      label: "Agent Specializations",
+      icon: Briefcase,
+      color: "from-amber-500 to-orange-600",
+    },
   ];
 
   return (
@@ -169,7 +240,10 @@ export default function Settings() {
       {/* Hero Section */}
       <div className={`bg-gradient-to-r ${theme.primary} py-12`}>
         <div className="container mx-auto px-6">
-          <button onClick={() => navigate("/admin")} className="flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-all">
+          <button
+            onClick={() => navigate("/admin")}
+            className="flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-all"
+          >
             <ArrowLeft className="size-5" />
             <span className="font-bold">Back to Dashboard</span>
           </button>
@@ -179,8 +253,12 @@ export default function Settings() {
               <SettingsIcon className="size-8 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-black text-white mb-2">Select Field Settings</h1>
-              <p className="text-white/90 font-medium text-lg">Manage dropdown options for all forms</p>
+              <h1 className="text-4xl font-black text-white mb-2">
+                Select Field Settings
+              </h1>
+              <p className="text-white/90 font-medium text-lg">
+                Manage dropdown options for all forms
+              </p>
             </div>
           </div>
 
@@ -192,8 +270,12 @@ export default function Settings() {
                   <Sparkles className="size-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-3xl font-black text-white">{categorySummary.length}</p>
-                  <p className="text-white/90 font-medium text-sm">Categories</p>
+                  <p className="text-3xl font-black text-white">
+                    {categorySummary.length}
+                  </p>
+                  <p className="text-white/90 font-medium text-sm">
+                    Categories
+                  </p>
                 </div>
               </div>
             </div>
@@ -204,8 +286,15 @@ export default function Settings() {
                   <SettingsIcon className="size-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-3xl font-black text-white">{categorySummary.reduce((sum, cat) => sum + cat.totalOptions, 0)}</p>
-                  <p className="text-white/90 font-medium text-sm">Total Options</p>
+                  <p className="text-3xl font-black text-white">
+                    {categorySummary.reduce(
+                      (sum, cat) => sum + cat.totalOptions,
+                      0,
+                    )}
+                  </p>
+                  <p className="text-white/90 font-medium text-sm">
+                    Total Options
+                  </p>
                 </div>
               </div>
             </div>
@@ -216,8 +305,15 @@ export default function Settings() {
                   <Check className="size-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-3xl font-black text-white">{categorySummary.reduce((sum, cat) => sum + cat.activeOptions, 0)}</p>
-                  <p className="text-white/90 font-medium text-sm">Active Options</p>
+                  <p className="text-3xl font-black text-white">
+                    {categorySummary.reduce(
+                      (sum, cat) => sum + cat.activeOptions,
+                      0,
+                    )}
+                  </p>
+                  <p className="text-white/90 font-medium text-sm">
+                    Active Options
+                  </p>
                 </div>
               </div>
             </div>
@@ -231,12 +327,16 @@ export default function Settings() {
           {/* Sidebar - Category Navigation */}
           <div className="lg:col-span-1">
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 border-2 border-white/60 shadow-xl sticky top-6">
-              <h3 className="text-lg font-black text-slate-900 mb-4">Categories</h3>
+              <h3 className="text-lg font-black text-slate-900 mb-4">
+                Categories
+              </h3>
               <div className="space-y-2">
                 {categories.map((cat) => {
                   const Icon = cat.icon;
-                  const summary = categorySummary.find((s) => s.category === cat.id);
-                  
+                  const summary = categorySummary.find(
+                    (s) => s.category === cat.id,
+                  );
+
                   return (
                     <button
                       key={cat.id}
@@ -252,7 +352,8 @@ export default function Settings() {
                         <p className="font-bold">{cat.label}</p>
                         {summary && (
                           <p className="text-xs opacity-80">
-                            {summary.activeOptions}/{summary.totalOptions} active
+                            {summary.activeOptions}/{summary.totalOptions}{" "}
+                            active
                           </p>
                         )}
                       </div>
@@ -268,14 +369,19 @@ export default function Settings() {
           <div className="lg:col-span-3">
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl border-2 border-white/60 shadow-xl overflow-hidden">
               {/* Header */}
-              <div className={`bg-gradient-to-r ${categories.find((c) => c.id === activeTab)?.color} p-6`}>
+              <div
+                className={`bg-gradient-to-r ${categories.find((c) => c.id === activeTab)?.color} p-6`}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-black text-white mb-1">
                       {categories.find((c) => c.id === activeTab)?.label}
                     </h2>
                     <p className="text-white/90 font-medium">
-                      {categorySummary.find((s) => s.category === activeTab)?.description}
+                      {
+                        categorySummary.find((s) => s.category === activeTab)
+                          ?.description
+                      }
                     </p>
                   </div>
                   <button
@@ -293,13 +399,19 @@ export default function Settings() {
                 {loading ? (
                   <div className="text-center py-12">
                     <div className="inline-block animate-spin size-12 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
-                    <p className="text-slate-600 font-medium">Loading options...</p>
+                    <p className="text-slate-600 font-medium">
+                      Loading options...
+                    </p>
                   </div>
                 ) : options.length === 0 ? (
                   <div className="text-center py-12">
                     <SettingsIcon className="size-16 text-slate-300 mx-auto mb-4" />
-                    <p className="text-slate-600 font-bold text-lg mb-2">No options found</p>
-                    <p className="text-slate-500 mb-6">Add your first option to get started</p>
+                    <p className="text-slate-600 font-bold text-lg mb-2">
+                      No options found
+                    </p>
+                    <p className="text-slate-500 mb-6">
+                      Add your first option to get started
+                    </p>
                     <button
                       onClick={handleAddOption}
                       className={`px-6 py-3 bg-gradient-to-r ${categories.find((c) => c.id === activeTab)?.color} text-white rounded-xl font-bold shadow-lg hover:scale-105 transition-all inline-flex items-center gap-2`}
@@ -330,14 +442,18 @@ export default function Settings() {
                             className="size-10 rounded-xl flex items-center justify-center"
                             style={{ backgroundColor: option.color }}
                           >
-                            <span className="text-white font-black text-sm">{option.sortOrder}</span>
+                            <span className="text-white font-black text-sm">
+                              {option.sortOrder}
+                            </span>
                           </div>
                         )}
 
                         {/* Option Details */}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-black text-slate-900">{option.label}</h4>
+                            <h4 className="font-black text-slate-900">
+                              {option.label}
+                            </h4>
                             <code className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs font-mono">
                               {option.value}
                             </code>
@@ -348,7 +464,9 @@ export default function Settings() {
                             )}
                           </div>
                           {option.description && (
-                            <p className="text-sm text-slate-600">{option.description}</p>
+                            <p className="text-sm text-slate-600">
+                              {option.description}
+                            </p>
                           )}
                         </div>
 
@@ -363,7 +481,11 @@ export default function Settings() {
                             }`}
                             title={option.isActive ? "Deactivate" : "Activate"}
                           >
-                            {option.isActive ? <Check className="size-5" /> : <X className="size-5" />}
+                            {option.isActive ? (
+                              <Check className="size-5" />
+                            ) : (
+                              <X className="size-5" />
+                            )}
                           </button>
 
                           <button
@@ -375,7 +497,9 @@ export default function Settings() {
                           </button>
 
                           <button
-                            onClick={() => handleDeleteOption(option.id, option.label)}
+                            onClick={() =>
+                              handleDeleteOption(option.id, option.label)
+                            }
                             className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all"
                             title="Delete"
                           >
@@ -403,11 +527,15 @@ export default function Settings() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Label */}
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Label (Display Name) *</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Label (Display Name) *
+                </label>
                 <input
                   type="text"
                   value={formData.label}
-                  onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, label: e.target.value })
+                  }
                   className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
                   placeholder="e.g., Luxury Villa"
                   required
@@ -416,24 +544,37 @@ export default function Settings() {
 
               {/* Value */}
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Value (System ID) *</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Value (System ID) *
+                </label>
                 <input
                   type="text"
                   value={formData.value}
-                  onChange={(e) => setFormData({ ...formData, value: e.target.value.toLowerCase().replace(/\s+/g, "_") })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      value: e.target.value.toLowerCase().replace(/\s+/g, "_"),
+                    })
+                  }
                   className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none font-mono"
                   placeholder="e.g., luxury_villa"
                   required
                 />
-                <p className="text-xs text-slate-500 mt-1">Use lowercase letters, numbers, and underscores only</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Use lowercase letters, numbers, and underscores only
+                </p>
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Description (Optional)</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Description (Optional)
+                </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
                   placeholder="Brief description of this option"
                   rows={3}
@@ -443,21 +584,32 @@ export default function Settings() {
               {/* Color & Sort Order */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Color</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Color
+                  </label>
                   <input
                     type="color"
                     value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, color: e.target.value })
+                    }
                     className="w-full h-12 border-2 border-slate-200 rounded-xl cursor-pointer"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Sort Order</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Sort Order
+                  </label>
                   <input
                     type="number"
                     value={formData.sortOrder}
-                    onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        sortOrder: parseInt(e.target.value),
+                      })
+                    }
                     className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
                     min="1"
                   />
@@ -470,7 +622,9 @@ export default function Settings() {
                   type="checkbox"
                   id="isActive"
                   checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, isActive: e.target.checked })
+                  }
                   className="size-5 rounded border-2 border-slate-300"
                 />
                 <label htmlFor="isActive" className="font-bold text-slate-700">
@@ -520,8 +674,11 @@ export default function Settings() {
       )}
 
       <Footer />
+      {toastMsg && (
+        <div className="fixed bottom-6 right-6 z-50 px-6 py-3 bg-green-500 text-white rounded-2xl shadow-2xl font-bold">
+          {toastMsg}
+        </div>
+      )}
     </div>
   );
 }
-
-

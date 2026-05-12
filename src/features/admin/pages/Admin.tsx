@@ -83,6 +83,7 @@ import AddAgentModal from "../components/AddAgentModal";
 import { useTheme } from "../../../app/hooks/useTheme";
 import PageBuilderWithAPI from "../components/PageBuilderWithAPI";
 import MenuEditor from "../components/MenuEditor";
+import ConfirmModal from "@/features/shared/components/ConfirmModal";
 import {
   allWebsitePages,
   pageCategories,
@@ -120,6 +121,8 @@ export default function Admin() {
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showAddAgentModal, setShowAddAgentModal] = useState(false);
   const [pages, setPages] = useState(allWebsitePages);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState("");
 
   useEffect(() => {
     let path = location.pathname.replace("/admin/", "").replace("/admin", "");
@@ -1930,10 +1933,7 @@ export default function Admin() {
                             </button>
 
                             <button
-                              onClick={() => {
-                                if (confirm("Delete this user?"))
-                                  deleteUser.mutate(user._id);
-                              }}
+                              onClick={() => setUserToDelete(user._id)}
                               className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                             >
                               <Trash2 className="size-4" />
@@ -2265,7 +2265,8 @@ export default function Admin() {
               className="p-8 space-y-6"
               onSubmit={(e) => {
                 e.preventDefault();
-                alert("Campaign sent successfully!");
+                setToastMsg("Campaign sent!");
+                setTimeout(() => setToastMsg(""), 4000);
                 setShowSendCampaignModal(false);
               }}
             >
@@ -2467,7 +2468,8 @@ export default function Admin() {
               className="p-8 space-y-6"
               onSubmit={(e) => {
                 e.preventDefault();
-                alert("Report generated successfully!");
+                setToastMsg("Report generated!");
+                setTimeout(() => setToastMsg(""), 4000);
                 setShowGenerateReportModal(false);
               }}
             >
@@ -2653,6 +2655,21 @@ export default function Admin() {
             queryClient.invalidateQueries({ queryKey: ["users"] })
           }
         />
+      )}
+      <ConfirmModal
+        show={!!userToDelete}
+        title="Delete User"
+        message="This user account will be permanently deleted."
+        onConfirm={() => {
+          deleteUser.mutate(userToDelete);
+          setUserToDelete(null);
+        }}
+        onCancel={() => setUserToDelete(null)}
+      />
+      {toastMsg && (
+        <div className="fixed bottom-6 right-6 z-50 px-6 py-3 bg-green-500 text-white rounded-2xl shadow-2xl font-bold">
+          {toastMsg}
+        </div>
       )}
     </AdminLayout>
   );

@@ -36,7 +36,7 @@ export default function LiveAuctions() {
     const firstProperty = a.properties?.[0];
     const isPopulated = typeof firstProperty === "object" && firstProperty.propertyTitle;
     const cardImage = isPopulated && firstProperty?.media?.propertyImages?.[0]
-      ? (firstProperty.media.propertyImages[0].startsWith("http") ? firstProperty.media.propertyImages[0] : `http://localhost:5000${firstProperty.media.propertyImages[0]}`)
+      ? firstProperty.media.propertyImages[0]
       : a.auctionImage || "https://images.unsplash.com/photo-1627257363565-4bc682c69e8e?w=1080";
 
     return {

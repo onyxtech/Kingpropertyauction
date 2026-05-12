@@ -142,6 +142,42 @@ const defaultTemplates = {
       "property_type",
     ],
   },
+  propertySubmitted: {
+    subject: "📋 New Property Submitted - {property_title}",
+    html: `<h2>New Property Submitted</h2><p>Hi {user_name},</p><p>A new property <strong>{property_title}</strong> has been submitted by {submitted_by}.</p><p><a href="{property_url}">Review Property</a></p>`,
+    variables: ["user_name", "property_title", "submitted_by", "property_url"],
+  },
+  propertyApproved: {
+    subject: "✅ Your property has been approved - {property_title}",
+    html: `<h2>Property Approved!</h2><p>Hi {user_name},</p><p>Your property <strong>{property_title}</strong> has been approved and is now visible on the platform.</p><p><a href="{property_url}">View Property</a></p>`,
+    variables: ["user_name", "property_title", "property_url"],
+  },
+  propertyRejected: {
+    subject: "❌ Property Update - {property_title}",
+    html: `<h2>Property Update</h2><p>Hi {user_name},</p><p>Your property <strong>{property_title}</strong> was not approved.</p><p>Reason: {reason}</p>`,
+    variables: ["user_name", "property_title", "reason"],
+  },
+  auctionStartingSoon: {
+    subject: "⏰ Auction Starting Soon - {auction_name}",
+    html: `<h2>Auction Starting Soon!</h2><p>Hi {user_name},</p><p><strong>{auction_name}</strong> starts at {start_time}.</p><p>{lot_count} lots available.</p><p><a href="{auction_url}">View Auction</a></p>`,
+    variables: [
+      "user_name",
+      "auction_name",
+      "start_time",
+      "lot_count",
+      "auction_url",
+    ],
+  },
+  auctionStarted: {
+    subject: "🔴 Auction Now Live - {auction_name}",
+    html: `<h2>Auction is LIVE!</h2><p>Hi {user_name},</p><p><strong>{auction_name}</strong> is now live with {lot_count} lots.</p><p><a href="{auction_url}">Start Bidding</a></p>`,
+    variables: ["user_name", "auction_name", "lot_count", "auction_url"],
+  },
+  auctionEnded: {
+    subject: "🏁 Auction Ended - {auction_name}",
+    html: `<h2>Auction Ended</h2><p>Hi {user_name},</p><p><strong>{auction_name}</strong> has ended.</p><p><a href="{auction_url}">View Results</a></p>`,
+    variables: ["user_name", "auction_name", "auction_url"],
+  },
 };
 
 const readTemplates = () => {

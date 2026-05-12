@@ -15,6 +15,7 @@ import { useAuctionApi } from "@/features/auction/api/useAuctionApi";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
+import ConfirmModal from "@/features/shared/components/ConfirmModal";
 
 export default function AuctionCard({ auction }: any) {
   const navigate = useNavigate();
@@ -23,6 +24,8 @@ export default function AuctionCard({ auction }: any) {
   const deleteAuction = useDeleteAuction();
   const queryClient = useQueryClient();
   const [showActivity, setShowActivity] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
 
   const completeAuction = useMutation({
     mutationFn: async () => {
@@ -313,15 +316,7 @@ export default function AuctionCard({ auction }: any) {
 
         {auction.status === "live" && (
           <button
-            onClick={() => {
-              if (
-                confirm(
-                  `Complete this auction? This will determine winners for all lots and cannot be undone.`,
-                )
-              ) {
-                completeAuction.mutate();
-              }
-            }}
+            onClick={() => setShowCompleteConfirm(true)}
             disabled={completeAuction.isPending}
             className="px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl text-sm font-bold hover:shadow-lg transition-all flex items-center justify-center gap-1 disabled:opacity-50"
           >
@@ -339,11 +334,7 @@ export default function AuctionCard({ auction }: any) {
               <Edit className="size-4" />
             </button>
             <button
-              onClick={() => {
-                if (confirm("Delete this auction?")) {
-                  deleteAuction.mutate(auction._id);
-                }
-              }}
+              onClick={() => setShowDeleteConfirm(true)}
               className="px-4 py-2.5 bg-red-100 text-red-600 rounded-xl text-sm font-bold hover:bg-red-200 transition-all"
             >
               <Trash2 className="size-4" />
@@ -351,6 +342,27 @@ export default function AuctionCard({ auction }: any) {
           </>
         )}
       </div>
+      <ConfirmModal
+        show={showCompleteConfirm}
+        title="Complete Auction"
+        message="This will determine winners for all lots and cannot be undone."
+        confirmLabel="Complete"
+        onConfirm={() => {
+          completeAuction.mutate();
+          setShowCompleteConfirm(false);
+        }}
+        onCancel={() => setShowCompleteConfirm(false)}
+      />
+      <ConfirmModal
+        show={showDeleteConfirm}
+        title="Delete Auction"
+        message="This auction will be permanently deleted and properties will become available."
+        onConfirm={() => {
+          deleteAuction.mutate(auction._id);
+          setShowDeleteConfirm(false);
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }

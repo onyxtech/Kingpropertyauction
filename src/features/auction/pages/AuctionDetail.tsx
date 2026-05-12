@@ -354,7 +354,8 @@ export default function AuctionDetail() {
   const getPropertyImage = (property: any) => {
     if (property?.media?.propertyImages?.length > 0) {
       const img = property.media.propertyImages[0];
-      return img.startsWith("http") ? img : `/uploads/properties/${img}`;
+      if (img.startsWith("http")) return img;
+      return img.startsWith("/uploads") ? img : `/uploads/properties/${img}`;
     }
     return "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600";
   };

@@ -4,7 +4,14 @@ import {
 } from "./auction.validation.js";
 import * as auctionService from "./auction.service.js";
 import Auction from "./auction.model.js";
-import { completeAuction, checkAndCompleteEndedAuctions } from './auction.service.js';
+import {
+  completeAuction,
+  checkAndCompleteEndedAuctions,
+} from "./auction.service.js";
+import notificationService, {
+  NotificationEvents,
+} from "../notifications/trigger.service.js";
+
 
 export const create = async (req, res) => {
   try {
@@ -66,14 +73,20 @@ export const getById = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { error, value } = updateAuctionSchema.validate(req.body);
-    if (error)
-      return res
-        .status(400)
-        .json({ success: false, message: error.details[0].message });
+    if (error) return res.status(400).json({ success: false, message: error.details[0].message });
+    
+    // Get current auction to check if status is changing to live
+    const currentAuction = await Auction.findById(req.params.id);
+    const wasNotLive = currentAuction?.status !== 'live';
+    
     const auction = await auctionService.updateAuction(req.params.id, value);
-    res
-      .status(200)
-      .json({ success: true, data: auction, message: "Auction updated" });
+    res.status(200).json({ success: true, data: auction, message: "Auction updated" });
+
+    // If status changed to live, notify bidders
+    if (wasNotLive && value.status === 'live') {
+      notificationService.emit(NotificationEvents.AUCTION_STARTED, { auctionId: req.params.id })
+        .catch(e => console.error('Auction started event failed:', e.message));
+    }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -94,8 +107,13 @@ export const start = async (req, res) => {
     res
       .status(200)
       .json({ success: true, data: auction, message: "Auction started" });
+
+    // Notify bidders
+    notificationService
+      .emit(NotificationEvents.AUCTION_STARTED, { auctionId: req.params.id })
+      .catch((e) => console.error("Auction started event failed:", e.message));
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
@@ -121,11 +139,14 @@ export const cancel = async (req, res) => {
   }
 };
 
-
 export const completeAuctionController = async (req, res) => {
   try {
     const result = await completeAuction(req.params.id);
-    res.status(200).json({ success: true, data: result, message: 'Auction completed successfully' });
+    res.status(200).json({
+      success: true,
+      data: result,
+      message: "Auction completed successfully",
+    });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -134,10 +155,10 @@ export const completeAuctionController = async (req, res) => {
 export const checkEndedAuctionsController = async (req, res) => {
   try {
     const results = await checkAndCompleteEndedAuctions();
-    res.status(200).json({ 
-      success: true, 
-      data: results, 
-      message: `Checked ended auctions. ${results.length} completed.` 
+    res.status(200).json({
+      success: true,
+      data: results,
+      message: `Checked ended auctions. ${results.length} completed.`,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

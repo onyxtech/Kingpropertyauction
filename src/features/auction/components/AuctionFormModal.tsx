@@ -23,10 +23,32 @@ export default function AuctionFormModal({
 }: AuctionFormModalProps) {
   const theme = useTheme();
   const { useGetProperties } = usePropertyApi();
+  const { useGetAuctions } = useAuctionApi();
+  const { data: auctionsData } = useGetAuctions();
+  const allAuctions = auctionsData?.data || [];
+
   const { data: propsData } = useGetProperties({
     approvalStatus: "approved",
+    listingType: "auction",
+    status: "available", // Only show available properties, not sold ones
   } as any);
   const allProperties = propsData?.data || [];
+  // Build set of property IDs already in other auctions
+  const propertiesInOtherAuctions = new Set();
+  allAuctions.forEach((a: any) => {
+    if (editData?._id && a._id === editData._id) return;
+    // Only exclude properties from live or scheduled auctions (not completed/cancelled)
+    if (a.status === "completed" || a.status === "cancelled") return;
+    a.properties?.forEach((p: any) => {
+      const id = typeof p === "object" ? p._id?.toString() : p?.toString();
+      if (id) propertiesInOtherAuctions.add(id);
+    });
+  });
+
+  // Filter out properties already in other auctions
+  const availableProperties = allProperties.filter(
+    (p: any) => !propertiesInOtherAuctions.has(p._id?.toString()),
+  );
   const { useCreateAuction } = useAuctionApi();
   const createAuction = useCreateAuction();
   const { useUpdateAuction } = useAuctionApi();
@@ -35,11 +57,14 @@ export default function AuctionFormModal({
   const [formData, setFormData] = useState({
     auctionTitle: editData?.auctionTitle || "",
     auctionType: editData?.auctionType || "live",
-    selectedProperties: editData?.properties || [],
+    selectedProperties:
+      editData?.properties?.map((p: any) =>
+        typeof p === "object" ? p._id?.toString() : p?.toString(),
+      ) || [],
     startingBid: editData?.startingBid || "",
     bidIncrement: editData?.bidIncrement || "",
     startDateTime: formatForDateTimeLocal(editData?.startDateTime) || "",
-endDateTime: formatForDateTimeLocal(editData?.endDateTime) || "",
+    endDateTime: formatForDateTimeLocal(editData?.endDateTime) || "",
     description: editData?.description || "",
     venueName: editData?.venue?.name || "",
     venueAddress: editData?.venue?.address || "",
@@ -56,7 +81,7 @@ endDateTime: formatForDateTimeLocal(editData?.endDateTime) || "",
   const [propertySearch, setPropertySearch] = useState("");
 
   const filteredProperties = propertySearch
-    ? allProperties.filter(
+    ? availableProperties.filter(
         (p: any) =>
           p.propertyTitle
             ?.toLowerCase()
@@ -65,7 +90,7 @@ endDateTime: formatForDateTimeLocal(editData?.endDateTime) || "",
             ?.toLowerCase()
             .includes(propertySearch.toLowerCase()),
       )
-    : allProperties;
+    : availableProperties;
 
   const toggleProperty = (id: string) => {
     setFormData((prev) => ({
