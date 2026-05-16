@@ -6,6 +6,9 @@ import { useNavigate } from "react-router";
 export default function SellingOverview() {
   const navigate = useNavigate();
   const [showValuationModal, setShowValuationModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [formData, setFormData] = useState({
     propertyType: "",
     address: "",
@@ -19,23 +22,45 @@ export default function SellingOverview() {
     message: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Valuation form submitted:", formData);
-    alert("Thank you! We'll contact you shortly with your free valuation.");
-    setShowValuationModal(false);
-    setFormData({
-      propertyType: "",
-      address: "",
-      postcode: "",
-      bedrooms: "",
-      bathrooms: "",
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      message: ""
-    });
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${formData.firstName} ${formData.lastName}`.trim(),
+          email: formData.email,
+          phone: formData.phone,
+          subject: 'Selling Overview - Free Valuation Request',
+          message: [
+            `Property Type: ${formData.propertyType}`,
+            `Address: ${formData.address}`,
+            `Postcode: ${formData.postcode}`,
+            `Bedrooms: ${formData.bedrooms}`,
+            `Bathrooms: ${formData.bathrooms}`,
+            `Additional Info: ${formData.message || 'None'}`,
+          ].join('\n'),
+          leadType: 'valuation',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSubmitted(true);
+        setFormData({
+          propertyType: '', address: '', postcode: '',
+          bedrooms: '', bathrooms: '', firstName: '',
+          lastName: '', email: '', phone: '', message: ''
+        });
+      } else {
+        setSubmitError(data.message || 'Something went wrong. Please try again.');
+      }
+    } catch {
+      setSubmitError('Network error. Please try again.');
+    }
+    setSubmitting(false);
   };
 
   const benefits = [
@@ -172,6 +197,23 @@ export default function SellingOverview() {
 
             {/* Modal Body */}
             <div className="p-8">
+              {submitted ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="size-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                    <CheckCircle className="size-10 text-green-600" />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 mb-2">Thank You!</h3>
+                  <p className="text-slate-600 mb-6 max-w-sm">
+                    We'll contact you within 24 hours with your free property valuation.
+                  </p>
+                  <button
+                    onClick={() => { setSubmitted(false); setShowValuationModal(false); }}
+                    className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Property Details Section */}
                 <div>
@@ -322,6 +364,11 @@ export default function SellingOverview() {
                 </div>
 
                 {/* Submit Button */}
+                {submitError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                    {submitError}
+                  </div>
+                )}
                 <div className="flex gap-4 pt-4">
                   <button
                     type="button"
@@ -332,12 +379,14 @@ export default function SellingOverview() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105"
+                    disabled={submitting}
+                    className="flex-1 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 disabled:opacity-60"
                   >
-                    Submit Valuation Request
+                    {submitting ? 'Submitting...' : 'Submit Valuation Request'}
                   </button>
                 </div>
               </form>
+              )}
             </div>
           </div>
         </div>

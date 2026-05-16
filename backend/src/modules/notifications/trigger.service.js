@@ -56,19 +56,34 @@ const notificationService = new NotificationTriggerService();
 notificationService.on(
   NotificationEvents.USER_REGISTERED,
   async ({ userId }) => {
-    const enabled = await isNotificationEnabled("welcome");
+    const enabled = await isNotificationEnabled('welcome');
     if (!enabled) return;
 
     const user = await User.findById(userId);
     if (!user) return;
 
+    // If user is already active (created by admin), send approval email
+    if (user.isActive) {
+      await sendEmail({
+        to: user.email,
+        subject: 'Your Account Has Been Created',
+        templateKey: 'accountApproved',
+        variables: {
+          user_name: user.name,
+          site_url: process.env.CLIENT_URL || 'http://localhost:5173',
+        },
+      });
+      return;
+    }
+
+    // Normal registration - pending approval
     await sendEmail({
       to: user.email,
-      subject: "Welcome to King Property Auction! 🏠",
-      templateKey: "welcome",
+      subject: 'Welcome to King Property Auction! 🏠',
+      templateKey: 'welcome',
       variables: {
         user_name: user.name,
-        site_url: process.env.CLIENT_URL || "http://localhost:5173",
+        site_url: process.env.CLIENT_URL || 'http://localhost:5173',
       },
     });
   },
@@ -281,23 +296,21 @@ notificationService.on(
 notificationService.on(
   NotificationEvents.PROPERTY_REJECTED,
   async ({ propertyId, reason }) => {
-    const enabled = await isNotificationEnabled("propertyRejected");
+    const enabled = await isNotificationEnabled('propertyRejected');
     if (!enabled) return;
 
-    const property = await Property.findById(propertyId).populate(
-      "createdBy",
-      "name email",
-    );
+    const property = await Property.findById(propertyId)
+      .populate('createdBy', 'name email');
     if (!property?.createdBy) return;
 
     await sendEmail({
       to: property.createdBy.email,
-      subject: `❌ Property Update - ${property.propertyTitle}`,
-      templateKey: "propertyRejected",
+      subject: `Property Update - ${property.propertyTitle}`,
+      templateKey: 'propertyRejected',
       variables: {
         user_name: property.createdBy.name,
         property_title: property.propertyTitle,
-        reason: reason || "Your property was not approved.",
+        reason: reason || 'Your property did not meet our current requirements.',
       },
     });
   },

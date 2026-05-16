@@ -372,14 +372,6 @@ export default function Auctions() {
                         {lot.totalProperties}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl">
-                      <span className="text-sm font-bold text-slate-600">
-                        Est. Value
-                      </span>
-                      <span className="text-lg font-black text-orange-600">
-                        {lot.estimatedValue}
-                      </span>
-                    </div>
                   </div>
                   <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-200">
                     <div className="flex items-center gap-1.5 text-sm font-bold text-slate-600">
@@ -439,9 +431,6 @@ export default function Auctions() {
                       Properties
                     </th>
                     <th className="px-6 py-5 text-left text-sm font-black uppercase tracking-wider">
-                      Est. Value
-                    </th>
-                    <th className="px-6 py-5 text-left text-sm font-black uppercase tracking-wider">
                       Status
                     </th>
                     <th className="px-6 py-5 text-center text-sm font-black uppercase tracking-wider">
@@ -496,14 +485,6 @@ export default function Auctions() {
                           <span className="text-lg font-black text-emerald-600">
                             {lot.totalProperties}
                           </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="text-lg font-black text-orange-600">
-                          {lot.estimatedValue}
-                        </div>
-                        <div className="text-xs font-medium text-slate-500">
-                          {lot.registeredBidders} bidders
                         </div>
                       </td>
                       <td className="px-6 py-5">

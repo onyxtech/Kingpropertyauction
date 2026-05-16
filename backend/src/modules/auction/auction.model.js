@@ -34,11 +34,11 @@ const auctionSchema = new mongoose.Schema(
     // Bidding Configuration
     startingBid: {
       type: Number,
-      required: [true, "Starting bid is required"],
+      default: 0,
     },
     bidIncrement: {
       type: Number,
-      required: [true, "Bid increment is required"],
+      default: 1000,
     },
     reservePrice: {
       type: Number,

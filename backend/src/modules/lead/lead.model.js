@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const leadSchema = new mongoose.Schema(
   {
@@ -26,28 +26,47 @@ const leadSchema = new mongoose.Schema(
     },
     leadType: {
       type: String,
-      enum: ['contact', 'valuation', 'finance', 'catalogue', 'referral', 'general'],
-      default: 'general',
+      enum: [
+        "contact",
+        "valuation",
+        "finance",
+        "catalogue",
+        "referral",
+        "general",
+        "chat",
+        "alert",
+        "solicitor",
+        "home-report",
+        "buying",
+        "selling",
+        "legal",
+        "faq",
+      ],
+      default: "general",
     },
     status: {
       type: String,
-      enum: ['new', 'contacted', 'qualified', 'converted', 'closed'],
-      default: 'new',
+      enum: ["new", "contacted", "qualified", "converted", "closed"],
+      default: "new",
     },
     property: {
       type: mongoose.Schema.ObjectId,
-      ref: 'Property',
+      ref: "Property",
     },
     assignedTo: {
       type: mongoose.Schema.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
-    notes: {
-      type: String,
-    },
+    notes: [
+      {
+        text: String,
+        addedBy: { type: mongoose.Schema.ObjectId, ref: "User" },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-const Lead = mongoose.model('Lead', leadSchema);
+const Lead = mongoose.model("Lead", leadSchema);
 export default Lead;

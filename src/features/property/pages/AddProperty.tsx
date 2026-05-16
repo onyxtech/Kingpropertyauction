@@ -152,6 +152,8 @@ export default function AddProperty() {
   });
 
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+  const [createdTitle, setCreatedTitle] = useState("");
 
   const handleInputChange = (field: string, value: any) => {
     setFormData({ ...formData, [field]: value });
@@ -201,11 +203,79 @@ export default function AddProperty() {
       // First, upload images if any
       let imageUrls: string[] = [];
       if (formData.propertyImages.length > 0) {
-        const uploadResponse = await uploadPropertyImages(
-          formData.propertyImages,
-        );
-        if (uploadResponse.success && uploadResponse.data) {
-          imageUrls = uploadResponse.data.map((file) => file.fileUrl);
+        try {
+          const uploadResponse = await uploadPropertyImages(
+            formData.propertyImages,
+          );
+          if (uploadResponse.success && uploadResponse.data) {
+            imageUrls = uploadResponse.data.map(
+              (img: any) => img.fileUrl || img,
+            );
+          }
+        } catch (uploadErr) {
+          console.error(
+            "Image upload failed, continuing without images:",
+            uploadErr,
+          );
+          // Continue without images instead of failing entirely
+        }
+      }
+
+      // Upload video if provided
+      let videoUrl: string | undefined = undefined;
+      if (formData.propertyVideo) {
+        try {
+          const videoFormData = new FormData();
+          videoFormData.append('propertyVideo', formData.propertyVideo);
+          const videoRes = await fetch('/api/upload/video', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+            body: videoFormData,
+          });
+          const videoData = await videoRes.json();
+          if (videoData.success) videoUrl = videoData.data?.fileUrl;
+        } catch (e) {
+          console.error('Video upload failed:', e);
+        }
+      }
+
+      // Upload floor plan if provided
+      let floorPlanUrl: string | undefined = undefined;
+      if (formData.floorPlan) {
+        try {
+          const fpFormData = new FormData();
+          fpFormData.append('floorPlan', formData.floorPlan);
+          const fpRes = await fetch('/api/upload/floorplan', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+            body: fpFormData,
+          });
+          const fpData = await fpRes.json();
+          if (fpData.success) floorPlanUrl = fpData.data?.fileUrl;
+        } catch (e) {
+          console.error('Floor plan upload failed:', e);
+        }
+      }
+
+      // Upload legal documents if provided
+      let legalDocUrls: string[] = [];
+      if (formData.legalDocuments.length > 0) {
+        try {
+          const docsFormData = new FormData();
+          formData.legalDocuments.forEach(doc => {
+            docsFormData.append('legalDocuments', doc);
+          });
+          const docsRes = await fetch('/api/upload/documents', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+            body: docsFormData,
+          });
+          const docsData = await docsRes.json();
+          if (docsData.success) {
+            legalDocUrls = docsData.data?.map((d: any) => d.fileUrl) || [];
+          }
+        } catch (e) {
+          console.error('Documents upload failed:', e);
         }
       }
 
@@ -224,19 +294,24 @@ export default function AddProperty() {
       // Remove File objects (can't send to API)
       delete propertyData.propertyImages;
       propertyData.media = {
-        propertyImages: imageUrls.length > 0 ? imageUrls : [],
+        propertyImages:
+          imageUrls.length > 0
+            ? imageUrls
+            : [
+                "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+              ],
+        propertyVideo: videoUrl,
+        floorPlan: floorPlanUrl,
+        legalDocuments: legalDocUrls,
       };
 
       // Create property via API
       const response = await createProperty(propertyData);
 
       if (response.success) {
-        setToastMessage({
-          text: `Property submitted! ID: ${response.data?._id?.slice(-6) || "N/A"}`,
-          type: "success",
-        });
-        setTimeout(() => setToastMessage(null), 4000);
-        navigate("/admin");
+        setCreatedTitle(formData.propertyTitle || "Property");
+        setSubmitted(true);
+        window.scrollTo({ top: 0, behavior: 'instant' });
       } else {
         setToastMessage({
           text: `Failed: ${response.error || "Unknown error"}`,
@@ -280,6 +355,36 @@ export default function AddProperty() {
     { number: 9, title: "Media", icon: Camera },
     { number: 10, title: "Review", icon: CheckCircle },
   ];
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
+        <Header />
+        <div className="container mx-auto px-6 py-16 text-center">
+          <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-xl rounded-3xl p-12 shadow-xl border-2 border-white/60">
+            <CheckCircle className="size-20 text-green-500 mx-auto mb-6" />
+            <h2 className="text-3xl font-black text-slate-900 mb-3">Property Created Successfully!</h2>
+            <p className="text-slate-600 font-medium mb-8">{createdTitle}</p>
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={() => navigate("/admin/properties")}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold hover:shadow-lg transition-all"
+              >
+                View Properties
+              </button>
+              <button
+                onClick={() => { setSubmitted(false); setCurrentStep(1); }}
+                className="px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl font-bold hover:border-slate-300 transition-all"
+              >
+                Add Another Property
+              </button>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">

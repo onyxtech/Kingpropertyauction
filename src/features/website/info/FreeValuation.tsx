@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
-import { 
-  Calculator, 
+import { useState } from "react";
+import {
+  Calculator,
   CheckCircle,
   Sparkles,
   Home,
@@ -8,19 +9,68 @@ import {
   Award,
   Clock,
   MapPin,
-  Phone
+  Phone,
 } from "lucide-react";
 import Header from "@/features/shared/layout/Header";
 import Footer from "@/features/shared/layout/Footer";
 
 export default function FreeValuation() {
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const form = e.target as HTMLFormElement;
+      const fd = new FormData(form);
+      await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: fd.get("fullName") || "User",
+          email: fd.get("email") || "",
+          phone: fd.get("phone") || "",
+          subject: "Free Property Valuation Request",
+          message: [
+            `Property Address: ${fd.get("address") || "Not provided"}`,
+            `City: ${fd.get("city") || "Not provided"}`,
+            `Postcode: ${fd.get("postcode") || "Not provided"}`,
+            `Property Type: ${fd.get("propertyType") || "Not provided"}`,
+            `Bedrooms: ${fd.get("bedrooms") || "Not provided"}`,
+            `Bathrooms: ${fd.get("bathrooms") || "Not provided"}`,
+            `Square Feet: ${fd.get("sqft") || "Not provided"}`,
+          ].join("\n"),
+          leadType: "valuation",
+        }),
+      });
+      form.reset();
+      setSubmitted(true);
+    } catch (e) {}
+    setLoading(false);
+  };
 
   const benefits = [
-    { icon: Calculator, title: "AI-Powered Analysis", description: "Advanced algorithms for accurate valuations" },
-    { icon: TrendingUp, title: "Market Insights", description: "Real-time market data and trends" },
-    { icon: Award, title: "Expert Review", description: "Verified by professional valuers" },
-    { icon: Clock, title: "Instant Results", description: "Get your valuation in minutes" }
+    {
+      icon: Calculator,
+      title: "AI-Powered Analysis",
+      description: "Advanced algorithms for accurate valuations",
+    },
+    {
+      icon: TrendingUp,
+      title: "Market Insights",
+      description: "Real-time market data and trends",
+    },
+    {
+      icon: Award,
+      title: "Expert Review",
+      description: "Verified by professional valuers",
+    },
+    {
+      icon: Clock,
+      title: "Instant Results",
+      description: "Get your valuation in minutes",
+    },
   ];
 
   return (
@@ -28,7 +78,10 @@ export default function FreeValuation() {
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div
+          className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "2s" }}
+        />
       </div>
 
       <Header />
@@ -38,26 +91,34 @@ export default function FreeValuation() {
         <div className="absolute inset-0 bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 opacity-95" />
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 size-96 bg-white rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 right-0 size-96 bg-cyan-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }} />
+          <div
+            className="absolute bottom-0 right-0 size-96 bg-cyan-300 rounded-full blur-3xl animate-pulse"
+            style={{ animationDelay: "1.5s" }}
+          />
         </div>
-        
+
         <div className="container mx-auto px-6 py-20 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md rounded-full mb-6 border-2 border-white/30 shadow-xl">
               <Sparkles className="size-4 text-yellow-300 animate-pulse" />
-              <span className="text-sm font-bold text-white">100% FREE • No Obligation • Instant Results</span>
+              <span className="text-sm font-bold text-white">
+                100% FREE • No Obligation • Instant Results
+              </span>
             </div>
-            
+
             <h1 className="text-6xl font-black text-white mb-6 leading-tight drop-shadow-lg">
               Free Property Valuation
               <br />
               <span className="text-yellow-200">Know Your Worth Today</span>
             </h1>
-            
+
             <p className="text-2xl text-white/90 mb-10 font-medium">
-              Get an accurate, instant property valuation powered by AI and expert analysis
+              Get an accurate, instant property valuation powered by AI and
+              expert analysis
               <br />
-              <span className="text-yellow-200">✨ Completely free with no hidden fees</span>
+              <span className="text-yellow-200">
+                ✨ Completely free with no hidden fees
+              </span>
             </p>
 
             <div className="flex items-center gap-6 justify-center flex-wrap">
@@ -88,16 +149,50 @@ export default function FreeValuation() {
                 <Home className="size-7 text-white" />
               </div>
               <div>
-                <h2 className="text-3xl font-black text-slate-900">Property Details</h2>
-                <p className="text-slate-600 font-medium">Fill in your property information</p>
+                <h2 className="text-3xl font-black text-slate-900">
+                  Property Details
+                </h2>
+                <p className="text-slate-600 font-medium">
+                  Fill in your property information
+                </p>
               </div>
             </div>
 
-            <form className="space-y-6">
+            {submitted ? (
+              <div className="text-center py-12">
+                <CheckCircle className="size-16 text-green-500 mx-auto mb-4" />
+                <h3 className="text-2xl font-black text-slate-900">Thank You!</h3>
+                <p className="text-slate-600 mt-2">
+                  We'll be in touch within 48 hours with your free valuation.
+                </p>
+                <button
+                  onClick={() => setSubmitted(false)}
+                  className="mt-6 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
+                >
+                  Submit Another Valuation
+                </button>
+              </div>
+            ) : (
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Property Address</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Full Name
+                </label>
                 <input
                   type="text"
+                  name="fullName"
+                  required
+                  placeholder="John Doe"
+                  className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Property Address
+                </label>
+                <input
+                  type="text"
+                  name="address"
                   placeholder="123 Example Street"
                   className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
                 />
@@ -105,17 +200,25 @@ export default function FreeValuation() {
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">City</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    City
+                  </label>
                   <input
                     type="text"
+                    name="city"
+                    required
                     placeholder="London"
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Postcode</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Postcode
+                  </label>
                   <input
                     type="text"
+                    name="postcode"
+                    required
                     placeholder="W1A 1AA"
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
                   />
@@ -123,8 +226,10 @@ export default function FreeValuation() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Property Type</label>
-                <select className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium">
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Property Type
+                </label>
+                <select name="propertyType" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium">
                   <option>Select type...</option>
                   <option>Detached House</option>
                   <option>Semi-Detached House</option>
@@ -137,8 +242,10 @@ export default function FreeValuation() {
 
               <div className="grid md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Bedrooms</label>
-                  <select className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Bedrooms
+                  </label>
+                  <select name="bedrooms" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium">
                     <option>1</option>
                     <option>2</option>
                     <option>3</option>
@@ -147,8 +254,10 @@ export default function FreeValuation() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Bathrooms</label>
-                  <select className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Bathrooms
+                  </label>
+                  <select name="bathrooms" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium">
                     <option>1</option>
                     <option>2</option>
                     <option>3</option>
@@ -156,9 +265,13 @@ export default function FreeValuation() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Square Feet</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Square Feet
+                  </label>
                   <input
                     type="number"
+                    name="sqft"
+                    required
                     placeholder="2000"
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
                   />
@@ -166,18 +279,26 @@ export default function FreeValuation() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Your Email</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Your Email
+                </label>
                 <input
                   type="email"
+                  name="email"
+                  required
                   placeholder="your.email@example.com"
                   className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Phone Number (Optional)</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  Phone Number (Optional)
+                </label>
                 <input
                   type="tel"
+                  name="phone"
+                  required
                   placeholder="+44 7xxx xxx xxx"
                   className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
                 />
@@ -185,6 +306,7 @@ export default function FreeValuation() {
 
               <button
                 type="submit"
+                disabled={loading}
                 className="w-full py-5 bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-orange-500/50 transition-all hover:scale-105 flex items-center justify-center gap-3"
               >
                 <Calculator className="size-6" />
@@ -192,26 +314,37 @@ export default function FreeValuation() {
               </button>
 
               <p className="text-sm text-slate-500 text-center font-medium">
-                By submitting, you agree to our Terms of Service and Privacy Policy
+                By submitting, you agree to our Terms of Service and Privacy
+                Policy
               </p>
             </form>
+            )}
           </div>
 
           {/* Benefits */}
           <div className="space-y-6">
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
-              <h3 className="text-3xl font-black text-slate-900 mb-6">What You'll Get</h3>
+              <h3 className="text-3xl font-black text-slate-900 mb-6">
+                What You'll Get
+              </h3>
               <div className="space-y-4">
                 {benefits.map((benefit, index) => {
                   const Icon = benefit.icon;
                   return (
-                    <div key={index} className="flex items-start gap-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl">
+                    <div
+                      key={index}
+                      className="flex items-start gap-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl"
+                    >
                       <div className="size-12 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center flex-shrink-0 shadow-lg">
                         <Icon className="size-6 text-white" />
                       </div>
                       <div>
-                        <h4 className="text-lg font-black text-slate-900 mb-1">{benefit.title}</h4>
-                        <p className="text-slate-600 font-medium">{benefit.description}</p>
+                        <h4 className="text-lg font-black text-slate-900 mb-1">
+                          {benefit.title}
+                        </h4>
+                        <p className="text-slate-600 font-medium">
+                          {benefit.description}
+                        </p>
                       </div>
                     </div>
                   );
@@ -225,16 +358,21 @@ export default function FreeValuation() {
               </div>
               <h3 className="text-3xl font-black mb-4">Limited Time Offer!</h3>
               <p className="text-xl font-medium mb-6">
-                Get a FREE expert consultation worth £299 with your valuation report
+                Get a FREE expert consultation worth £299 with your valuation
+                report
               </p>
               <ul className="space-y-3 mb-6">
                 <li className="flex items-center gap-3">
                   <CheckCircle className="size-5 flex-shrink-0" />
-                  <span className="font-medium">30-minute video call with an expert</span>
+                  <span className="font-medium">
+                    30-minute video call with an expert
+                  </span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle className="size-5 flex-shrink-0" />
-                  <span className="font-medium">Personalized selling strategy</span>
+                  <span className="font-medium">
+                    Personalized selling strategy
+                  </span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle className="size-5 flex-shrink-0" />
@@ -247,14 +385,18 @@ export default function FreeValuation() {
             </div>
 
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
-              <h3 className="text-2xl font-black text-slate-900 mb-6">Need Help?</h3>
+              <h3 className="text-2xl font-black text-slate-900 mb-6">
+                Need Help?
+              </h3>
               <div className="space-y-4">
                 <button className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl hover:shadow-lg transition-all">
                   <div className="flex items-center gap-3">
                     <div className="size-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                       <Phone className="size-5 text-white" />
                     </div>
-                    <span className="font-bold text-slate-900">Call us: 0800 123 4567</span>
+                    <span className="font-bold text-slate-900">
+                      Call us: 0800 123 4567
+                    </span>
                   </div>
                 </button>
                 <button className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl hover:shadow-lg transition-all">
@@ -262,7 +404,9 @@ export default function FreeValuation() {
                     <div className="size-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
                       <MapPin className="size-5 text-white" />
                     </div>
-                    <span className="font-bold text-slate-900">Book Office Visit</span>
+                    <span className="font-bold text-slate-900">
+                      Book Office Visit
+                    </span>
                   </div>
                 </button>
               </div>
@@ -302,4 +446,3 @@ export default function FreeValuation() {
     </div>
   );
 }
-

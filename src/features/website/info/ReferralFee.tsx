@@ -5,6 +5,9 @@ import Header from "@/features/shared/layout/Header";
 export default function ReferralFee() {
   const [showReferralForm, setShowReferralForm] = useState(false);
   const [showLearnMore, setShowLearnMore] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -17,21 +20,34 @@ export default function ReferralFee() {
     message: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Thank you ${formData.fullName}! We'll contact you soon about the referral program.`);
-    setShowReferralForm(false);
-    setFormData({
-      fullName: "",
-      email: "",
-      phone: "",
-      company: "",
-      role: "",
-      address: "",
-      city: "",
-      postcode: "",
-      message: ""
-    });
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          subject: 'Referral Fee Enquiry',
+          message: `Referral Type: General\nCompany/Individual: ${formData.company || formData.fullName || 'Not specified'}\nMessage: ${formData.message || ''}`,
+          leadType: 'referral',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSubmitted(true);
+        setFormData({ fullName: "", email: "", phone: "", company: "", role: "", address: "", city: "", postcode: "", message: "" });
+      } else {
+        setError(data.message || 'Something went wrong. Please try again.');
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    }
+    setSubmitting(false);
   };
 
   const tiers = [
@@ -288,10 +304,25 @@ export default function ReferralFee() {
 
             {/* Form - Scrollable Content */}
             <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+              {submitted ? (
+                <div className="p-8 text-center py-16">
+                  <div className="size-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle className="size-10 text-green-600" />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 mb-2">Thank You!</h3>
+                  <p className="text-slate-600 mb-6">Thank you for your referral enquiry. Our team will be in touch shortly.</p>
+                  <button
+                    onClick={() => { setShowReferralForm(false); setSubmitted(false); }}
+                    className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : (
               <form onSubmit={handleSubmit} className="p-8">
                 <div className="grid md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                       <User className="size-4 text-purple-600" />
                       Full Name *
                     </label>
@@ -305,7 +336,7 @@ export default function ReferralFee() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                       <Mail className="size-4 text-pink-600" />
                       Email Address *
                     </label>
@@ -319,7 +350,7 @@ export default function ReferralFee() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                       <Phone className="size-4 text-rose-600" />
                       Phone Number *
                     </label>
@@ -333,7 +364,7 @@ export default function ReferralFee() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                       <Building className="size-4 text-orange-600" />
                       Company Name *
                     </label>
@@ -347,7 +378,7 @@ export default function ReferralFee() {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                       <Award className="size-4 text-blue-600" />
                       Your Role *
                     </label>
@@ -370,7 +401,7 @@ export default function ReferralFee() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                       <Home className="size-4 text-teal-600" />
                       Street Address *
                     </label>
@@ -384,7 +415,7 @@ export default function ReferralFee() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                       <Building className="size-4 text-cyan-600" />
                       City *
                     </label>
@@ -398,7 +429,7 @@ export default function ReferralFee() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                       <MapPin className="size-4 text-indigo-600" />
                       Postcode *
                     </label>
@@ -462,13 +493,19 @@ export default function ReferralFee() {
                 </div>
 
                 {/* Submit Button */}
+                {error && (
+                  <div className="p-3 mb-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                    {error}
+                  </div>
+                )}
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     type="submit"
-                    className="flex-1 py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-2"
+                    disabled={submitting}
+                    className="flex-1 py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-60"
                   >
                     <Gift className="size-6" />
-                    Submit Application
+                    {submitting ? 'Submitting...' : 'Submit Application'}
                   </button>
                   <button
                     type="button"
@@ -479,6 +516,7 @@ export default function ReferralFee() {
                   </button>
                 </div>
               </form>
+              )}
             </div>
           </div>
         </div>

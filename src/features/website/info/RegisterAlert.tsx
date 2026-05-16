@@ -1,8 +1,34 @@
+import { useState } from "react";
 import { Bell, Mail, MapPin, DollarSign, Home, Sparkles, CheckCircle, Zap, TrendingUp, Target } from "lucide-react";
 import Header from "@/features/shared/layout/Header";
 import Footer from "@/features/shared/layout/Footer";
 
 export default function RegisterAlert() {
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const fd = new FormData(form);
+    try {
+      await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: fd.get("name") || "Alert Registration",
+          email: fd.get("email") || "",
+          phone: fd.get("phone") || "",
+          subject: "Register for Alerts",
+          message: `Property type: ${fd.get("propertyType") || "All"}. Location: ${fd.get("location") || "All"}. Frequency: ${fd.get("frequency") || "Instant"}`,
+          leadType: "alert",
+        }),
+      });
+      setSubmitted(true);
+    } catch {}
+    setLoading(false);
+  };
   const alertTypes = [
     { icon: Home, title: "Property Type", desc: "Get notified for specific property types", gradient: "from-blue-500 to-indigo-600" },
     { icon: MapPin, title: "Location Based", desc: "Alerts for your preferred areas", gradient: "from-purple-500 to-pink-600" },
@@ -97,19 +123,53 @@ export default function RegisterAlert() {
               </div>
             </div>
 
-            <form className="space-y-6">
+            {submitted ? (
+              <div className="text-center py-10">
+                <CheckCircle className="size-16 text-green-500 mx-auto mb-4" />
+                <h3 className="text-2xl font-black text-green-700 mb-2">Alert Created!</h3>
+                <p className="text-green-600 mb-6">We'll notify you when matching properties are listed.</p>
+                <button
+                  onClick={() => setSubmitted(false)}
+                  className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl font-bold hover:shadow-lg transition-all"
+                >
+                  Register Another Alert
+                </button>
+              </div>
+            ) : (
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  placeholder="John Doe"
+                  className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
                 <input
                   type="email"
+                  name="email"
+                  required
                   placeholder="your.email@example.com"
+                  className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Phone Number (Optional)</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="+44 7xxx xxx xxx"
                   className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Property Type</label>
-                <select className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium">
+                <select name="propertyType" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium">
                   <option>All Property Types</option>
                   <option>Detached House</option>
                   <option>Semi-Detached House</option>
@@ -123,7 +183,7 @@ export default function RegisterAlert() {
 
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Location</label>
-                <select className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium">
+                <select name="location" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium">
                   <option>All Locations</option>
                   <option>London</option>
                   <option>Manchester</option>
@@ -169,7 +229,7 @@ export default function RegisterAlert() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Alert Frequency</label>
-                  <select className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium">
+                  <select name="frequency" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium">
                     <option>Instant (as listed)</option>
                     <option>Daily Digest</option>
                     <option>Weekly Summary</option>
@@ -189,16 +249,18 @@ export default function RegisterAlert() {
 
               <button
                 type="submit"
-                className="w-full py-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all hover:scale-105 flex items-center justify-center gap-3"
+                disabled={loading}
+                className="w-full py-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-emerald-500/50 transition-all hover:scale-105 flex items-center justify-center gap-3 disabled:opacity-60"
               >
                 <Bell className="size-6" />
-                Create Alert
+                {loading ? "Creating Alert..." : "Create Alert"}
               </button>
 
               <p className="text-sm text-slate-500 text-center font-medium">
                 You can update or cancel alerts anytime from your account
               </p>
             </form>
+            )}
           </div>
 
           {/* Benefits Section */}

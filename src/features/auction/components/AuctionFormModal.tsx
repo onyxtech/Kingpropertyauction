@@ -61,8 +61,6 @@ export default function AuctionFormModal({
       editData?.properties?.map((p: any) =>
         typeof p === "object" ? p._id?.toString() : p?.toString(),
       ) || [],
-    startingBid: editData?.startingBid || "",
-    bidIncrement: editData?.bidIncrement || "",
     startDateTime: formatForDateTimeLocal(editData?.startDateTime) || "",
     endDateTime: formatForDateTimeLocal(editData?.endDateTime) || "",
     description: editData?.description || "",
@@ -115,8 +113,6 @@ export default function AuctionFormModal({
       auctionTitle: formData.auctionTitle,
       auctionType: formData.auctionType,
       properties: formData.selectedProperties,
-      startingBid: Number(formData.startingBid),
-      bidIncrement: Number(formData.bidIncrement),
       startDateTime: new Date(formData.startDateTime).toISOString(),
       endDateTime: new Date(formData.endDateTime).toISOString(),
       description: formData.description,
@@ -187,12 +183,6 @@ export default function AuctionFormModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
-              {error}
-            </div>
-          )}
-
           {/* Auction Details */}
           <div className="space-y-4">
             <h3 className="text-lg font-black text-slate-900">
@@ -345,42 +335,12 @@ export default function AuctionFormModal({
             </div>
           </div>
 
-          {/* Bidding Configuration */}
+          {/* Fees */}
           <div className="space-y-4">
             <h3 className="text-lg font-black text-slate-900">
-              Bidding Configuration
+              Fees &amp; Deposit
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Starting Bid *
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={formData.startingBid}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startingBid: e.target.value })
-                  }
-                  placeholder="e.g., 500000"
-                  className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Bid Increment *
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={formData.bidIncrement}
-                  onChange={(e) =>
-                    setFormData({ ...formData, bidIncrement: e.target.value })
-                  }
-                  placeholder="e.g., 10000"
-                  className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">
                   Registration Fee (£)
@@ -545,6 +505,12 @@ export default function AuctionFormModal({
               className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+              {error}
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center gap-4 pt-4 border-t-2 border-slate-200">

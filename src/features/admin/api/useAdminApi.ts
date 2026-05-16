@@ -3,11 +3,17 @@ import { apiClient } from '@/lib/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 
 export const useAdminStats = () => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
 
   return useQuery({
     queryKey: ['admin', 'stats'],
     queryFn: async () => {
+      if (!isAuthenticated || !user) return {
+        totalProperties: 0, pendingProperties: 0, approvedProperties: 0,
+        totalAuctions: 0, liveAuctions: 0, totalBids: 0,
+        totalUsers: 0, totalLeads: 0, pendingUsers: 0,
+        activities: [], approvals: [],
+      };
       const result = await apiClient.fetch('/dashboard/stats');
       if (!result.success) {
         return {
@@ -19,7 +25,10 @@ export const useAdminStats = () => {
       }
       return result.data;
     },
-    enabled: isAuthenticated, // Only fetch when logged in
-    retry: false,
+    enabled: !!isAuthenticated && !!user,
+    retry: 2,
+    retryDelay: 800,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 };

@@ -27,6 +27,12 @@ export default function AddAgentModal({ onClose, onSuccess }: { onClose: () => v
       phone: formData.get('phone') as string,
       role: 'agent',
       isActive: true, // Admin-created agents are active by default
+      agentDetails: {
+        companyName: formData.get('companyName') as string || undefined,
+        licenseNumber: formData.get('license') as string || undefined,
+        commissionRate: formData.get('commission') ? Number(formData.get('commission')) : undefined,
+        specialization: formData.get('specialization') as string || undefined,
+      },
     };
     
     try {
@@ -53,9 +59,7 @@ export default function AddAgentModal({ onClose, onSuccess }: { onClose: () => v
           </div>
         </div>
         <form className="p-8 space-y-6" onSubmit={handleSubmit}>
-          {success && <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium">{success}</div>}
-          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">{error}</div>}
-
+          
           <div className="space-y-4">
             <h3 className="text-xl font-black text-slate-900 flex items-center gap-2"><UserCheck className="size-6 text-orange-600" />Agent Information</h3>
             <div className="grid md:grid-cols-2 gap-4">
@@ -87,6 +91,10 @@ export default function AddAgentModal({ onClose, onSuccess }: { onClose: () => v
               <div><label className="block text-sm font-bold text-slate-700 mb-2">Confirm Password *</label><div className="relative"><Lock className="absolute left-3 top-3.5 size-5 text-slate-400" /><input name="confirmPassword" type="password" placeholder="••••••••" className="w-full pl-11 pr-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500" required /></div></div>
             </div>
           </div>
+
+          {success && <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium">{success}</div>}
+          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">{error}</div>}
+
 
           <div className="flex items-center gap-4 pt-6 border-t-2 border-slate-100">
             <button type="button" onClick={onClose} className="flex-1 px-6 py-4 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-all">Cancel</button>

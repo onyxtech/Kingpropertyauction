@@ -22,6 +22,7 @@ export const createAuction = async (data, userId) => {
     // Check for properties already in ANY auction (not just live)
     const existingAuction = await Auction.findOne({
       properties: { $in: data.properties },
+      status: { $in: ["live", "scheduled"] },
     });
     if (existingAuction) {
       throw new Error(
@@ -31,6 +32,12 @@ export const createAuction = async (data, userId) => {
   }
 
   const auction = await Auction.create({ ...data, createdBy: userId });
+  // If created as live, notify users
+  if (auction.status === "live") {
+    notificationService
+      .emit(NotificationEvents.AUCTION_STARTED, { auctionId: auction._id })
+      .catch((e) => console.error("Auction started event failed:", e.message));
+  }
   return auction.populate(["properties", "createdBy", "winningBidder"]);
 };
 
@@ -93,6 +100,7 @@ export const updateAuction = async (id, data) => {
     const otherAuction = await Auction.findOne({
       _id: { $ne: id },
       properties: { $in: data.properties },
+      status: { $in: ["live", "scheduled"] },
     });
     if (otherAuction) {
       throw new Error(
@@ -135,6 +143,9 @@ export const startAuction = async (id) => {
     { new: true },
   );
   if (!auction) throw new Error("Auction not found");
+  notificationService
+    .emit(NotificationEvents.AUCTION_STARTED, { auctionId: id })
+    .catch((e) => console.error("Auction started event failed:", e.message));
   return auction;
 };
 
@@ -178,11 +189,12 @@ export const completeAuction = async (auctionId) => {
 
   // Atomically mark as completing to prevent duplicate runs
   const updated = await Auction.findOneAndUpdate(
-    { _id: auctionId, status: "live" },
+    { _id: auctionId, status: { $in: ["live", "completed"] } },
     { status: "completing" },
     { new: true },
   );
 
+  // Allow completion notifications even if already marked completed
   if (!updated) {
     return { auction: auction.auctionTitle, alreadyCompleted: true };
   }

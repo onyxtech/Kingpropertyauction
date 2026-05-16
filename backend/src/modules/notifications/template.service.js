@@ -1,235 +1,194 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import Template from './template.model.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const FOOTER = `<div style="background:#1e293b;padding:20px 24px;text-align:center;border-radius:0 0 12px 12px;"><p style="color:#94a3b8;margin:0;font-size:13px;font-weight:600;letter-spacing:0.5px;">King Property Auction</p><p style="color:#64748b;margin:4px 0 0;font-size:12px;">Transparent, Fast &amp; Trusted</p></div>`;
 
-const TEMPLATES_FILE = path.join(__dirname, "../../data/email-templates.json");
+// ─── Default templates ───
+const defaultTemplates = [
 
-const dataDir = path.join(__dirname, "../../data");
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
+  // ── AUTH ──────────────────────────────────────────────────────────────────
 
-const defaultTemplates = {
-  welcome: {
-    subject: "Welcome to King Property Auction! 🏠",
-    html: `<h2>Welcome, {user_name}!</h2>
-<p>Thank you for registering with King Property Auction.</p>
-<p>Your account has been created and is pending admin approval. You'll receive another email once your account is activated.</p>
-<p>Start browsing properties: <a href="{site_url}/website">Browse Properties</a></p>`,
-    variables: ["user_name", "site_url"],
-  },
-  accountApproved: {
-    subject: "Your account has been approved! ✅",
-    html: `<h2>Great news, {user_name}!</h2>
-<p>Your account has been approved. You can now place bids on properties.</p>
-<p><a href="{site_url}/login" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;">Login & Start Bidding</a></p>`,
-    variables: ["user_name", "site_url"],
-  },
-  accountRejected: {
-    subject: "Account Status Update",
-    html: `<h2>Account Status Update</h2>
-<p>Hi {user_name},</p>
-<p>{reason}</p>
-<p>If you believe this is an error, please contact us at {site_url}/contact-us.</p>`,
-    variables: ["user_name", "reason", "site_url"],
-  },
-  passwordReset: {
-    subject: "Reset Your Password",
-    html: `<h2>Password Reset Request</h2>
-<p>You requested a password reset. Click the link below to set a new password:</p>
-<p><a href="{reset_link}" style="background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;">Reset Password</a></p>
-<p>This link expires in 1 hour. If you didn't request this, ignore this email.</p>`,
-    variables: ["user_name", "reset_link"],
-  },
-  bidConfirmation: {
-    subject: "Bid Confirmed - {property_title}",
-    html: `<h2>Bid Placed Successfully!</h2>
-<p>Hi {user_name},</p>
-<p>Your bid of <strong>{bid_amount}</strong> on <strong>{property_title}</strong> has been placed.</p>
-<p>Current bid: {current_bid}</p>
-<p><a href="{property_url}">View Property</a></p>`,
-    variables: [
-      "user_name",
-      "property_title",
-      "bid_amount",
-      "current_bid",
-      "property_url",
-    ],
-  },
-  outbidAlert: {
-    subject: "⚠️ You've been outbid on {property_title}",
-    html: `<h2>You've Been Outbid!</h2>
-<p>Hi {user_name},</p>
-<p>Someone placed a higher bid on <strong>{property_title}</strong>.</p>
-<p>Your bid: {your_bid}</p>
-<p>Current highest: {current_bid}</p>
-<p><a href="{property_url}" style="background:#DC2626;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;">Place a Higher Bid</a></p>`,
-    variables: [
-      "user_name",
-      "property_title",
-      "your_bid",
-      "current_bid",
-      "property_url",
-    ],
-  },
-  auctionWon: {
-    subject: "🎉 Congratulations! You won {property_title}",
-    html: `<h2>You Won the Auction!</h2>
-<p>Congratulations {user_name}!</p>
-<p>You won <strong>{property_title}</strong> for <strong>{final_price}</strong>.</p>
-<p>Auction: {auction_name}</p>
-<p>Our team will contact you to complete the purchase.</p>`,
-    variables: ["user_name", "property_title", "final_price", "auction_name"],
-  },
-  auctionLost: {
-    subject: "Auction Ended - {property_title}",
-    html: `<h2>Auction Ended</h2>
-<p>Hi {user_name},</p>
-<p>The auction for <strong>{property_title}</strong> has ended.</p>
-<p>Final price: {final_price}</p>
-<p>You were not the winning bidder. Browse more properties below:</p>
-<p><a href="{site_url}/website">Browse Properties</a></p>`,
-    variables: ["user_name", "property_title", "final_price", "site_url"],
-  },
-  propertySold: {
-    subject: "✅ Your property has been sold! - {property_title}",
-    html: `<h2>Your Property Has Been Sold!</h2>
-<p>Hi {seller_name},</p>
-<p>Your property <strong>{property_title}</strong> has been sold for <strong>{final_price}</strong>.</p>
-<p>Our team will contact you to complete the sale.</p>`,
-    variables: ["seller_name", "property_title", "final_price"],
-  },
-  propertyUnsold: {
-    subject: "Auction Result - {property_title}",
-    html: `<h2>Auction Result: Unsold</h2>
-<p>Hi {seller_name},</p>
-<p>The auction for <strong>{property_title}</strong> has ended without meeting the reserve price.</p>
-<p>Highest bid: {highest_bid}</p>
-<p>Reserve price: {reserve_price}</p>
-<p>Contact us to discuss relisting options.</p>`,
-    variables: [
-      "seller_name",
-      "property_title",
-      "highest_bid",
-      "reserve_price",
-    ],
-  },
-  contactForm: {
-    subject: "New Contact Form Submission",
-    html: `<h2>New Contact Form Submission</h2>
-<p><strong>Name:</strong> {user_name}</p>
-<p><strong>Email:</strong> {user_email}</p>
-<p><strong>Phone:</strong> {user_phone}</p>
-<p><strong>Message:</strong> {message}</p>`,
-    variables: ["user_name", "user_email", "user_phone", "message"],
-  },
-  valuationRequest: {
-    subject: "New Valuation Request",
-    html: `<h2>New Valuation Request</h2>
-<p><strong>Name:</strong> {user_name}</p>
-<p><strong>Email:</strong> {user_email}</p>
-<p><strong>Phone:</strong> {user_phone}</p>
-<p><strong>Property Address:</strong> {property_address}</p>
-<p><strong>Property Type:</strong> {property_type}</p>`,
-    variables: [
-      "user_name",
-      "user_email",
-      "user_phone",
-      "property_address",
-      "property_type",
-    ],
-  },
-  propertySubmitted: {
-    subject: "📋 New Property Submitted - {property_title}",
-    html: `<h2>New Property Submitted</h2><p>Hi {user_name},</p><p>A new property <strong>{property_title}</strong> has been submitted by {submitted_by}.</p><p><a href="{property_url}">Review Property</a></p>`,
-    variables: ["user_name", "property_title", "submitted_by", "property_url"],
-  },
-  propertyApproved: {
-    subject: "✅ Your property has been approved - {property_title}",
-    html: `<h2>Property Approved!</h2><p>Hi {user_name},</p><p>Your property <strong>{property_title}</strong> has been approved and is now visible on the platform.</p><p><a href="{property_url}">View Property</a></p>`,
-    variables: ["user_name", "property_title", "property_url"],
-  },
-  propertyRejected: {
-    subject: "❌ Property Update - {property_title}",
-    html: `<h2>Property Update</h2><p>Hi {user_name},</p><p>Your property <strong>{property_title}</strong> was not approved.</p><p>Reason: {reason}</p>`,
-    variables: ["user_name", "property_title", "reason"],
-  },
-  auctionStartingSoon: {
-    subject: "⏰ Auction Starting Soon - {auction_name}",
-    html: `<h2>Auction Starting Soon!</h2><p>Hi {user_name},</p><p><strong>{auction_name}</strong> starts at {start_time}.</p><p>{lot_count} lots available.</p><p><a href="{auction_url}">View Auction</a></p>`,
-    variables: [
-      "user_name",
-      "auction_name",
-      "start_time",
-      "lot_count",
-      "auction_url",
-    ],
-  },
-  auctionStarted: {
-    subject: "🔴 Auction Now Live - {auction_name}",
-    html: `<h2>Auction is LIVE!</h2><p>Hi {user_name},</p><p><strong>{auction_name}</strong> is now live with {lot_count} lots.</p><p><a href="{auction_url}">Start Bidding</a></p>`,
-    variables: ["user_name", "auction_name", "lot_count", "auction_url"],
-  },
-  auctionEnded: {
-    subject: "🏁 Auction Ended - {auction_name}",
-    html: `<h2>Auction Ended</h2><p>Hi {user_name},</p><p><strong>{auction_name}</strong> has ended.</p><p><a href="{auction_url}">View Results</a></p>`,
-    variables: ["user_name", "auction_name", "auction_url"],
-  },
-};
+  { key: 'welcome', subject: 'Welcome to King Property Auction! 🏠', category: 'auth',
+    variables: ['user_name', 'site_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#1e40af,#7c3aed);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">🏠</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;letter-spacing:-0.5px;">Welcome to King Property Auction</h1><p style="color:rgba(255,255,255,0.85);margin:10px 0 0;font-size:15px;">Scotland's Premier Property Auction Platform</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Thank you for registering with King Property Auction. We're delighted to have you join our growing community of buyers, sellers, and investors.</p><div style="background:#eff6ff;border-left:4px solid #1e40af;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 24px;"><p style="margin:0;color:#1e40af;font-weight:700;font-size:14px;">What happens next:</p><ul style="margin:10px 0 0;padding-left:18px;color:#374151;font-size:14px;line-height:1.9;"><li>Our admin team will review your account</li><li>You will receive an approval email within 24 hours</li><li>Once approved, you can place bids on any live auction</li></ul></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 28px;">In the meantime, explore our upcoming properties and auctions to find your next opportunity.</p><div style="text-align:center;margin-bottom:8px;"><a href="{site_url}" style="background:linear-gradient(135deg,#1e40af,#7c3aed);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Browse Upcoming Auctions</a></div></div>${FOOTER}</div>` },
 
-const readTemplates = () => {
-  try {
-    if (fs.existsSync(TEMPLATES_FILE)) {
-      return {
-        ...defaultTemplates,
-        ...JSON.parse(fs.readFileSync(TEMPLATES_FILE, "utf8")),
-      };
-    }
-  } catch (e) {
-    console.error("Error reading templates:", e.message);
+  { key: 'accountApproved', subject: '✅ Your Account Has Been Approved — Start Bidding Today', category: 'auth',
+    variables: ['user_name', 'site_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#059669,#10b981);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">✅</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Account Approved!</h1><p style="color:rgba(255,255,255,0.85);margin:10px 0 0;font-size:15px;">You're ready to bid</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Great news — your King Property Auction account has been approved! You now have full access to place bids, track auctions, and purchase properties.</p><div style="background:#f0fdf4;border-left:4px solid #059669;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 24px;"><p style="margin:0;color:#059669;font-weight:700;font-size:14px;">You can now:</p><ul style="margin:10px 0 0;padding-left:18px;color:#374151;font-size:14px;line-height:1.9;"><li>Place bids on live and upcoming auctions</li><li>Add properties to your watchlist</li><li>Receive outbid alerts in real time</li><li>View full property details and legal packs</li></ul></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 28px;">Live auctions are available now — don't miss your chance to secure your next property.</p><div style="text-align:center;margin-bottom:8px;"><a href="{site_url}" style="background:linear-gradient(135deg,#059669,#10b981);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Login &amp; Start Bidding</a></div></div>${FOOTER}</div>` },
+
+  { key: 'accountRejected', subject: 'Your King Property Auction Account — Update', category: 'auth',
+    variables: ['user_name', 'reason'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#475569,#334155);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">📋</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Account Review Update</h1><p style="color:rgba(255,255,255,0.8);margin:10px 0 0;font-size:15px;">Important information about your application</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Thank you for your interest in King Property Auction. After reviewing your application, we are unable to approve your account at this time.</p><div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 24px;"><p style="margin:0;color:#dc2626;font-weight:700;font-size:14px;">Reason:</p><p style="margin:8px 0 0;color:#374151;font-size:14px;line-height:1.7;">{reason}</p></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px;">If you believe this decision was made in error, or if you would like to discuss your application, please don't hesitate to contact our team. We are happy to help.</p><div style="text-align:center;margin-bottom:8px;"><a href="mailto:info@kingpropertyauction.co.uk" style="background:linear-gradient(135deg,#475569,#334155);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Contact Our Team</a></div></div>${FOOTER}</div>` },
+
+  { key: 'passwordReset', subject: 'Reset Your Password — King Property Auction', category: 'auth',
+    variables: ['user_name', 'reset_link'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#2563eb,#4f46e5);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">🔐</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Password Reset Request</h1><p style="color:rgba(255,255,255,0.85);margin:10px 0 0;font-size:15px;">Secure your account</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">We received a request to reset the password for your King Property Auction account. Click the button below to create a new password.</p><div style="text-align:center;margin:28px 0;"><a href="{reset_link}" style="background:linear-gradient(135deg,#2563eb,#4f46e5);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Reset My Password</a></div><div style="background:#fffbeb;border-left:4px solid #d97706;border-radius:0 8px 8px 0;padding:14px 18px;margin:0 0 24px;"><p style="margin:0;color:#92400e;font-size:13px;line-height:1.6;"><strong>Security notice:</strong> This link expires in <strong>1 hour</strong>. If you did not request a password reset, please ignore this email — your account remains secure.</p></div><p style="color:#374151;font-size:14px;line-height:1.7;margin:0;">If the button above does not work, copy and paste this link into your browser:<br/><span style="color:#2563eb;word-break:break-all;font-size:13px;">{reset_link}</span></p></div>${FOOTER}</div>` },
+
+  // ── BIDDING ───────────────────────────────────────────────────────────────
+
+  { key: 'bidConfirmation', subject: '✅ Bid Confirmed — {property_title}', category: 'bidding',
+    variables: ['user_name', 'property_title', 'bid_amount', 'current_bid', 'property_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#2563eb,#4f46e5);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">🔨</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Bid Successfully Placed!</h1><p style="color:rgba(255,255,255,0.85);margin:10px 0 0;font-size:15px;">You're in the running</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Your bid has been successfully registered. Here's a summary of your bid:</p><div style="background:#eff6ff;border:2px solid #bfdbfe;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:140px;">Property</td><td style="padding:8px 0;color:#1e40af;font-weight:700;">{property_title}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #dbeafe;color:#64748b;font-weight:600;">Your Bid</td><td style="padding:8px 0;border-top:1px solid #dbeafe;color:#1e40af;font-weight:900;font-size:20px;">{bid_amount}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #dbeafe;color:#64748b;font-weight:600;">Current Highest</td><td style="padding:8px 0;border-top:1px solid #dbeafe;color:#374151;font-weight:700;">{current_bid}</td></tr></table></div><div style="background:#f0fdf4;border-left:4px solid #059669;border-radius:0 8px 8px 0;padding:14px 18px;margin:0 0 28px;"><p style="margin:0;color:#065f46;font-size:13px;line-height:1.6;">You will receive an email immediately if someone outbids you, so you can respond quickly.</p></div><div style="text-align:center;margin-bottom:8px;"><a href="{property_url}" style="background:linear-gradient(135deg,#2563eb,#4f46e5);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Track This Auction</a></div></div>${FOOTER}</div>` },
+
+  { key: 'outbidAlert', subject: "⚠️ You've Been Outbid — {property_title}", category: 'bidding',
+    variables: ['user_name', 'property_title', 'your_bid', 'current_bid', 'property_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#dc2626,#ea580c);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">⚠️</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">You've Been Outbid!</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">Act fast to stay in the running</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Someone has placed a higher bid on a property you're interested in. Don't lose it — place your new bid now!</p><div style="background:#fef2f2;border:2px solid #fecaca;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:140px;">Property</td><td style="padding:8px 0;color:#dc2626;font-weight:700;">{property_title}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #fecaca;color:#64748b;font-weight:600;">Your Bid</td><td style="padding:8px 0;border-top:1px solid #fecaca;color:#374151;font-weight:700;text-decoration:line-through;">{your_bid}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #fecaca;color:#64748b;font-weight:600;">Current Highest</td><td style="padding:8px 0;border-top:1px solid #fecaca;color:#dc2626;font-weight:900;font-size:20px;">{current_bid}</td></tr></table></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 28px;">The auction is still live — place a higher bid now to get back in the lead before the timer runs out.</p><div style="text-align:center;margin-bottom:8px;"><a href="{property_url}" style="background:linear-gradient(135deg,#dc2626,#ea580c);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Place a Higher Bid Now</a></div></div>${FOOTER}</div>` },
+
+  { key: 'auctionWon', subject: '🎉 Congratulations! You Won — {property_title}', category: 'bidding',
+    variables: ['user_name', 'property_title', 'final_price', 'auction_name', 'site_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#059669,#10b981);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:56px;margin-bottom:12px;">🎉</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Congratulations!</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:16px;">You've won the auction</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Congratulations! You have successfully won the auction for <strong>{property_title}</strong>. This is a fantastic achievement and we look forward to helping you complete this purchase.</p><div style="background:#f0fdf4;border:2px solid #bbf7d0;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:140px;">Property</td><td style="padding:8px 0;color:#059669;font-weight:700;">{property_title}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bbf7d0;color:#64748b;font-weight:600;">Winning Bid</td><td style="padding:8px 0;border-top:1px solid #bbf7d0;color:#059669;font-weight:900;font-size:22px;">{final_price}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bbf7d0;color:#64748b;font-weight:600;">Auction</td><td style="padding:8px 0;border-top:1px solid #bbf7d0;color:#374151;font-weight:600;">{auction_name}</td></tr></table></div><div style="background:#eff6ff;border-left:4px solid #2563eb;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 28px;"><p style="margin:0;color:#1e40af;font-weight:700;font-size:14px;">What happens next:</p><ul style="margin:10px 0 0;padding-left:18px;color:#374151;font-size:14px;line-height:1.9;"><li>Our team will contact you within 24 hours</li><li>You will receive the full legal pack and completion details</li><li>A 10% deposit is typically required within 24 hours of auction close</li><li>Completion is usually required within 28 days</li></ul></div><div style="text-align:center;margin-bottom:8px;"><a href="{site_url}" style="background:linear-gradient(135deg,#059669,#10b981);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">View Your Purchase</a></div></div>${FOOTER}</div>` },
+
+  { key: 'auctionLost', subject: 'Auction Ended — {property_title}', category: 'bidding',
+    variables: ['user_name', 'property_title', 'final_price', 'site_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#475569,#334155);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">🏁</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Auction Has Ended</h1><p style="color:rgba(255,255,255,0.8);margin:10px 0 0;font-size:15px;">Unfortunately, you were not the winning bidder</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">The auction for <strong>{property_title}</strong> has now closed. Unfortunately, your bid was not the highest on this occasion — but don't be discouraged, there are plenty more properties available.</p><div style="background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:140px;">Property</td><td style="padding:8px 0;color:#374151;font-weight:700;">{property_title}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #e2e8f0;color:#64748b;font-weight:600;">Final Sale Price</td><td style="padding:8px 0;border-top:1px solid #e2e8f0;color:#374151;font-weight:700;">{final_price}</td></tr></table></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 28px;">We regularly list new properties across Scotland. Browse our upcoming auctions to find your perfect property.</p><div style="text-align:center;margin-bottom:8px;"><a href="{site_url}" style="background:linear-gradient(135deg,#475569,#334155);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Browse More Properties</a></div></div>${FOOTER}</div>` },
+
+  // ── PROPERTY ──────────────────────────────────────────────────────────────
+
+  { key: 'propertySold', subject: '🎉 Your Property Has Sold! — {property_title}', category: 'property',
+    variables: ['user_name', 'property_title', 'final_price'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#059669,#10b981);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">🏠</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Your Property Has Sold!</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">Congratulations on a successful sale</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Fantastic news — your property has been successfully sold at auction! Here is a summary of the sale:</p><div style="background:#f0fdf4;border:2px solid #bbf7d0;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:140px;">Property</td><td style="padding:8px 0;color:#059669;font-weight:700;">{property_title}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bbf7d0;color:#64748b;font-weight:600;">Sale Price</td><td style="padding:8px 0;border-top:1px solid #bbf7d0;color:#059669;font-weight:900;font-size:22px;">{final_price}</td></tr></table></div><div style="background:#eff6ff;border-left:4px solid #2563eb;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 28px;"><p style="margin:0;color:#1e40af;font-weight:700;font-size:14px;">What happens next:</p><ul style="margin:10px 0 0;padding-left:18px;color:#374151;font-size:14px;line-height:1.9;"><li>Our team will contact you with full completion details</li><li>The buyer's solicitor will liaise with yours to arrange transfer</li><li>Completion is typically within 28 days of auction close</li><li>Sale proceeds will be transferred upon completion</li></ul></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0;">If you have any questions, please don't hesitate to contact our team — we're here to make the process as smooth as possible.</p></div>${FOOTER}</div>` },
+
+  { key: 'propertyUnsold', subject: 'Auction Result: Reserve Not Met — {property_title}', category: 'property',
+    variables: ['user_name', 'property_title', 'highest_bid', 'reserve_price'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#d97706,#b45309);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">📋</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Reserve Not Met</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">Your property did not reach its reserve price</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">The auction for <strong>{property_title}</strong> has concluded. Unfortunately, the reserve price was not met on this occasion.</p><div style="background:#fffbeb;border:2px solid #fde68a;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:140px;">Highest Bid</td><td style="padding:8px 0;color:#374151;font-weight:700;">{highest_bid}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #fde68a;color:#64748b;font-weight:600;">Your Reserve</td><td style="padding:8px 0;border-top:1px solid #fde68a;color:#374151;font-weight:700;">{reserve_price}</td></tr></table></div><div style="background:#f0fdf4;border-left:4px solid #059669;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 28px;"><p style="margin:0;color:#065f46;font-weight:700;font-size:14px;">Your options:</p><ul style="margin:10px 0 0;padding-left:18px;color:#374151;font-size:14px;line-height:1.9;"><li>We can contact the highest bidder to negotiate a post-auction sale</li><li>Relist the property in our next scheduled auction</li><li>Adjust your reserve price for a higher chance of sale</li></ul></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0;">Our team will be in touch within 24 hours to discuss your best options. Please feel free to call us in the meantime.</p></div>${FOOTER}</div>` },
+
+  { key: 'propertySubmitted', subject: '📋 New Property Submitted — {property_title}', category: 'property',
+    variables: ['user_name', 'property_title', 'submitted_by', 'property_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#2563eb,#4f46e5);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">📬</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">New Property Submitted</h1><p style="color:rgba(255,255,255,0.85);margin:10px 0 0;font-size:15px;">Action required — pending review</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 20px;">A new property has been submitted and is awaiting your review.</p><div style="background:#eff6ff;border:2px solid #bfdbfe;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:140px;">Property</td><td style="padding:8px 0;color:#1e40af;font-weight:700;">{property_title}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#64748b;font-weight:600;">Submitted By</td><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#374151;font-weight:600;">{submitted_by}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#64748b;font-weight:600;">Status</td><td style="padding:8px 0;border-top:1px solid #bfdbfe;"><span style="background:#fef9c3;color:#92400e;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;">Pending Review</span></td></tr></table></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 28px;">Please review the property details, images, and documentation before approving or rejecting this listing.</p><div style="text-align:center;margin-bottom:8px;"><a href="{property_url}" style="background:linear-gradient(135deg,#2563eb,#4f46e5);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Review Property Now</a></div></div>${FOOTER}</div>` },
+
+  { key: 'propertyApproved', subject: '✅ Your Property Has Been Approved — {property_title}', category: 'property',
+    variables: ['user_name', 'property_title', 'property_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#059669,#10b981);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">✅</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Property Approved!</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">Your listing is now live</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Great news — your property <strong>{property_title}</strong> has been reviewed and approved by our team. It is now visible to buyers and bidders on the King Property Auction platform.</p><div style="background:#f0fdf4;border-left:4px solid #059669;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 28px;"><p style="margin:0;color:#065f46;font-weight:700;font-size:14px;">What happens next:</p><ul style="margin:10px 0 0;padding-left:18px;color:#374151;font-size:14px;line-height:1.9;"><li>Your property is now listed and visible to all registered bidders</li><li>You will be notified when it is scheduled for an upcoming auction</li><li>You can log in at any time to view enquiries and interest</li></ul></div><div style="text-align:center;margin-bottom:8px;"><a href="{property_url}" style="background:linear-gradient(135deg,#059669,#10b981);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">View Your Listing</a></div></div>${FOOTER}</div>` },
+
+  { key: 'propertyRejected', subject: 'Property Review Update — {property_title}', category: 'property',
+    variables: ['user_name', 'property_title', 'reason'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#475569,#334155);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">📋</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Property Review Update</h1><p style="color:rgba(255,255,255,0.8);margin:10px 0 0;font-size:15px;">Additional information required</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Thank you for submitting <strong>{property_title}</strong> to King Property Auction. After a thorough review, we are unable to approve this listing at this time.</p><div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 24px;"><p style="margin:0;color:#dc2626;font-weight:700;font-size:14px;">Reason for review:</p><p style="margin:8px 0 0;color:#374151;font-size:14px;line-height:1.7;">{reason}</p></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 28px;">Please address the points raised above and resubmit, or contact our team directly if you need clarification or assistance. We want to help you get your property listed.</p><div style="text-align:center;margin-bottom:8px;"><a href="mailto:info@kingpropertyauction.co.uk" style="background:linear-gradient(135deg,#475569,#334155);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Contact Our Team</a></div></div>${FOOTER}</div>` },
+
+  // ── AUCTION ───────────────────────────────────────────────────────────────
+
+  { key: 'auctionStartingSoon', subject: '⏰ Auction Starting Soon — {auction_name}', category: 'auction',
+    variables: ['user_name', 'auction_name', 'start_time', 'lot_count', 'auction_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#d97706,#ea580c);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">⏰</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Auction Starting Soon!</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">Don't miss your chance to bid</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">A reminder that an upcoming auction is about to go live. Make sure you're ready to bid!</p><div style="background:#fffbeb;border:2px solid #fde68a;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:140px;">Auction</td><td style="padding:8px 0;color:#d97706;font-weight:700;">{auction_name}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #fde68a;color:#64748b;font-weight:600;">Start Time</td><td style="padding:8px 0;border-top:1px solid #fde68a;color:#374151;font-weight:700;">{start_time}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #fde68a;color:#64748b;font-weight:600;">Lots Available</td><td style="padding:8px 0;border-top:1px solid #fde68a;color:#374151;font-weight:700;">{lot_count} properties</td></tr></table></div><div style="background:#f0fdf4;border-left:4px solid #059669;border-radius:0 8px 8px 0;padding:14px 18px;margin:0 0 28px;"><p style="margin:0;color:#065f46;font-size:13px;line-height:1.6;">Tip: Review the legal packs and set your maximum bid before the auction starts to avoid missing out.</p></div><div style="text-align:center;margin-bottom:8px;"><a href="{auction_url}" style="background:linear-gradient(135deg,#d97706,#ea580c);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">View Auction &amp; Lots</a></div></div>${FOOTER}</div>` },
+
+  { key: 'auctionStarted', subject: '🔴 Live Now — {auction_name}', category: 'auction',
+    variables: ['user_name', 'auction_name', 'lot_count', 'auction_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#dc2626,#b91c1c);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:50px;padding:8px 20px;margin-bottom:16px;"><span style="color:white;font-size:13px;font-weight:700;letter-spacing:1px;">● LIVE NOW</span></div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Bidding Is Open!</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">The auction has started — place your bids now</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;"><strong>{auction_name}</strong> is now live with <strong>{lot_count} properties</strong> available to bid on. The clock is running — secure your property before time runs out!</p><div style="background:#fef2f2;border:2px solid #fecaca;border-radius:12px;padding:16px 20px;margin:0 0 24px;"><p style="margin:0;color:#dc2626;font-size:14px;font-weight:600;">⏱ Act quickly — auction lots close in order, and popular properties sell fast. Every bid counts.</p></div><div style="background:#eff6ff;border-left:4px solid #2563eb;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 28px;"><p style="margin:0;color:#1e40af;font-weight:700;font-size:14px;">Bidding tips:</p><ul style="margin:10px 0 0;padding-left:18px;color:#374151;font-size:14px;line-height:1.9;"><li>Set your maximum bid limit before you start</li><li>Read all legal documents before bidding</li><li>Confirm you have funds ready — winning bids are legally binding</li></ul></div><div style="text-align:center;margin-bottom:8px;"><a href="{auction_url}" style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Start Bidding Now</a></div></div>${FOOTER}</div>` },
+
+  { key: 'auctionEnded', subject: '🏁 Auction Has Ended — {auction_name}', category: 'auction',
+    variables: ['user_name', 'auction_name', 'auction_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#475569,#334155);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">🏁</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Auction Has Ended</h1><p style="color:rgba(255,255,255,0.8);margin:10px 0 0;font-size:15px;">{auction_name}</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;"><strong>{auction_name}</strong> has now closed. All lots have been finalised and winners have been notified.</p><div style="background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin:0 0 24px;"><p style="margin:0;color:#374151;font-size:14px;line-height:1.7;">You can view the full results, sold prices, and any available post-auction opportunities by visiting the auction page.</p></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 28px;">Don't miss our next auction — we list new properties regularly. Register for alerts to be the first to know.</p><div style="text-align:center;margin-bottom:8px;"><a href="{auction_url}" style="background:linear-gradient(135deg,#475569,#334155);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">View Auction Results</a></div></div>${FOOTER}</div>` },
+
+  // ── LEADS ─────────────────────────────────────────────────────────────────
+
+  { key: 'contactForm', subject: '📬 New Contact Form Submission — {user_name}', category: 'lead',
+    variables: ['user_name', 'user_email', 'user_phone', 'message'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#2563eb,#4f46e5);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">📬</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">New Contact Form Submission</h1><p style="color:rgba(255,255,255,0.85);margin:10px 0 0;font-size:15px;">Action required — respond within 24 hours</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:15px;margin:0 0 20px;">A visitor has submitted a contact form on the King Property Auction website.</p><div style="background:#eff6ff;border:2px solid #bfdbfe;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:100px;">Name</td><td style="padding:8px 0;color:#1e40af;font-weight:700;">{user_name}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#64748b;font-weight:600;">Email</td><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#374151;">{user_email}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#64748b;font-weight:600;">Phone</td><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#374151;">{user_phone}</td></tr></table></div><div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 24px;"><p style="margin:0 0 8px;color:#475569;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Message</p><p style="margin:0;color:#374151;font-size:14px;line-height:1.7;font-style:italic;">{message}</p></div></div>${FOOTER}</div>` },
+
+  { key: 'valuationRequest', subject: '🏠 New Valuation Request — {user_name}', category: 'lead',
+    variables: ['user_name', 'user_email', 'user_phone', 'property_address', 'property_type'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#d97706,#ea580c);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">🏠</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">New Valuation Request</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">Respond within 24 hours</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:15px;margin:0 0 20px;">A new free valuation request has been submitted through the website.</p><div style="background:#fffbeb;border:2px solid #fde68a;border-radius:12px;padding:20px 24px;margin:0 0 20px;"><p style="margin:0 0 12px;color:#92400e;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Contact Details</p><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:7px 0;color:#64748b;font-weight:600;width:140px;">Name</td><td style="padding:7px 0;color:#374151;font-weight:700;">{user_name}</td></tr><tr><td style="padding:7px 0;border-top:1px solid #fde68a;color:#64748b;font-weight:600;">Email</td><td style="padding:7px 0;border-top:1px solid #fde68a;color:#374151;">{user_email}</td></tr><tr><td style="padding:7px 0;border-top:1px solid #fde68a;color:#64748b;font-weight:600;">Phone</td><td style="padding:7px 0;border-top:1px solid #fde68a;color:#374151;">{user_phone}</td></tr></table></div><div style="background:#fff7ed;border:2px solid #fed7aa;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><p style="margin:0 0 12px;color:#9a3412;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Property Details</p><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:7px 0;color:#64748b;font-weight:600;width:140px;">Address</td><td style="padding:7px 0;color:#374151;font-weight:700;">{property_address}</td></tr><tr><td style="padding:7px 0;border-top:1px solid #fed7aa;color:#64748b;font-weight:600;">Property Type</td><td style="padding:7px 0;border-top:1px solid #fed7aa;color:#374151;">{property_type}</td></tr></table></div></div>${FOOTER}</div>` },
+
+  { key: 'adminLeadAlert', subject: '📋 New Lead: {lead_name} — {lead_type}', category: 'lead',
+    variables: ['admin_name', 'lead_name', 'lead_email', 'lead_phone', 'lead_type', 'message', 'admin_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#1e40af,#4f46e5);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">🎯</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">New Lead Received</h1><p style="color:rgba(255,255,255,0.85);margin:10px 0 0;font-size:15px;">Review and respond promptly</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:15px;margin:0 0 20px;">Hi <strong>{admin_name}</strong>, a new lead has been submitted on the King Property Auction platform.</p><div style="background:#eff6ff;border:2px solid #bfdbfe;border-radius:12px;padding:20px 24px;margin:0 0 20px;"><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:100px;">Name</td><td style="padding:8px 0;color:#1e40af;font-weight:700;">{lead_name}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#64748b;font-weight:600;">Email</td><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#374151;">{lead_email}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#64748b;font-weight:600;">Phone</td><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#374151;">{lead_phone}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#64748b;font-weight:600;">Type</td><td style="padding:8px 0;border-top:1px solid #bfdbfe;"><span style="background:#dbeafe;color:#1e40af;padding:3px 12px;border-radius:12px;font-size:12px;font-weight:700;">{lead_type}</span></td></tr></table></div><div style="background:#f1f5f9;border-radius:8px;padding:16px 20px;margin:0 0 28px;"><p style="margin:0 0 8px;color:#475569;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Message</p><p style="margin:0;color:#374151;font-size:14px;line-height:1.7;font-style:italic;">{message}</p></div><div style="text-align:center;margin-bottom:8px;"><a href="{admin_url}" style="background:linear-gradient(135deg,#1e40af,#4f46e5);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">View Lead in Admin</a></div></div>${FOOTER}</div>` },
+
+  { key: 'catalogueRequest', subject: 'Your Auction Catalogue Request — King Property Auction', category: 'lead',
+    variables: ['user_name'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">📖</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Catalogue Request Received</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">Your catalogue is on its way</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Thank you for requesting our auction catalogue. We have received your request and our team will send you the full catalogue shortly.</p><div style="background:#f5f3ff;border-left:4px solid #7c3aed;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 24px;"><p style="margin:0;color:#5b21b6;font-weight:700;font-size:14px;">What's in the catalogue:</p><ul style="margin:10px 0 0;padding-left:18px;color:#374151;font-size:14px;line-height:1.9;"><li>Full listing of all upcoming auction properties</li><li>Property descriptions, photos, and guide prices</li><li>Legal pack summaries and viewing arrangements</li><li>How to register and bid at auction</li></ul></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 28px;">In the meantime, you can browse all upcoming properties online.</p><div style="text-align:center;margin-bottom:8px;"><a href="/" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Browse Upcoming Properties</a></div></div>${FOOTER}</div>` },
+
+  { key: 'registerAlert', subject: '🔔 Property Alerts Active — You\'re on the List', category: 'lead',
+    variables: ['user_name', 'property_type', 'location', 'budget'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#2563eb,#4f46e5);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">🔔</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Property Alert Active!</h1><p style="color:rgba(255,255,255,0.85);margin:10px 0 0;font-size:15px;">We'll notify you as soon as a match is found</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">You're now registered for property alerts. We will contact you as soon as a property matching your requirements becomes available on King Property Auction.</p><div style="background:#eff6ff;border:2px solid #bfdbfe;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><p style="margin:0 0 12px;color:#1e40af;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Your Alert Criteria</p><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:140px;">Property Type</td><td style="padding:8px 0;color:#374151;font-weight:700;">{property_type}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#64748b;font-weight:600;">Location</td><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#374151;font-weight:700;">{location}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#64748b;font-weight:600;">Budget</td><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#374151;font-weight:700;">{budget}</td></tr></table></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 28px;">Browse our current listings while you wait — you may find exactly what you're looking for right now.</p><div style="text-align:center;margin-bottom:8px;"><a href="/" style="background:linear-gradient(135deg,#2563eb,#4f46e5);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Browse Properties Now</a></div></div>${FOOTER}</div>` },
+
+  { key: 'solicitorEnquiry', subject: 'Solicitor Enquiry Received — King Property Auction', category: 'lead',
+    variables: ['user_name'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">⚖️</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Solicitor Enquiry Received</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">Our legal team will be in touch shortly</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Thank you for your solicitor enquiry with King Property Auction. We take legal matters seriously and our team will respond to you within 24 hours.</p><div style="background:#f5f3ff;border-left:4px solid #7c3aed;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 24px;"><p style="margin:0;color:#5b21b6;font-weight:700;font-size:14px;">What happens next:</p><ul style="margin:10px 0 0;padding-left:18px;color:#374151;font-size:14px;line-height:1.9;"><li>A member of our legal team will review your enquiry</li><li>We will contact you within 24 hours to discuss your requirements</li><li>Legal packs for specific properties can be provided on request</li></ul></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 28px;">If your matter is urgent, please call us directly and we will prioritise your enquiry.</p><div style="text-align:center;margin-bottom:8px;"><a href="/contact-us" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Contact Our Team</a></div></div>${FOOTER}</div>` },
+
+  { key: 'homeReport', subject: 'Home Report Request Confirmed — King Property Auction', category: 'lead',
+    variables: ['user_name', 'property_address', 'property_type'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#059669,#10b981);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">🏠</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Home Report Requested</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">We will arrange this within 48 hours</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Thank you for requesting a home report through King Property Auction. We have received your request and will be in contact within 48 hours to arrange the survey.</p><div style="background:#f0fdf4;border:2px solid #bbf7d0;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><p style="margin:0 0 12px;color:#065f46;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Property Details</p><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:140px;">Address</td><td style="padding:8px 0;color:#374151;font-weight:700;">{property_address}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bbf7d0;color:#64748b;font-weight:600;">Property Type</td><td style="padding:8px 0;border-top:1px solid #bbf7d0;color:#374151;font-weight:700;">{property_type}</td></tr></table></div><div style="background:#eff6ff;border-left:4px solid #2563eb;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 28px;"><p style="margin:0;color:#1e40af;font-weight:700;font-size:14px;">What's included in your report:</p><ul style="margin:10px 0 0;padding-left:18px;color:#374151;font-size:14px;line-height:1.9;"><li>Full structural survey and condition assessment</li><li>Energy performance certificate (EPC)</li><li>Accessibility information</li><li>Property valuation for auction purposes</li></ul></div><div style="text-align:center;margin-bottom:8px;"><a href="/free-valuation" style="background:linear-gradient(135deg,#059669,#10b981);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Request a Free Valuation</a></div></div>${FOOTER}</div>` },
+
+  { key: 'referralFee', subject: 'Referral Fee Enquiry — King Property Auction', category: 'lead',
+    variables: ['user_name'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#d97706,#ea580c);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">💰</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Referral Enquiry Received</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">Our partnerships team will be in touch</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Thank you for your interest in our referral programme. We have received your enquiry and a member of our partnerships team will contact you shortly to discuss the details.</p><div style="background:#fffbeb;border:2px solid #fde68a;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><p style="margin:0 0 10px;color:#92400e;font-weight:700;font-size:14px;">About our referral programme:</p><ul style="margin:0;padding-left:18px;color:#374151;font-size:14px;line-height:1.9;"><li>Earn competitive fees for every successful property introduction</li><li>No cap on earnings — refer as many clients as you like</li><li>Fast, transparent payment upon completion of each sale</li><li>Dedicated support from our partnerships team</li></ul></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 28px;">We work with estate agents, solicitors, financial advisors, and private individuals. Whatever your background, we'd love to work with you.</p><div style="text-align:center;margin-bottom:8px;"><a href="/contact-us" style="background:linear-gradient(135deg,#d97706,#ea580c);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Talk to Our Team</a></div></div>${FOOTER}</div>` },
+
+  { key: 'buyingEnquiry', subject: 'Buying Enquiry Confirmed — King Property Auction', category: 'lead',
+    variables: ['user_name', 'property_type', 'budget', 'location', 'timeline'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#2563eb,#7c3aed);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">🏡</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Buying Enquiry Confirmed</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">A consultant will contact you shortly</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Thank you for your buying enquiry. One of our property consultants will contact you shortly to help match you with the right properties and guide you through the auction process.</p><div style="background:#eff6ff;border:2px solid #bfdbfe;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><p style="margin:0 0 12px;color:#1e40af;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Your Requirements</p><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:140px;">Property Type</td><td style="padding:8px 0;color:#374151;font-weight:700;">{property_type}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#64748b;font-weight:600;">Budget</td><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#374151;font-weight:700;">{budget}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#64748b;font-weight:600;">Location</td><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#374151;font-weight:700;">{location}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#64748b;font-weight:600;">Timeline</td><td style="padding:8px 0;border-top:1px solid #bfdbfe;color:#374151;font-weight:700;">{timeline}</td></tr></table></div><div style="background:#f0fdf4;border-left:4px solid #059669;border-radius:0 8px 8px 0;padding:14px 18px;margin:0 0 28px;"><p style="margin:0;color:#065f46;font-size:13px;line-height:1.6;">Auction properties often sell below market value — it's one of the best ways to buy in Scotland. We'll help you every step of the way.</p></div><div style="text-align:center;margin-bottom:8px;"><a href="/website" style="background:linear-gradient(135deg,#2563eb,#7c3aed);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Browse Current Auctions</a></div></div>${FOOTER}</div>` },
+
+  { key: 'sellingEnquiry', subject: 'Free Valuation Request Confirmed — King Property Auction', category: 'lead',
+    variables: ['user_name', 'property_type', 'property_address', 'bedrooms'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#7c3aed,#ec4899);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">💼</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">Free Valuation Requested</h1><p style="color:rgba(255,255,255,0.9);margin:10px 0 0;font-size:15px;">Our experts will respond within 24 hours</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Thank you for requesting a free auction valuation from King Property Auction. Our property experts will review your details and get back to you within 24 hours with an honest, no-obligation valuation.</p><div style="background:#fdf4ff;border:2px solid #e9d5ff;border-radius:12px;padding:20px 24px;margin:0 0 24px;"><p style="margin:0 0 12px;color:#6b21a8;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Property Details</p><table style="width:100%;border-collapse:collapse;font-size:14px;"><tr><td style="padding:8px 0;color:#64748b;font-weight:600;width:140px;">Property Type</td><td style="padding:8px 0;color:#374151;font-weight:700;">{property_type}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #e9d5ff;color:#64748b;font-weight:600;">Address</td><td style="padding:8px 0;border-top:1px solid #e9d5ff;color:#374151;font-weight:700;">{property_address}</td></tr><tr><td style="padding:8px 0;border-top:1px solid #e9d5ff;color:#64748b;font-weight:600;">Bedrooms</td><td style="padding:8px 0;border-top:1px solid #e9d5ff;color:#374151;font-weight:700;">{bedrooms}</td></tr></table></div><div style="background:#eff6ff;border-left:4px solid #2563eb;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 28px;"><p style="margin:0;color:#1e40af;font-weight:700;font-size:14px;">Why sell at auction?</p><ul style="margin:10px 0 0;padding-left:18px;color:#374151;font-size:14px;line-height:1.9;"><li>Legally binding sale on auction day — no fall-throughs</li><li>Competitive bidding often achieves above guide price</li><li>Fast completion — typically 28 days</li><li>Transparent, open process with no hidden fees</li></ul></div><div style="text-align:center;margin-bottom:8px;"><a href="/free-valuation" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Track Your Valuation</a></div></div>${FOOTER}</div>` },
+
+  { key: 'adminReply', subject: 'New Reply From King Property Auction — {subject}', category: 'lead',
+    variables: ['user_name', 'subject', 'message', 'site_url'],
+    html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;"><div style="background:linear-gradient(135deg,#2563eb,#4f46e5);padding:36px 24px;text-align:center;border-radius:12px 12px 0 0;"><div style="font-size:48px;margin-bottom:12px;">💬</div><h1 style="color:white;margin:0;font-size:28px;font-weight:900;">You Have a New Reply</h1><p style="color:rgba(255,255,255,0.85);margin:10px 0 0;font-size:15px;">From the King Property Auction team</p></div><div style="background:white;padding:36px 28px;"><p style="color:#374151;font-size:16px;margin:0 0 16px;">Hi <strong>{user_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 20px;">Our team has responded to your enquiry regarding: <strong>{subject}</strong></p><div style="background:#eff6ff;border:2px solid #bfdbfe;border-radius:12px;padding:20px 24px;margin:0 0 28px;"><p style="margin:0 0 10px;color:#1e40af;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Message from our team:</p><p style="margin:0;color:#374151;font-size:15px;line-height:1.7;font-style:italic;">{message}</p></div><p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 28px;">If you have any follow-up questions or need further assistance, please don't hesitate to get in touch. We're always happy to help.</p><div style="text-align:center;margin-bottom:8px;"><a href="{site_url}" style="background:linear-gradient(135deg,#2563eb,#4f46e5);color:white;padding:14px 40px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px;display:inline-block;">Visit King Property Auction</a></div></div>${FOOTER}</div>` },
+
+];
+
+// ─── Seed default templates ───
+const seedDefaults = async () => {
+  const count = await Template.countDocuments();
+  if (count === 0) {
+    await Template.insertMany(defaultTemplates);
+    console.log(`✅ Seeded ${defaultTemplates.length} email templates`);
   }
-  return defaultTemplates;
 };
 
-const writeTemplates = (templates) => {
-  fs.writeFileSync(TEMPLATES_FILE, JSON.stringify(templates, null, 2));
-};
-
-export const renderTemplate = (key, variables = {}) => {
-  const templates = readTemplates();
-  const template = templates[key];
+// ─── Service functions ───
+export const renderTemplate = async (key, variables = {}) => {
+  await seedDefaults();
+  const template = await Template.findOne({ key });
   if (!template) return `<p>Template "${key}" not found.</p>`;
 
   let html = template.html;
   Object.entries(variables).forEach(([varName, value]) => {
-    html = html.replace(new RegExp(`\\{${varName}\\}`, "g"), value || "");
+    html = html.replace(new RegExp(`\\{${varName}\\}`, 'g'), value || '');
   });
-
   return html;
 };
 
-export const getAllTemplates = () => {
-  return readTemplates();
+export const getAllTemplates = async () => {
+  await seedDefaults();
+  const templates = await Template.find().sort('category key').lean();
+  const result = {};
+  templates.forEach(t => {
+    result[t.key] = { subject: t.subject, html: t.html, variables: t.variables, category: t.category };
+  });
+  return result;
 };
 
-export const getTemplate = (key) => {
-  const templates = readTemplates();
-  return templates[key] || null;
+export const getTemplate = async (key) => {
+  await seedDefaults();
+  return Template.findOne({ key }).lean();
 };
 
-export const updateTemplate = (key, data) => {
-  const templates = readTemplates();
-  templates[key] = { ...templates[key], ...data };
-  writeTemplates(templates);
-  return templates[key];
+export const updateTemplate = async (key, data) => {
+  await seedDefaults();
+  return Template.findOneAndUpdate({ key }, { $set: data }, { new: true, upsert: true }).lean();
 };
 
-export const resetTemplate = (key) => {
-  const templates = readTemplates();
-  templates[key] = { ...defaultTemplates[key] };
-  writeTemplates(templates);
-  return templates[key];
+export const resetTemplate = async (key) => {
+  await seedDefaults();
+  const defaultTpl = defaultTemplates.find(
+    t => t.key.toLowerCase() === key.toLowerCase()
+  );
+  if (!defaultTpl) return null;
+  return Template.findOneAndUpdate({ key }, { $set: defaultTpl }, { new: true, upsert: true }).lean();
+};
+
+export const resetAllTemplatesToDefault = async () => {
+  for (const tpl of defaultTemplates) {
+    await Template.findOneAndUpdate(
+      { key: tpl.key.toLowerCase() },
+      { $set: {
+        key: tpl.key.toLowerCase(),
+        subject: tpl.subject,
+        html: tpl.html,
+        variables: tpl.variables,
+        category: tpl.category,
+      }},
+      { upsert: true, new: true }
+    );
+  }
+  console.log(`✅ All ${defaultTemplates.length} templates reset to defaults`);
 };

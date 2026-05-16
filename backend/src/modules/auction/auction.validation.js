@@ -6,8 +6,8 @@ export const createAuctionSchema = Joi.object({
   description: Joi.string().max(2000).optional(),
    properties: Joi.array().items(Joi.string()).min(1).required(),
   
-  startingBid: Joi.number().min(0).required(),
-  bidIncrement: Joi.number().min(1).required(),
+  startingBid: Joi.number().min(0).optional().default(0),
+  bidIncrement: Joi.number().min(1).optional().default(1000),
   reservePrice: Joi.number().min(0).optional(),
   antiSnipingMinutes: Joi.number().min(1).max(60).default(5),
   enableAutoBidding: Joi.boolean().default(false),

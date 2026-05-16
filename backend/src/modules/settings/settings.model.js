@@ -28,21 +28,31 @@ export const NotificationRulesSchema = z.object({
   welcome: z.boolean().default(true),
   accountApproved: z.boolean().default(true),
   accountRejected: z.boolean().default(true),
+  passwordReset: z.boolean().default(true),
   bidConfirmation: z.boolean().default(true),
   outbidAlert: z.boolean().default(true),
   auctionWon: z.boolean().default(true),
   auctionLost: z.boolean().default(true),
-  propertySold: z.boolean().default(true),
-  propertyUnsold: z.boolean().default(true),
-  passwordReset: z.boolean().default(true),
-  contactForm: z.boolean().default(true),
-  valuationRequest: z.boolean().default(true),
-  propertySubmitted: z.boolean().default(true),
-  propertyApproved: z.boolean().default(true),
-  propertyRejected: z.boolean().default(true),
   auctionStartingSoon: z.boolean().default(true),
   auctionStarted: z.boolean().default(true),
   auctionEnded: z.boolean().default(true),
+  propertySubmitted: z.boolean().default(true),
+  propertyApproved: z.boolean().default(true),
+  propertyRejected: z.boolean().default(true),
+  propertySold: z.boolean().default(true),
+  propertyUnsold: z.boolean().default(true),
+  contactForm: z.boolean().default(true),
+  valuationRequest: z.boolean().default(true),
+  catalogueRequest: z.boolean().default(true),
+  adminLeadAlert: z.boolean().default(true),
+  adminReply: z.boolean().default(true),
+  registerAlert: z.boolean().default(true),
+  solicitorEnquiry: z.boolean().default(true),
+  homeReport: z.boolean().default(true),
+  referralFee: z.boolean().default(true),
+  buyingEnquiry: z.boolean().default(true),
+  sellingEnquiry: z.boolean().default(true),
+  chatEnquiry: z.boolean().default(true),
 });
 
 // ─── OAuth Configuration Schema ───
@@ -91,9 +101,6 @@ const settingsSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
-
-// Index for fast lookups
-settingsSchema.index({ key: 1 });
 
 const Settings = mongoose.model("Settings", settingsSchema);
 export default Settings;

@@ -180,7 +180,7 @@ export default function AuctionCard({ auction }: any) {
                   property.pricing?.reservePrice ||
                   0;
                 const pReserveMet = pCurrentBid >= pReserve;
-                const pSoldPrice = latestData?.soldPrice || 0;
+                const pSoldPrice = latestData?.soldPrice || latestData?.currentBid || property.currentBid || 0;
                 const isSold = latestData?.propertyStatus === "sold";
                 const isUnsold = latestData?.propertyStatus === "unsold";
                 const winnerObj =

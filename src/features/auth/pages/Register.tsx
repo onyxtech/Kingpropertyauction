@@ -436,12 +436,7 @@ export default function Register() {
                       </span>
                     </label>
                   )}
-
-                  {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
-                      {error}
-                    </div>
-                  )}
+                  
                   <button
                     type="submit"
                     disabled={loading}

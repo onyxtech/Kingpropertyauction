@@ -10,6 +10,8 @@ import {
   Shield,
   Zap,
   AlertCircle,
+  Brain,
+  Trash2,
 } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
 import AdminLayout from "../components/AdminLayout";
@@ -48,7 +50,49 @@ export default function AdminSettings() {
     facebook: { enabled: false, clientId: "", clientSecret: "" },
   });
   const [rules, setRules] = useState<Record<string, boolean>>({});
+  const [templates, setTemplates] = useState<Record<string, any>>({});
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [editSubject, setEditSubject] = useState("");
+  const [editHtml, setEditHtml] = useState("");
+  const [templateSaving, setTemplateSaving] = useState(false);
+  const [templateFilter, setTemplateFilter] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
+  const [templateMessage, setTemplateMessage] = useState("");
+  const [simpleMode, setSimpleMode] = useState(true);
+  const [simpleFields, setSimpleFields] = useState<{label: string, value: string, index: number}[]>([]);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkText, setLinkText] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkStyle, setLinkStyle] = useState<'text' | 'button'>('button');
+  const [focusedFieldIndex, setFocusedFieldIndex] = useState<number | null>(null);
   const loadedRef = useRef(false);
+  const [knowledgeEntries, setKnowledgeEntries] = useState<any[]>([]);
+  const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editCategory, setEditCategory] = useState("custom");
+  const [knowledgeSaving, setKnowledgeSaving] = useState(false);
+  const [knowledgeMsg, setKnowledgeMsg] = useState("");
+
+  useEffect(() => {
+    if (activeTab !== "templates") return;
+    apiClient
+      .fetch("/notifications/templates")
+      .then((r) => {
+        if (r.success && r.data) setTemplates(r.data);
+      })
+      .catch(() => {});
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "knowledge") return;
+    apiClient
+      .fetch("/knowledge")
+      .then((r) => {
+        if (r.success && r.data) setKnowledgeEntries(r.data);
+      })
+      .catch(() => {});
+  }, [activeTab]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -144,6 +188,217 @@ export default function AdminSettings() {
     } catch (e) {}
   };
 
+  const handleSaveTemplate = async () => {
+    if (!selectedTemplate) return;
+    setTemplateSaving(true);
+    try {
+      await apiClient.fetch(`/notifications/templates/${selectedTemplate}`, {
+        method: "PUT",
+        body: JSON.stringify({ subject: editSubject, html: editHtml }),
+      });
+      setTemplateMessage("Template saved!");
+      setTimeout(() => setTemplateMessage(""), 3000);
+    } catch (e) {
+      setTemplateMessage("Error saving template");
+    }
+    setTemplateSaving(false);
+  };
+
+  const handleResetTemplate = async () => {
+    if (!selectedTemplate || !confirm("Reset this template to default?"))
+      return;
+    try {
+      const result = await apiClient.fetch(
+        `/notifications/templates/${selectedTemplate}/reset`,
+        { method: "POST" },
+      );
+      console.log('[Reset] API response:', JSON.stringify(result));
+      if (result.success && result.data) {
+        const newHtml = result.data.html;
+        const newSubject = result.data.subject;
+        setEditHtml(newHtml);
+        setEditSubject(newSubject);
+        setSimpleMode(true);
+        setSimpleFields(extractSimpleFields(newHtml));
+        setShowPreview(false);
+        setTemplates(prev => ({
+          ...prev,
+          [selectedTemplate]: {
+            ...prev[selectedTemplate],
+            html: newHtml,
+            subject: newSubject,
+          },
+        }));
+        setTemplateMessage('Template reset to default!');
+        setTimeout(() => setTemplateMessage(''), 3000);
+      }
+    } catch (e) {
+      setTemplateMessage("Error resetting template");
+    }
+  };
+
+  const handleSelectEntry = (entry: any) => {
+    setSelectedEntry(entry);
+    setEditTitle(entry.title);
+    setEditContent(entry.content);
+    setEditCategory(entry.category || "custom");
+    setKnowledgeMsg("");
+  };
+
+  const handleSaveEntry = async () => {
+    if (!selectedEntry) return;
+    setKnowledgeSaving(true);
+    try {
+      const isNew = selectedEntry._id === "new";
+      const payload = {
+        title: editTitle,
+        content: editContent,
+        category: editCategory,
+        ...(isNew
+          ? {
+              key:
+                editTitle
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "_")
+                  .replace(/(^_|_$)/g, "") +
+                "_" +
+                Date.now(),
+            }
+          : {}),
+      };
+      const result = isNew
+        ? await apiClient.fetch("/knowledge", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          })
+        : await apiClient.fetch(`/knowledge/${selectedEntry._id}`, {
+            method: "PUT",
+            body: JSON.stringify(payload),
+          });
+      if (result.success) {
+        if (isNew && result.data) {
+          setKnowledgeEntries((prev) => [...prev, result.data]);
+          setSelectedEntry(result.data);
+        } else {
+          setKnowledgeEntries((prev) =>
+            prev.map((e) =>
+              e._id === selectedEntry._id ? { ...e, ...payload } : e,
+            ),
+          );
+          setSelectedEntry((prev: any) => ({ ...prev, ...payload }));
+        }
+        setKnowledgeMsg("Saved!");
+      } else {
+        setKnowledgeMsg("Error: " + result.message);
+      }
+    } catch (e: any) {
+      setKnowledgeMsg("Error: " + e.message);
+    }
+    setKnowledgeSaving(false);
+    setTimeout(() => setKnowledgeMsg(""), 3000);
+  };
+
+  const handleKnowledgeToggle = async (entry: any) => {
+    try {
+      const result = await apiClient.fetch(`/knowledge/${entry._id}/toggle`, {
+        method: "PATCH",
+      });
+      if (result.success) {
+        setKnowledgeEntries((prev) =>
+          prev.map((e) =>
+            e._id === entry._id ? { ...e, isActive: !e.isActive } : e,
+          ),
+        );
+        if (selectedEntry?._id === entry._id) {
+          setSelectedEntry((prev: any) => ({
+            ...prev,
+            isActive: !prev.isActive,
+          }));
+        }
+      }
+    } catch (e) {}
+  };
+
+  const handleDeleteEntry = async (entry: any) => {
+    try {
+      const result = await apiClient.fetch(`/knowledge/${entry._id}`, {
+        method: "DELETE",
+      });
+      if (result.success) {
+        setKnowledgeEntries((prev) => prev.filter((e) => e._id !== entry._id));
+        if (selectedEntry?._id === entry._id) {
+          setSelectedEntry(null);
+          setEditTitle("");
+          setEditContent("");
+        }
+      }
+    } catch (e) {}
+  };
+
+  const extractSimpleFields = (html: string) => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const fields: {label: string, value: string, index: number}[] = [];
+      let idx = 0;
+      doc.querySelectorAll('h1, h2, h3, h4, p').forEach((el) => {
+        const text = el.textContent?.trim();
+        if (text !== undefined && text !== null) {
+          const tag = el.tagName.toLowerCase();
+          const isHeading = ['h1','h2','h3','h4'].includes(tag);
+          fields.push({
+            label: isHeading ? `Heading: ${text.substring(0, 30)}` : `Text: ${text.substring(0, 30)}...`,
+            value: text,
+            index: idx++,
+          });
+        }
+      });
+      return fields;
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const updateSimpleField = (fieldIndex: number, newValue: string) => {
+    const updated = simpleFields.map(f =>
+      f.index === fieldIndex ? { ...f, value: newValue } : f
+    );
+    setSimpleFields(updated);
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(editHtml, 'text/html');
+      const elements = Array.from(doc.querySelectorAll('h1, h2, h3, h4, p'))
+        .filter(el => el.textContent !== null && el.textContent !== undefined);
+      updated.forEach((field) => {
+        if (elements[field.index]) {
+          elements[field.index].textContent = field.value || '';
+        }
+      });
+      setEditHtml(doc.body.innerHTML);
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    if (editHtml) {
+      setSimpleFields(extractSimpleFields(editHtml));
+    }
+  }, [selectedTemplate, editHtml]);
+
+  const insertBeforeClose = (html: string, newContent: string) => {
+    // Find the last <a ...> tag (the CTA button) and insert after its closing </div>
+    const lastAnchorEnd = html.lastIndexOf('</a>');
+    if (lastAnchorEnd !== -1) {
+      const insertPoint = html.indexOf('</div>', lastAnchorEnd);
+      if (insertPoint !== -1) {
+        return html.slice(0, insertPoint) + newContent + html.slice(insertPoint);
+      }
+    }
+    // Fallback: insert before last </div></div>
+    const lastIndex = html.lastIndexOf('</div></div>');
+    if (lastIndex === -1) return html + newContent;
+    return html.slice(0, lastIndex) + newContent + html.slice(lastIndex);
+  };
+
   const tabs = [
     {
       id: "email",
@@ -169,6 +424,12 @@ export default function AdminSettings() {
       icon: Shield,
       description: "Google, GitHub, Facebook login",
     },
+    {
+      id: "knowledge",
+      label: "AI Knowledge",
+      icon: Brain,
+      description: "Manage AI assistant knowledge base",
+    },
   ];
 
   const mailerOptions = [
@@ -178,25 +439,110 @@ export default function AdminSettings() {
     { value: "mailchimp", label: "Mailchimp Transactional" },
   ];
 
+  const templateLabels: Record<
+    string,
+    { label: string; icon: string; category: string }
+  > = {
+    welcome: { label: "Welcome Email", icon: "👋", category: "Auth" },
+    accountApproved: {
+      label: "Account Approved",
+      icon: "✅",
+      category: "Auth",
+    },
+    accountRejected: {
+      label: "Account Rejected",
+      icon: "❌",
+      category: "Auth",
+    },
+    passwordReset: { label: "Password Reset", icon: "🔑", category: "Auth" },
+    bidConfirmation: {
+      label: "Bid Confirmation",
+      icon: "🔨",
+      category: "Bidding",
+    },
+    outbidAlert: { label: "Outbid Alert", icon: "⚠️", category: "Bidding" },
+    auctionWon: { label: "Auction Won", icon: "🎉", category: "Bidding" },
+    auctionLost: { label: "Auction Lost", icon: "😢", category: "Bidding" },
+    auctionStartingSoon: {
+      label: "Auction Starting Soon",
+      icon: "⏰",
+      category: "Auction",
+    },
+    auctionStarted: {
+      label: "Auction Started",
+      icon: "🔴",
+      category: "Auction",
+    },
+    auctionEnded: { label: "Auction Ended", icon: "🏁", category: "Auction" },
+    propertySubmitted: {
+      label: "Property Submitted",
+      icon: "📋",
+      category: "Property",
+    },
+    propertyApproved: {
+      label: "Property Approved",
+      icon: "✅",
+      category: "Property",
+    },
+    propertyRejected: {
+      label: "Property Rejected",
+      icon: "❌",
+      category: "Property",
+    },
+    propertySold: { label: "Property Sold", icon: "🏠", category: "Property" },
+    propertyUnsold: {
+      label: "Property Unsold",
+      icon: "📉",
+      category: "Property",
+    },
+    contactForm: { label: "Contact Form", icon: "📧", category: "Leads" },
+    valuationRequest: {
+      label: "Valuation Request",
+      icon: "💰",
+      category: "Leads",
+    },
+    adminLeadAlert: {
+      label: "Admin Lead Alert",
+      icon: "📋",
+      category: "Leads",
+    },
+    catalogueRequest: {
+      label: "Catalogue Request",
+      icon: "📚",
+      category: "Leads",
+    },
+    adminReply: { label: "Admin Reply", icon: "💬", category: "Leads" },
+  };
+
   const ruleLabels: Record<string, string> = {
     welcome: "Welcome Email",
     accountApproved: "Account Approved",
     accountRejected: "Account Rejected",
+    passwordReset: "Password Reset",
     bidConfirmation: "Bid Confirmation",
     outbidAlert: "Outbid Alert",
     auctionWon: "Auction Won",
     auctionLost: "Auction Lost",
-    propertySold: "Property Sold",
-    propertyUnsold: "Property Unsold",
-    passwordReset: "Password Reset",
-    contactForm: "Contact Form",
-    valuationRequest: "Valuation Request",
-    propertySubmitted: "Property Submitted (Admin Alert)",
-    propertyApproved: "Property Approved",
-    propertyRejected: "Property Rejected",
     auctionStartingSoon: "Auction Starting Soon",
     auctionStarted: "Auction Started",
     auctionEnded: "Auction Ended",
+    propertySubmitted: "Property Submitted (Admin Alert)",
+    propertyApproved: "Property Approved",
+    propertyRejected: "Property Rejected",
+    propertySold: "Property Sold",
+    propertyUnsold: "Property Unsold",
+    contactForm: "Contact Form",
+    valuationRequest: "Valuation Request",
+    catalogueRequest: "Catalogue Request",
+    adminReply: "Admin Reply to Lead",
+    adminLeadAlert: "Admin Lead Alert",
+    registerAlert: "Register for Property Alerts",
+    solicitorEnquiry: "Solicitor Enquiry",
+    homeReport: "Home Report Request",
+    referralFee: "Referral Fee Enquiry",
+    buyingEnquiry: "Buying Overview Enquiry",
+    sellingEnquiry: "Selling Overview Enquiry",
+    chatEnquiry: "Chat Enquiry (AI Widget)",
   };
 
   if (isLoading) {
@@ -226,7 +572,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Tab Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -673,27 +1019,482 @@ export default function AdminSettings() {
             {/* ─── Templates ─── */}
             {activeTab === "templates" && (
               <div>
-                <p className="text-sm text-slate-600 mb-6">
-                  Select a template to edit its subject and content. Full editor
-                  coming soon.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Object.entries(ruleLabels).map(([key, label]) => (
-                    <div
-                      key={key}
-                      className="p-5 bg-slate-50 rounded-2xl hover:bg-white hover:shadow-md transition-all border-2 border-transparent hover:border-blue-200 cursor-pointer group"
+                {/* Category Filter — OUTSIDE the flex layout */}
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {[
+                    "All",
+                    "Auth",
+                    "Bidding",
+                    "Auction",
+                    "Property",
+                    "Leads",
+                  ].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() =>
+                        setTemplateFilter(
+                          cat === "All" ? "" : cat.toLowerCase(),
+                        )
+                      }
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        templateFilter ===
+                        (cat === "All" ? "" : cat.toLowerCase())
+                          ? "bg-blue-600 text-white shadow-md"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
                     >
-                      <div className="size-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                        <FileText className="size-5 text-white" />
-                      </div>
-                      <p className="font-bold text-slate-900 text-sm">
-                        {label}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1 font-mono">
-                        template: {key}
-                      </p>
-                    </div>
+                      {cat}
+                    </button>
                   ))}
+                </div>
+
+                {/* Main flex layout: Left List + Right Editor */}
+                <div className="flex gap-6" style={{ minHeight: "560px" }}>
+                  {/* Left: Template List */}
+                  <div className="w-1/3 flex-shrink-0 overflow-y-auto space-y-2 pr-1">
+                    {Object.keys(templates).length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2" />
+                        <p className="text-sm text-slate-500">
+                          Loading templates...
+                        </p>
+                      </div>
+                    ) : (
+                      Object.entries(templates)
+                        .filter(([key]: [string, any]) => {
+                          if (!templateFilter) return true;
+                          const tpl = templates[key];
+                          const cat = (
+                            tpl?.category ||
+                            templateLabels[key]?.category ||
+                            ""
+                          ).toLowerCase();
+                          return cat === templateFilter.toLowerCase();
+                        })
+                        .map(([key, tpl]: [string, any]) => (
+                          <div
+                            key={key}
+                            onClick={() => {
+                              setSelectedTemplate(key);
+                              setEditSubject(tpl.subject);
+                              setEditHtml(tpl.html);
+                              setSimpleMode(true);
+                              setSimpleFields(extractSimpleFields(tpl.html));
+                              setTemplateMessage('');
+                              setShowPreview(false);
+                            }}
+                            className={`p-3 rounded-xl cursor-pointer transition-all border-2 ${
+                              selectedTemplate === key
+                                ? "border-blue-500 bg-blue-50 shadow-md"
+                                : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-lg">
+                                {templateLabels[key]?.icon || "📧"}
+                              </span>
+                              <span className="font-bold text-sm text-slate-900 truncate">
+                                {templateLabels[key]?.label || key}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 capitalize">
+                                {templates[key]?.category ||
+                                  templateLabels[key]?.category ||
+                                  "System"}
+                              </span>
+                              <span className="text-[11px] text-slate-400 truncate">
+                                {tpl.subject}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                    )}
+                  </div>
+
+                  {/* Right: Editor */}
+                  <div className="flex-1 min-w-0 flex flex-col">
+                    {!selectedTemplate ? (
+                      <div className="flex-1 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl">
+                        <div className="text-center">
+                          <div className="size-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                            <FileText className="size-7 text-slate-400" />
+                          </div>
+                          <p className="font-bold text-slate-600">
+                            Select a template to edit
+                          </p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Choose from the list on the left
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-4 overflow-y-auto">
+                        {/* Heading + buttons */}
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <h4 className="font-black text-slate-900 text-base">
+                            {templateLabels[selectedTemplate]?.label ||
+                              selectedTemplate
+                                .replace(/([A-Z])/g, " $1")
+                                .trim()}
+                          </h4>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+                              <button
+                                onClick={() => { setSimpleMode(true); setShowPreview(false); }}
+                                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${simpleMode && !showPreview ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                              >
+                                ✏️ Simple
+                              </button>
+                              <button
+                                onClick={() => { setSimpleMode(false); setShowPreview(false); }}
+                                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${!simpleMode && !showPreview ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                              >
+                                {'</>'} HTML
+                              </button>
+                              <button
+                                onClick={() => { setShowPreview(true); setSimpleMode(false); }}
+                                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors ${showPreview ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                              >
+                                👁️ Preview
+                              </button>
+                            </div>
+                            <button
+                              onClick={handleResetTemplate}
+                              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200"
+                            >
+                              Reset to Default
+                            </button>
+                          </div>
+                          {templateMessage && (
+                            <span
+                              className={`text-xs font-bold px-3 py-1 rounded-lg ${
+                                templateMessage.includes("Error")
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-green-100 text-green-700"
+                              }`}
+                            >
+                              {templateMessage}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Variable chips */}
+                        {templates[selectedTemplate]?.variables?.length > 0 && (
+                          <div>
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Available Variables
+                            </p>
+                            <p className="text-xs text-slate-400 mb-2">
+                              💡 Click inside a text field above, then click a variable to insert it there.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {templates[selectedTemplate].variables.map(
+                                (v: string) => (
+                                  <span
+                                    key={v}
+                                    onClick={() => {
+                                      const insertion = `{${v}}`;
+                                      if (focusedFieldIndex !== null) {
+                                        updateSimpleField(focusedFieldIndex,
+                                          (simpleFields.find(f => f.index === focusedFieldIndex)?.value || '') + insertion
+                                        );
+                                        setTemplateMessage(`Inserted ${insertion}`);
+                                        setTimeout(() => setTemplateMessage(''), 2000);
+                                      } else {
+                                        setEditHtml(prev => {
+                                          const lastAnchorEnd = prev.lastIndexOf('</a>');
+                                          if (lastAnchorEnd !== -1) {
+                                            const insertPoint = prev.indexOf('</div>', lastAnchorEnd);
+                                            if (insertPoint !== -1) {
+                                              return prev.slice(0, insertPoint) + insertion + prev.slice(insertPoint);
+                                            }
+                                          }
+                                          const lastIndex = prev.lastIndexOf('</div></div>');
+                                          if (lastIndex === -1) return prev + insertion;
+                                          return prev.slice(0, lastIndex) + insertion + prev.slice(lastIndex);
+                                        });
+                                        setTemplateMessage(`Inserted ${insertion} — click a field first to insert there`);
+                                        setTimeout(() => setTemplateMessage(''), 3000);
+                                      }
+                                    }}
+                                    className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-mono cursor-pointer hover:bg-blue-200 transition-colors select-none"
+                                    title={`Click to insert {${v}}`}
+                                  >
+                                    {`{${v}}`}
+                                  </span>
+                                ),
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Subject */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">
+                            Subject Line
+                          </label>
+                          <input
+                            type="text"
+                            value={editSubject}
+                            onChange={(e) => setEditSubject(e.target.value)}
+                            className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                          />
+                        </div>
+
+                        {/* HTML Editor */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">
+                            {simpleMode && !showPreview ? 'Content Editor' : showPreview ? 'Preview' : 'HTML Content'}
+                          </label>
+                          {showPreview ? (
+                            <div
+                              className="flex-1 overflow-hidden bg-slate-100 rounded-xl flex flex-col"
+                              style={{ minHeight: "300px" }}
+                            >
+                              <div className="px-3 py-1.5 text-xs text-slate-500 bg-slate-200 rounded-t-xl text-center font-medium">
+                                📧 Email Preview — Rendered View
+                              </div>
+                              <iframe
+                                srcDoc={editHtml}
+                                className="w-full flex-1 border-0"
+                                style={{ minHeight: "380px" }}
+                                title="Email Preview"
+                                sandbox="allow-same-origin"
+                              />
+                            </div>
+                          ) : simpleMode ? (
+                            <div className="space-y-3">
+                              <p className="text-xs text-slate-500 font-medium">
+                                Edit the text content below. Switch to HTML mode for advanced formatting.
+                              </p>
+                              {simpleFields.length === 0 && (
+                                <p className="text-xs text-slate-400 italic">
+                                  No editable text fields found in this template. Use HTML mode to edit.
+                                </p>
+                              )}
+                              {simpleFields.map((field) => (
+                                <div key={field.index}>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                                      {field.label}
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        try {
+                                          const parser = new DOMParser();
+                                          const doc = parser.parseFromString(editHtml, 'text/html');
+                                          const elements = Array.from(
+                                            doc.querySelectorAll('h1,h2,h3,h4,p')
+                                          ).filter(el =>
+                                            el.textContent !== null && el.textContent !== undefined
+                                          );
+                                          if (elements[field.index]) {
+                                            elements[field.index].remove();
+                                            const newHtml = doc.body.innerHTML;
+                                            setEditHtml(newHtml);
+                                            setSimpleFields(extractSimpleFields(newHtml));
+                                          }
+                                        } catch (e) {}
+                                      }}
+                                      className="text-xs text-red-400 hover:text-red-600 font-bold px-1.5 py-0.5 rounded hover:bg-red-50 transition-colors"
+                                      title="Remove this field"
+                                    >
+                                      ✕ Remove
+                                    </button>
+                                  </div>
+                                  {field.value.length > 60 ? (
+                                    <textarea
+                                      value={field.value}
+                                      onChange={e => updateSimpleField(field.index, e.target.value)}
+                                      onFocus={() => setFocusedFieldIndex(field.index)}
+                                      rows={3}
+                                      className="w-full px-3 py-2 bg-white border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 resize-none font-medium"
+                                    />
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      value={field.value}
+                                      onChange={e => updateSimpleField(field.index, e.target.value)}
+                                      onFocus={() => setFocusedFieldIndex(field.index)}
+                                      className="w-full px-3 py-2 bg-white border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 font-medium"
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                              <div className="pt-3 border-t border-slate-100">
+                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Add Content</p>
+                                <div className="flex gap-2 flex-wrap">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newHtml = insertBeforeClose(
+                                        editHtml,
+                                        '<h3 style="color:#1e293b;font-size:18px;font-weight:bold;margin:12px 0;">New Heading</h3>'
+                                      );
+                                      setEditHtml(newHtml);
+                                      setSimpleFields(extractSimpleFields(newHtml));
+                                    }}
+                                    className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg hover:bg-blue-100 transition border border-blue-200"
+                                  >
+                                    + Heading
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newHtml = insertBeforeClose(
+                                        editHtml,
+                                        '<p style="color:#374151;font-size:14px;margin:8px 0;">New paragraph text here.</p>'
+                                      );
+                                      setEditHtml(newHtml);
+                                      setSimpleFields(extractSimpleFields(newHtml));
+                                    }}
+                                    className="px-3 py-1.5 bg-green-50 text-green-700 text-xs font-bold rounded-lg hover:bg-green-100 transition border border-green-200"
+                                  >
+                                    + Paragraph
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowLinkInput(!showLinkInput)}
+                                    className="px-3 py-1.5 bg-purple-50 border border-purple-200 text-purple-700 rounded-lg text-xs font-bold hover:bg-purple-100 transition-colors"
+                                  >
+                                    + Link / Button
+                                  </button>
+                                </div>
+                                {showLinkInput && (
+                                  <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                                    <p className="text-xs font-bold text-slate-600">Add Link or Button</p>
+                                    <input
+                                      type="text"
+                                      placeholder="Link Text (e.g. View Property)"
+                                      value={linkText}
+                                      onChange={e => setLinkText(e.target.value)}
+                                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
+                                    />
+                                    <input
+                                      type="url"
+                                      placeholder="URL (e.g. https://kingauction.com)"
+                                      value={linkUrl}
+                                      onChange={e => setLinkUrl(e.target.value)}
+                                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
+                                    />
+                                    <div className="flex gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setLinkStyle('button')}
+                                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-colors ${linkStyle === 'button' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-600 border-slate-200'}`}
+                                      >
+                                        🔲 Button Style
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setLinkStyle('text')}
+                                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-colors ${linkStyle === 'text' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-slate-600 border-slate-200'}`}
+                                      >
+                                        🔗 Text Link
+                                      </button>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (!linkText || !linkUrl) return;
+                                          const linkHtml = linkStyle === 'button'
+                                            ? `<div style="text-align:center;margin:16px 0;"><a href="${linkUrl}" style="background:linear-gradient(135deg,#f97316,#d97706);color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;font-size:14px;">${linkText}</a></div>`
+                                            : `<p style="text-align:center;margin:8px 0;"><a href="${linkUrl}" style="color:#2563eb;text-decoration:underline;font-weight:bold;font-size:14px;">${linkText}</a></p>`;
+                                          const newHtml = insertBeforeClose(editHtml, linkHtml);
+                                          setEditHtml(newHtml);
+                                          setSimpleFields(extractSimpleFields(newHtml));
+                                          setLinkText('');
+                                          setLinkUrl('');
+                                          setShowLinkInput(false);
+                                        }}
+                                        className="flex-1 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700"
+                                      >
+                                        Add to Email
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowLinkInput(false)}
+                                        className="px-4 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-bold"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <textarea
+                                value={editHtml}
+                                onChange={(e) => setEditHtml(e.target.value)}
+                                className="flex-1 w-full p-4 border-2 border-slate-200 rounded-xl font-mono text-sm focus:outline-none focus:border-blue-500 resize-none"
+                                placeholder="HTML template content..."
+                                style={{ minHeight: "300px" }}
+                              />
+                              <p className="text-xs text-slate-500 mt-1">
+                                💡 Tip: Use the variable chips above to insert dynamic content. The HTML editor shows the raw template — use Preview to see how it looks.
+                              </p>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-3 pt-2 pb-4">
+                          <button
+                            onClick={async () => {
+                              setTemplateSaving(true);
+                              try {
+                                const result = await apiClient.fetch(
+                                  `/notifications/templates/${selectedTemplate}`,
+                                  {
+                                    method: "PUT",
+                                    body: JSON.stringify({
+                                      subject: editSubject,
+                                      html: editHtml,
+                                    }),
+                                  },
+                                );
+                                if (result.success) {
+                                  setTemplates((prev) => ({
+                                    ...prev,
+                                    [selectedTemplate]: {
+                                      ...prev[selectedTemplate],
+                                      subject: editSubject,
+                                      html: editHtml,
+                                    },
+                                  }));
+                                  setTemplateMessage("Template saved!");
+                                } else {
+                                  setTemplateMessage(
+                                    "Error: " + result.message,
+                                  );
+                                }
+                              } catch (e: any) {
+                                setTemplateMessage("Error: " + e.message);
+                              }
+                              setTemplateSaving(false);
+                              setTimeout(() => setTemplateMessage(""), 4000);
+                            }}
+                            disabled={templateSaving}
+                            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center gap-2 disabled:opacity-50"
+                          >
+                            <Save className="size-4" />
+                            {templateSaving ? "Saving..." : "Save Changes"}
+                          </button>
+                          <button
+                            onClick={handleResetTemplate}
+                            className="px-6 py-3 bg-white border-2 border-red-200 text-red-600 rounded-xl font-bold hover:bg-red-50 hover:border-red-300 transition-all"
+                          >
+                            Reset to Default
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -1028,6 +1829,165 @@ export default function AdminSettings() {
                       </div>
                     </details>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* ─── AI Knowledge ─── */}
+            {activeTab === "knowledge" && (
+              <div className="flex gap-6" style={{ height: 560 }}>
+                {/* Left: Entry List */}
+                <div className="w-64 flex-shrink-0 flex flex-col gap-2 overflow-y-auto pr-1">
+                  <button
+                    onClick={() => {
+                      setSelectedEntry({
+                        _id: "new",
+                        title: "",
+                        content: "",
+                        category: "custom",
+                        isActive: true,
+                      });
+                      setEditTitle("");
+                      setEditContent("");
+                      setEditCategory("custom");
+                      setKnowledgeMsg("");
+                    }}
+                    className="w-full px-3 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition flex items-center gap-2 flex-shrink-0"
+                  >
+                    <Brain className="size-4" /> New Entry
+                  </button>
+                  {knowledgeEntries.length === 0 && (
+                    <p className="text-xs text-slate-400 text-center mt-4">
+                      No knowledge entries yet.
+                    </p>
+                  )}
+                  {knowledgeEntries.map((entry) => (
+                    <button
+                      key={entry._id}
+                      onClick={() => handleSelectEntry(entry)}
+                      className={`w-full text-left px-3 py-2.5 rounded-xl border-2 transition-all flex-shrink-0 ${
+                        selectedEntry?._id === entry._id
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-slate-200 bg-white hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-sm font-bold text-slate-800 truncate">
+                          {entry.title || "(Untitled)"}
+                        </span>
+                        <span
+                          className={`size-2 rounded-full flex-shrink-0 ${entry.isActive ? "bg-green-500" : "bg-slate-300"}`}
+                        />
+                      </div>
+                      <span className="text-xs text-slate-400 capitalize">
+                        {entry.category}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Right: Editor */}
+                <div className="flex-1 flex flex-col gap-4 min-w-0">
+                  {!selectedEntry ? (
+                    <div className="flex-1 flex items-center justify-center text-slate-400">
+                      <div className="text-center">
+                        <Brain className="size-12 mx-auto mb-3 opacity-30" />
+                        <p className="font-medium">Select an entry to edit</p>
+                        <p className="text-sm mt-1">
+                          or click New Entry to create one
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">
+                            Title
+                          </label>
+                          <input
+                            type="text"
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                            placeholder="Entry title"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">
+                            Category
+                          </label>
+                          <select
+                            value={editCategory}
+                            onChange={(e) => setEditCategory(e.target.value)}
+                            className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                          >
+                            <option value="company">Company</option>
+                            <option value="process">Process</option>
+                            <option value="fees">Fees</option>
+                            <option value="legal">Legal</option>
+                            <option value="faq">FAQ</option>
+                            <option value="custom">Custom</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex-1 flex flex-col min-h-0">
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">
+                          Content
+                        </label>
+                        <textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          className="flex-1 w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                          placeholder="Write knowledge content for the AI assistant..."
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-3 flex-shrink-0">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleKnowledgeToggle(selectedEntry)}
+                            disabled={selectedEntry._id === "new"}
+                            className={`px-3 py-2 text-xs font-bold rounded-lg border-2 transition disabled:opacity-40 ${
+                              selectedEntry.isActive
+                                ? "border-green-500 bg-green-50 text-green-700 hover:bg-green-100"
+                                : "border-slate-300 bg-white text-slate-600 hover:border-slate-400"
+                            }`}
+                          >
+                            {selectedEntry.isActive ? "Active" : "Inactive"}
+                          </button>
+                          {selectedEntry._id !== "new" && (
+                            <button
+                              onClick={() => handleDeleteEntry(selectedEntry)}
+                              className="px-3 py-2 text-xs font-bold rounded-lg border-2 border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition flex items-center gap-1"
+                            >
+                              <Trash2 className="size-3.5" /> Delete
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {knowledgeMsg && (
+                            <span
+                              className={`text-xs font-bold ${knowledgeMsg.includes("Error") ? "text-red-600" : "text-green-600"}`}
+                            >
+                              {knowledgeMsg}
+                            </span>
+                          )}
+                          <button
+                            onClick={handleSaveEntry}
+                            disabled={
+                              knowledgeSaving ||
+                              !editTitle.trim() ||
+                              !editContent.trim()
+                            }
+                            className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition flex items-center gap-2"
+                          >
+                            <Save className="size-4" />
+                            {knowledgeSaving ? "Saving..." : "Save Entry"}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}

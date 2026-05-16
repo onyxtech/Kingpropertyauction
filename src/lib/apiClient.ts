@@ -73,11 +73,25 @@ export const apiClient = {
 
   async upload(url: string, formData: FormData) {
     const token = this.getToken();
-    const response = await fetch(`${API_BASE}${url}`, {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${API_BASE}${url}`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return {
+          success: false,
+          message: errorData.message || "Upload failed",
+        };
+      }
+      return response.json();
+    } catch (err: any) {
+      return {
+        success: false,
+        message: err.message || "Network error during upload",
+      };
+    }
   },
 };

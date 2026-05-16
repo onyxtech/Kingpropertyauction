@@ -9,7 +9,6 @@ import { requestLogger } from "./utils/logger.js";
 
 const app = express();
 
-// Security middleware
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -28,13 +27,8 @@ app.use(
     },
   }),
 );
-app.use(requestLogger); // logger
-app.use(
-  cors({
-    origin: env.CLIENT_URL,
-    credentials: true,
-  }),
-);
+app.use(requestLogger);
+app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -44,7 +38,6 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Serve uploaded files
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 const limiter = rateLimit({
@@ -54,13 +47,18 @@ const limiter = rateLimit({
 });
 app.use("/api/", limiter);
 
-// Health check
+// ─── AI chat has its own stricter rate limit ───
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: "Too many chat requests, please slow down.",
+});
+
 app.get("/", (req, res) => {
   res.json({ message: "King Property Auction API is running..." });
 });
 
-// Routes will be added here
-
+// ─── Routes ───
 import authRoutes from "./modules/auth/auth.routes.js";
 app.use("/api/auth", authRoutes);
 
@@ -85,19 +83,23 @@ app.use("/api/leads", leadRoutes);
 import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
 app.use("/api/dashboard", dashboardRoutes);
 
-// Serve uploaded files
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+import notificationsRoutes from "./modules/notifications/notifications.routes.js";
+app.use("/api/notifications", notificationsRoutes);
 
-import notificationsRoutes from './modules/notifications/notifications.routes.js';
-app.use('/api/notifications', notificationsRoutes);
+import settingsRoutes from "./modules/settings/settings.routes.js";
+app.use("/api/settings", settingsRoutes);
 
-import settingsRoutes from './modules/settings/settings.routes.js';
-app.use('/api/settings', settingsRoutes);
+import messageRoutes from "./modules/message/message.routes.js";
+app.use("/api/conversations", messageRoutes);
 
-// 404 handler
+// ─── AI Chat (Phase 3) ───
+import chatRoutes from "./modules/chat/chat.routes.js";
+app.use("/api/chat", chatLimiter, chatRoutes);
+
+import knowledgeRoutes from "./modules/knowledge/knowledge.routes.js";
+app.use("/api/knowledge", knowledgeRoutes);
+
 app.use(notFound);
-
-// Global error handler
 app.use(errorHandler);
 
 export default app;

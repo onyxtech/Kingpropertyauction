@@ -48,6 +48,8 @@ import ProtectedRoute from "@/features/shared/layout/ProtectedRoute";
 
 const AdminProfile = lazy(() => import("../features/admin/pages/AdminProfile"));
 import AdminSettings from "@/features/admin/pages/AdminSettings";
+import Leads from "@/features/admin/pages/Leads";
+import Inbox from "@/features/admin/pages/Inbox";
 
 export const router = createBrowserRouter([
   { path: "/", Component: Website },
@@ -76,7 +78,22 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-
+  {
+    path: "/admin/leads",
+    Component: () => (
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <Leads />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/admin/inbox",
+    Component: () => (
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <Inbox />
+      </ProtectedRoute>
+    ),
+  },
   {
     path: "/admin/overview",
     Component: () => (

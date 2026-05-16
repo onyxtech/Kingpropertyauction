@@ -1,19 +1,105 @@
-import { FileText, Download, Sparkles, CheckCircle, Mail, Phone, MapPin, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  FileText,
+  Download,
+  Sparkles,
+  CheckCircle,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+} from "lucide-react";
 import Header from "@/features/shared/layout/Header";
+import Footer from "@/features/shared/layout/Footer";
 
 export default function CatalogueRequest() {
-  const upcomingAuctions = [
-    { id: 1, date: "March 15, 2026", properties: 45, location: "London & South East" },
-    { id: 2, date: "March 22, 2026", properties: 67, location: "Midlands & North" },
-    { id: 3, date: "March 29, 2026", properties: 34, location: "Scotland & Wales" },
-  ];
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [upcomingAuctions, setUpcomingAuctions] = useState<any[]>([]);
+  const [loadingAuctions, setLoadingAuctions] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/auctions?status=scheduled&limit=10')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.data?.length > 0) {
+          setUpcomingAuctions(data.data.map((a: any) => ({
+            id: a._id,
+            date: new Date(a.startDateTime).toLocaleDateString('en-GB', {
+              day: 'numeric', month: 'long', year: 'numeric',
+            }),
+            properties: a.totalLots || 0,
+            location: a.venue?.city || a.auctionType || 'Online',
+            title: a.auctionTitle,
+          })));
+        } else {
+          setUpcomingAuctions([{
+            id: 'general',
+            date: 'Next Available Auction',
+            properties: 0,
+            location: 'UK Wide',
+            title: 'General Catalogue Request',
+          }]);
+        }
+      })
+      .catch(() => {
+        setUpcomingAuctions([{
+          id: 'general',
+          date: 'Next Available Auction',
+          properties: 0,
+          location: 'UK Wide',
+          title: 'General Catalogue Request',
+        }]);
+      })
+      .finally(() => setLoadingAuctions(false));
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const fd = new FormData(form);
+
+    const selectedAuctions = upcomingAuctions
+      .filter(a => fd.get(`auction_${a.id}`) === 'on')
+      .map(a => `${a.title || a.date} - ${a.location}${a.properties > 0 ? ` (${a.properties} properties)` : ''}`)
+      .join(', ') || 'None selected';
+
+    try {
+      await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name:
+            `${fd.get("firstName") || ""} ${fd.get("lastName") || ""}`.trim() ||
+            "User",
+          email: fd.get("email") || "",
+          phone: fd.get("phone") || "",
+          subject: "Auction Catalogue Request",
+          message: [
+            `Catalogue Request Details:`,
+            `Selected Auctions: ${selectedAuctions}`,
+            `Delivery Method: ${fd.get("deliveryMethod") || "Email PDF"}`,
+          ].join('\n'),
+          leadType: "catalogue",
+        }),
+      });
+      setSubmitted(true);
+    } catch (e) {
+      console.error('Catalogue submit error:', e);
+    }
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-rose-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-red-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div
+          className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-red-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "2s" }}
+        />
       </div>
 
       <Header />
@@ -23,26 +109,34 @@ export default function CatalogueRequest() {
         <div className="absolute inset-0 bg-gradient-to-r from-rose-600 via-red-600 to-pink-600 opacity-95" />
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 size-96 bg-white rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 right-0 size-96 bg-cyan-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }} />
+          <div
+            className="absolute bottom-0 right-0 size-96 bg-cyan-300 rounded-full blur-3xl animate-pulse"
+            style={{ animationDelay: "1.5s" }}
+          />
         </div>
-        
+
         <div className="container mx-auto px-6 py-20 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md rounded-full mb-6 border-2 border-white/30 shadow-xl">
               <Sparkles className="size-4 text-yellow-300 animate-pulse" />
-              <span className="text-sm font-bold text-white">📚 Free Catalogues • Detailed Info • High-Quality Images</span>
+              <span className="text-sm font-bold text-white">
+                📚 Free Catalogues • Detailed Info • High-Quality Images
+              </span>
             </div>
-            
+
             <h1 className="text-6xl font-black text-white mb-6 leading-tight drop-shadow-lg">
               Catalogue Request
               <br />
               <span className="text-yellow-300">Download Brochures</span>
             </h1>
-            
+
             <p className="text-2xl text-white/90 mb-10 font-medium">
-              Get detailed property information and legal packs delivered to your inbox
+              Get detailed property information and legal packs delivered to
+              your inbox
               <br />
-              <span className="text-yellow-200">✨ Instant access to all auction catalogues</span>
+              <span className="text-yellow-200">
+                ✨ Instant access to all auction catalogues
+              </span>
             </p>
           </div>
         </div>
@@ -58,94 +152,149 @@ export default function CatalogueRequest() {
                 <FileText className="size-7 text-white" />
               </div>
               <div>
-                <h2 className="text-3xl font-black text-slate-900">Request Catalogue</h2>
-                <p className="text-slate-600 font-medium">Fill in your details below</p>
+                <h2 className="text-3xl font-black text-slate-900">
+                  Request Catalogue
+                </h2>
+                <p className="text-slate-600 font-medium">
+                  Fill in your details below
+                </p>
               </div>
             </div>
 
-            <form className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">First Name</label>
-                  <input
-                    type="text"
-                    placeholder="John"
-                    className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Last Name</label>
-                  <input
-                    type="text"
-                    placeholder="Doe"
-                    className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium"
-                  />
-                </div>
+            {submitted ? (
+              <div className="text-center py-10">
+                <CheckCircle className="size-16 text-green-500 mx-auto mb-4" />
+                <h3 className="text-2xl font-black text-slate-900">
+                  Thank You!
+                </h3>
+                <p className="text-slate-600">
+                  Your catalogue will be sent to your email.
+                </p>
               </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
-                <input
-                  type="email"
-                  placeholder="john.doe@example.com"
-                  className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Phone Number</label>
-                <input
-                  type="tel"
-                  placeholder="+44 7xxx xxx xxx"
-                  className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Select Auction(s)</label>
-                <div className="space-y-3">
-                  {upcomingAuctions.map((auction) => (
-                    <label key={auction.id} className="flex items-center gap-3 p-4 bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl cursor-pointer hover:shadow-md transition-all">
-                      <input
-                        type="checkbox"
-                        className="size-5 rounded border-2 border-slate-300 text-rose-600 focus:ring-2 focus:ring-rose-500"
-                      />
-                      <div className="flex-1">
-                        <p className="font-bold text-slate-900">{auction.date}</p>
-                        <p className="text-sm text-slate-600 font-medium">{auction.properties} properties • {auction.location}</p>
-                      </div>
+            ) : (
+              <form className="space-y-6" onSubmit={handleSubmit}>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      First Name
                     </label>
-                  ))}
+                    <input
+                      type="text"
+                      name="firstName"
+                      required
+                      placeholder="John"
+                      className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      name="lastName"
+                      required
+                      placeholder="Doe"
+                      className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Delivery Method</label>
-                <select className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium">
-                  <option>Email (PDF)</option>
-                  <option>Postal Mail</option>
-                  <option>Both Email & Post</option>
-                </select>
-              </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    placeholder="john.doe@example.com"
+                    className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium"
+                  />
+                </div>
 
-              <button
-                type="submit"
-                className="w-full py-5 bg-gradient-to-r from-rose-600 via-red-600 to-pink-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-rose-500/50 transition-all hover:scale-105 flex items-center justify-center gap-3"
-              >
-                <Download className="size-6" />
-                Request Catalogue
-              </button>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    required
+                    placeholder="+44 7xxx xxx xxx"
+                    className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium"
+                  />
+                </div>
 
-              <p className="text-sm text-slate-500 text-center font-medium">
-                By submitting, you agree to receive auction catalogues and updates
-              </p>
-            </form>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Select Auction(s)
+                  </label>
+                  <div className="space-y-3">
+                    {loadingAuctions ? (
+                      <div className="py-4 text-center text-slate-500 text-sm">
+                        Loading upcoming auctions...
+                      </div>
+                    ) : (
+                      upcomingAuctions.map((auction) => (
+                        <label
+                          key={auction.id}
+                          className="flex items-center gap-3 p-4 bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl cursor-pointer hover:shadow-md transition-all"
+                        >
+                          <input
+                            type="checkbox"
+                            name={`auction_${auction.id}`}
+                            className="size-5 rounded border-2 border-slate-300 text-rose-600 focus:ring-2 focus:ring-rose-500"
+                          />
+                          <div className="flex-1">
+                            <p className="font-bold text-slate-900">
+                              {auction.title || auction.date}
+                            </p>
+                            <p className="text-sm text-slate-600 font-medium">
+                              {auction.properties > 0 ? `${auction.properties} properties • ` : ''}{auction.location}
+                              {auction.title && auction.date !== auction.title ? ` • ${auction.date}` : ''}
+                            </p>
+                          </div>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Delivery Method
+                  </label>
+                  <select name="deliveryMethod" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium">
+                    <option>Email (PDF)</option>
+                    <option>Postal Mail</option>
+                    <option>Both Email & Post</option>
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-5 bg-gradient-to-r from-rose-600 via-red-600 to-pink-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-rose-500/50 transition-all hover:scale-105 flex items-center justify-center gap-3"
+                >
+                  <Download className="size-6" />
+                  Request Catalogue
+                </button>
+
+                <p className="text-sm text-slate-500 text-center font-medium">
+                  By submitting, you agree to receive auction catalogues and
+                  updates
+                </p>
+              </form>
+            )}
           </div>
 
           {/* Info Section */}
           <div className="space-y-6">
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
-              <h3 className="text-3xl font-black text-slate-900 mb-6">What's Included?</h3>
+              <h3 className="text-3xl font-black text-slate-900 mb-6">
+                What's Included?
+              </h3>
               <ul className="space-y-4">
                 {[
                   "High-resolution property images",
@@ -155,9 +304,12 @@ export default function CatalogueRequest() {
                   "Guide prices and reserve prices",
                   "Viewing times and contact details",
                   "Terms and conditions of sale",
-                  "Location maps and area guides"
+                  "Location maps and area guides",
                 ].map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-3 p-3 bg-gradient-to-r from-rose-50 to-pink-50 rounded-xl">
+                  <li
+                    key={idx}
+                    className="flex items-start gap-3 p-3 bg-gradient-to-r from-rose-50 to-pink-50 rounded-xl"
+                  >
                     <CheckCircle className="size-6 text-emerald-600 flex-shrink-0 mt-0.5" />
                     <span className="text-slate-700 font-medium">{item}</span>
                   </li>
@@ -177,13 +329,17 @@ export default function CatalogueRequest() {
                 </button>
                 <button className="w-full flex items-center gap-3 p-4 bg-white/20 backdrop-blur-md rounded-xl hover:bg-white/30 transition-all">
                   <Mail className="size-5" />
-                  <span className="font-bold">Email: catalogues@kingauction.com</span>
+                  <span className="font-bold">
+                    Email: catalogues@kingauction.com
+                  </span>
                 </button>
               </div>
             </div>
 
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
-              <h3 className="text-2xl font-black text-slate-900 mb-4">Quick Facts</h3>
+              <h3 className="text-2xl font-black text-slate-900 mb-4">
+                Quick Facts
+              </h3>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <div className="size-10 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center flex-shrink-0">
@@ -191,7 +347,9 @@ export default function CatalogueRequest() {
                   </div>
                   <div>
                     <p className="font-bold text-slate-900">Updated Weekly</p>
-                    <p className="text-sm text-slate-600 font-medium">New catalogues every Monday</p>
+                    <p className="text-sm text-slate-600 font-medium">
+                      New catalogues every Monday
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -200,7 +358,9 @@ export default function CatalogueRequest() {
                   </div>
                   <div>
                     <p className="font-bold text-slate-900">Instant Access</p>
-                    <p className="text-sm text-slate-600 font-medium">Download immediately after request</p>
+                    <p className="text-sm text-slate-600 font-medium">
+                      Download immediately after request
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -208,8 +368,12 @@ export default function CatalogueRequest() {
                     <MapPin className="size-5 text-white" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">Nationwide Coverage</p>
-                    <p className="text-sm text-slate-600 font-medium">Properties across the UK</p>
+                    <p className="font-bold text-slate-900">
+                      Nationwide Coverage
+                    </p>
+                    <p className="text-sm text-slate-600 font-medium">
+                      Properties across the UK
+                    </p>
                   </div>
                 </div>
               </div>
@@ -244,8 +408,7 @@ export default function CatalogueRequest() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
-
-

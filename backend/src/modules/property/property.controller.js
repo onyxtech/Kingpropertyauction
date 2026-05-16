@@ -109,6 +109,13 @@ export const create = async (req, res) => {
     }
 
     const property = await propertyService.createProperty(value, req.user._id);
+
+    if (req.user.role === 'admin') {
+      await propertyService.approveProperty(property._id, 'approved', req.user._id);
+      property.approvalStatus = 'approved';
+      console.log('[Property] Auto-approved for admin:', property.propertyTitle);
+    }
+
     res.status(201).json({
       success: true,
       data: property,

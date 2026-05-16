@@ -221,7 +221,7 @@ export default function EditProperty() {
           {step === 6 && <StepFeatures form={form} updateField={updateField} />}
           {step === 7 && <StepLegal form={form} updateField={updateField} />}
           {step === 8 && <StepSeller form={form} updateField={updateField} />}
-          {step === 9 && <StepMedia form={form} updateField={updateField} newImages={newImages} imagePreviews={imagePreviews} handleImageUpload={handleImageUpload} removeExistingImage={removeExistingImage} removeNewImage={removeNewImage} />}
+          {step === 9 && <StepMedia form={form} updateField={updateField} newImages={newImages} imagePreviews={imagePreviews} handleImageUpload={handleImageUpload} removeExistingImage={removeExistingImage} removeNewImage={removeNewImage} property={property} />}
           <div className="flex items-center justify-between pt-6 mt-6 border-t-2 border-slate-100">
             <button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className="px-5 py-2.5 bg-slate-200 text-slate-700 rounded-xl font-bold disabled:opacity-50 flex items-center gap-1"><ChevronLeft className="size-4" /> Previous</button>
             <span className="text-sm font-bold text-slate-500">Step {step} of 9</span>

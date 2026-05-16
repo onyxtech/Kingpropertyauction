@@ -87,6 +87,19 @@ export const update = async (req, res) => {
       notificationService.emit(NotificationEvents.AUCTION_STARTED, { auctionId: req.params.id })
         .catch(e => console.error('Auction started event failed:', e.message));
     }
+
+    // If status changed to completed, run notifications async after response sent
+    if (currentAuction?.status !== 'completed' && value.status === 'completed') {
+      setImmediate(async () => {
+        try {
+          console.log('[Auction] Running manual completion notifications for:', req.params.id);
+          await completeAuction(req.params.id);
+          console.log('[Auction] Manual completion notifications sent');
+        } catch (err) {
+          console.error('[Auction] Manual completion notification failed:', err.message);
+        }
+      });
+    }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

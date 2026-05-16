@@ -7,6 +7,18 @@ export const registerSchema = Joi.object({
   phone: Joi.string().optional(),
   role: Joi.string().valid('user', 'agent', 'admin', 'buyer', 'seller', 'investor').default('user'),
   isActive: Joi.boolean().optional(),
+  agentDetails: Joi.object({
+    companyName: Joi.string().optional(),
+    licenseNumber: Joi.string().optional(),
+    commissionRate: Joi.number().optional(),
+    specialization: Joi.string().optional(),
+  }).optional(),
+  permissions: Joi.object({
+    canBid: Joi.boolean().optional(),
+    canListProperties: Joi.boolean().optional(),
+    emailNotifications: Joi.boolean().optional(),
+    smsAlerts: Joi.boolean().optional(),
+  }).optional(),
 });
 
 export const loginSchema = Joi.object({

@@ -1,8 +1,35 @@
+import { useState } from "react";
 import { Briefcase, Scale, FileText, Phone, Sparkles, CheckCircle, Clock, Shield, Award, Users, Mail, MapPin } from "lucide-react";
 import Header from "@/features/shared/layout/Header";
 import Footer from "@/features/shared/layout/Footer";
 
 export default function Solicitor() {
+  const [showForm, setShowForm] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleConsultation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const fd = new FormData(form);
+    try {
+      await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: fd.get("name") || "",
+          email: fd.get("email") || "",
+          phone: fd.get("phone") || "",
+          subject: "Solicitor Enquiry",
+          message: fd.get("message") || "Requested a free consultation",
+          leadType: "solicitor",
+        }),
+      });
+      setSubmitted(true);
+    } catch {}
+    setLoading(false);
+  };
   const services = [
     {
       title: "Contract Review & Exchange",
@@ -308,9 +335,26 @@ export default function Solicitor() {
                 </div>
               </div>
             </div>
-            <button className="w-full py-5 bg-white text-rose-600 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105">
-              Book Consultation
-            </button>
+            {submitted ? (
+              <div className="w-full py-5 bg-white/20 rounded-xl text-center">
+                <CheckCircle className="size-8 text-white mx-auto mb-2" />
+                <p className="text-white font-bold">Request received! We'll call you shortly.</p>
+              </div>
+            ) : showForm ? (
+              <form className="space-y-3" onSubmit={handleConsultation}>
+                <input type="text" name="name" required placeholder="Full Name" className="w-full px-4 py-3 rounded-xl text-slate-900 font-medium focus:outline-none" />
+                <input type="email" name="email" required placeholder="Email Address" className="w-full px-4 py-3 rounded-xl text-slate-900 font-medium focus:outline-none" />
+                <input type="tel" name="phone" placeholder="Phone Number" className="w-full px-4 py-3 rounded-xl text-slate-900 font-medium focus:outline-none" />
+                <input type="text" name="message" placeholder="Brief description of your needs" className="w-full px-4 py-3 rounded-xl text-slate-900 font-medium focus:outline-none" />
+                <button type="submit" disabled={loading} className="w-full py-4 bg-white text-rose-600 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-60">
+                  {loading ? "Sending..." : "Submit Request"}
+                </button>
+              </form>
+            ) : (
+              <button onClick={() => setShowForm(true)} className="w-full py-5 bg-white text-rose-600 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105">
+                Book Consultation
+              </button>
+            )}
           </div>
         </div>
 

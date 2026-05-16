@@ -4,6 +4,9 @@ import Header from "@/features/shared/layout/Header";
 
 export default function HomeReport() {
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -17,22 +20,34 @@ export default function HomeReport() {
     additionalNotes: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Thank you ${formData.fullName}! Your survey booking request has been received. We'll contact you shortly to confirm the details.`);
-    setShowBookingModal(false);
-    setFormData({
-      fullName: "",
-      email: "",
-      phone: "",
-      propertyAddress: "",
-      propertyType: "",
-      propertyValue: "",
-      bedrooms: "",
-      preferredDate: "",
-      package: "",
-      additionalNotes: ""
-    });
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          subject: 'Home Report Request',
+          message: `Property Address: ${formData.propertyAddress || 'Not provided'}\nProperty Type: ${formData.propertyType || 'Not specified'}\nMessage: ${formData.additionalNotes || ''}`,
+          leadType: 'valuation',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSubmitted(true);
+        setFormData({ fullName: "", email: "", phone: "", propertyAddress: "", propertyType: "", propertyValue: "", bedrooms: "", preferredDate: "", package: "", additionalNotes: "" });
+      } else {
+        setError(data.message || 'Something went wrong. Please try again.');
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    }
+    setSubmitting(false);
   };
 
   const included = [
@@ -384,6 +399,21 @@ export default function HomeReport() {
 
             {/* Form - Scrollable Content */}
             <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+              {submitted ? (
+                <div className="p-8 text-center py-16">
+                  <div className="size-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle className="size-10 text-green-600" />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 mb-2">Thank You!</h3>
+                  <p className="text-slate-600 mb-6">Your home report request has been received. We'll contact you within 48 hours.</p>
+                  <button
+                    onClick={() => { setShowBookingModal(false); setSubmitted(false); }}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : (
               <form onSubmit={handleSubmit} className="p-8">
                 {/* Personal Information Section */}
                 <div className="mb-6">
@@ -393,7 +423,7 @@ export default function HomeReport() {
                   </h4>
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                      <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                         <User className="size-4 text-blue-600" />
                         Full Name *
                       </label>
@@ -407,7 +437,7 @@ export default function HomeReport() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                      <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                         <Mail className="size-4 text-indigo-600" />
                         Email Address *
                       </label>
@@ -421,7 +451,7 @@ export default function HomeReport() {
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                      <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                         <Phone className="size-4 text-purple-600" />
                         Phone Number *
                       </label>
@@ -445,7 +475,7 @@ export default function HomeReport() {
                   </h4>
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                      <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                         <MapPin className="size-4 text-emerald-600" />
                         Property Address *
                       </label>
@@ -459,7 +489,7 @@ export default function HomeReport() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                      <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                         <Home className="size-4 text-cyan-600" />
                         Property Type *
                       </label>
@@ -478,7 +508,7 @@ export default function HomeReport() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                      <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                         <Award className="size-4 text-amber-600" />
                         Property Value *
                       </label>
@@ -492,7 +522,7 @@ export default function HomeReport() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                      <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                         <Home className="size-4 text-rose-600" />
                         Number of Bedrooms *
                       </label>
@@ -506,7 +536,7 @@ export default function HomeReport() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                      <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                         <Clock className="size-4 text-teal-600" />
                         Preferred Survey Date *
                       </label>
@@ -528,7 +558,7 @@ export default function HomeReport() {
                     Package Selection
                   </h4>
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                       <FileText className="size-4 text-orange-600" />
                       Choose Package *
                     </label>
@@ -550,7 +580,7 @@ export default function HomeReport() {
 
                 {/* Additional Notes */}
                 <div className="mb-6">
-                  <label className="block text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+                  <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                     <FileText className="size-4 text-slate-600" />
                     Additional Notes (Optional)
                   </label>
@@ -590,13 +620,19 @@ export default function HomeReport() {
                 </div>
 
                 {/* Submit Button */}
+                {error && (
+                  <div className="p-3 mb-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                    {error}
+                  </div>
+                )}
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     type="submit"
-                    className="flex-1 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-2"
+                    disabled={submitting}
+                    className="flex-1 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-60"
                   >
                     <FileText className="size-6" />
-                    Submit Booking Request
+                    {submitting ? 'Submitting...' : 'Submit Booking Request'}
                   </button>
                   <button
                     type="button"
@@ -607,6 +643,7 @@ export default function HomeReport() {
                   </button>
                 </div>
               </form>
+              )}
             </div>
           </div>
         </div>

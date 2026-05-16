@@ -41,6 +41,18 @@ const userSchema = new mongoose.Schema(
     },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
+    agentDetails: {
+      companyName: String,
+      licenseNumber: String,
+      commissionRate: Number,
+      specialization: String,
+    },
+    permissions: {
+      canBid: { type: Boolean, default: true },
+      canListProperties: { type: Boolean, default: false },
+      emailNotifications: { type: Boolean, default: true },
+      smsAlerts: { type: Boolean, default: false },
+    },
   },
   { timestamps: true },
 );

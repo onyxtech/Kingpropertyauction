@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Users, Lock, Shield, Mail, Phone, User } from "lucide-react";
+import { X, Users, Lock, Mail, Phone, User } from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 
 export default function AddUserModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
@@ -7,6 +7,12 @@ export default function AddUserModal({ onClose, onSuccess }: { onClose: () => vo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [permissions, setPermissions] = useState({
+    canBid: true,
+    canListProperties: false,
+    emailNotifications: true,
+    smsAlerts: false,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +34,8 @@ export default function AddUserModal({ onClose, onSuccess }: { onClose: () => vo
       password: password,
       phone: formData.get('phone') as string,
       role: formData.get('role') as string || 'user',
-      isActive: true, // Admin-created users are active by default
+      isActive: formData.get('status') !== 'inactive',
+      permissions: permissions,
     };
     
     try {
@@ -55,8 +62,6 @@ export default function AddUserModal({ onClose, onSuccess }: { onClose: () => vo
           </div>
         </div>
         <form className="p-8 space-y-6" onSubmit={handleSubmit}>
-          {success && <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium">{success}</div>}
-          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">{error}</div>}
           
           <div className="space-y-4">
             <h3 className="text-xl font-black text-slate-900 flex items-center gap-2"><Users className="size-6 text-blue-600" />Personal Information</h3>
@@ -74,7 +79,7 @@ export default function AddUserModal({ onClose, onSuccess }: { onClose: () => vo
             <h3 className="text-xl font-black text-slate-900 flex items-center gap-2"><Lock className="size-6 text-purple-600" />Account Details</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div><label className="block text-sm font-bold text-slate-700 mb-2">User Role *</label><select name="role" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500" required><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="investor">Investor</option><option value="agent">Agent</option><option value="admin">Administrator</option></select></div>
-              <div><label className="block text-sm font-bold text-slate-700 mb-2">Account Status</label><select name="status" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"><option value="active">Active</option><option value="pending">Pending Verification</option></select></div>
+              <div><label className="block text-sm font-bold text-slate-700 mb-2">Account Status</label><select name="status" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div><label className="block text-sm font-bold text-slate-700 mb-2">Password *</label><input name="password" type="password" placeholder="••••••••" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500" required /></div>
@@ -82,15 +87,35 @@ export default function AddUserModal({ onClose, onSuccess }: { onClose: () => vo
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-xl font-black text-slate-900 flex items-center gap-2"><Shield className="size-6 text-green-600" />Permissions</h3>
-            <div className="grid md:grid-cols-2 gap-3">
-              <label className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors"><input type="checkbox" defaultChecked className="size-5 rounded accent-blue-600" /><span className="text-sm font-bold text-slate-700">Can Bid in Auctions</span></label>
-              <label className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors"><input type="checkbox" className="size-5 rounded accent-blue-600" /><span className="text-sm font-bold text-slate-700">Can List Properties</span></label>
-              <label className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors"><input type="checkbox" defaultChecked className="size-5 rounded accent-blue-600" /><span className="text-sm font-bold text-slate-700">Email Notifications</span></label>
-              <label className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors"><input type="checkbox" className="size-5 rounded accent-blue-600" /><span className="text-sm font-bold text-slate-700">SMS Alerts</span></label>
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+              🔐 Permissions
+              <span className="text-xs font-normal text-slate-400">(saved for future use)</span>
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { key: 'canBid', label: 'Can Bid in Auctions' },
+                { key: 'canListProperties', label: 'Can List Properties' },
+                { key: 'emailNotifications', label: 'Email Notifications' },
+                { key: 'smsAlerts', label: 'SMS Alerts' },
+              ].map(perm => (
+                <div key={perm.key} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl">
+                  <span className="text-xs font-medium text-slate-700">{perm.label}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPermissions(prev => ({ ...prev, [perm.key]: !prev[perm.key as keyof typeof prev] }))}
+                    className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${permissions[perm.key as keyof typeof permissions] ? 'bg-green-500' : 'bg-slate-300'}`}
+                  >
+                    <div className={`absolute top-0.5 size-4 bg-white rounded-full shadow transition-all ${permissions[perm.key as keyof typeof permissions] ? 'left-4' : 'left-0.5'}`} />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
+
+          {success && <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium">{success}</div>}
+          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">{error}</div>}
+
 
           <div className="flex items-center gap-4 pt-6 border-t-2 border-slate-100">
             <button type="button" onClick={onClose} className="flex-1 px-6 py-4 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-all">Cancel</button>

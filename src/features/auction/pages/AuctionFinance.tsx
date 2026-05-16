@@ -361,7 +361,7 @@ export default function AuctionFinance() {
                       </div>
                       <div className="grid md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
+                          <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                             <User className="size-4 text-blue-600" />
                             Full Name *
                           </label>
@@ -375,7 +375,7 @@ export default function AuctionFinance() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
+                          <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                             <Mail className="size-4 text-blue-600" />
                             Email Address *
                           </label>
@@ -389,7 +389,7 @@ export default function AuctionFinance() {
                           />
                         </div>
                         <div className="md:col-span-2">
-                          <label className="block text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
+                          <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                             <Phone className="size-4 text-blue-600" />
                             Phone Number *
                           </label>
@@ -415,7 +415,7 @@ export default function AuctionFinance() {
                       </div>
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
+                          <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                             <MapPin className="size-4 text-emerald-600" />
                             Property Address *
                           </label>
@@ -430,7 +430,7 @@ export default function AuctionFinance() {
                         </div>
                         <div className="grid md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
+                            <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                               <DollarSign className="size-4 text-emerald-600" />
                               Property Value *
                             </label>
@@ -447,7 +447,7 @@ export default function AuctionFinance() {
                             </div>
                           </div>
                           <div>
-                            <label className="block text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
+                            <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                               <DollarSign className="size-4 text-emerald-600" />
                               Purchase Price *
                             </label>
@@ -477,7 +477,7 @@ export default function AuctionFinance() {
                       </div>
                       <div className="grid md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
-                          <label className="block text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
+                          <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                             <Building2 className="size-4 text-purple-600" />
                             Loan Type *
                           </label>
@@ -494,7 +494,7 @@ export default function AuctionFinance() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
+                          <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                             <DollarSign className="size-4 text-purple-600" />
                             Loan Amount *
                           </label>
@@ -511,7 +511,7 @@ export default function AuctionFinance() {
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
+                          <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                             <Calendar className="size-4 text-purple-600" />
                             Loan Term (months) *
                           </label>
@@ -525,7 +525,7 @@ export default function AuctionFinance() {
                           />
                         </div>
                         <div className="md:col-span-2">
-                          <label className="block text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
+                          <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                             <Percent className="size-4 text-purple-600" />
                             Deposit Amount *
                           </label>
@@ -554,7 +554,7 @@ export default function AuctionFinance() {
                       </div>
                       <div className="grid md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
+                          <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                             <Briefcase className="size-4 text-cyan-600" />
                             Employment Status *
                           </label>
@@ -572,7 +572,7 @@ export default function AuctionFinance() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
+                          <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                             <DollarSign className="size-4 text-cyan-600" />
                             Annual Income *
                           </label>

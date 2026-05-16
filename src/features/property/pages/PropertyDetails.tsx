@@ -673,6 +673,69 @@ export default function PropertyDetails() {
               </div>
             )}
 
+            {property?.media?.propertyVideo && (
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
+                <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                  <FileText className="size-6 text-blue-600" />
+                  Property Video
+                </h2>
+                <video
+                  src={property.media.propertyVideo.startsWith("http") ? property.media.propertyVideo : `http://localhost:5000${property.media.propertyVideo}`}
+                  controls
+                  className="w-full rounded-2xl border-2 border-slate-200"
+                />
+              </div>
+            )}
+
+            {property?.media?.floorPlan && (
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
+                <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                  <FileText className="size-6 text-green-600" />
+                  Floor Plan
+                </h2>
+                {property.media.floorPlan.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                  <img
+                    src={property.media.floorPlan.startsWith("http") ? property.media.floorPlan : `http://localhost:5000${property.media.floorPlan}`}
+                    alt="Floor Plan"
+                    className="w-full rounded-2xl border-2 border-slate-200"
+                  />
+                ) : (
+                  <a
+                    href={property.media.floorPlan.startsWith("http") ? property.media.floorPlan : `http://localhost:5000${property.media.floorPlan}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-6 py-4 bg-green-50 border-2 border-green-200 rounded-2xl text-green-700 font-bold hover:bg-green-100 transition-colors w-fit"
+                  >
+                    <FileText className="size-5" /> Download Floor Plan PDF
+                  </a>
+                )}
+              </div>
+            )}
+
+            {property?.media?.legalDocuments?.length > 0 && (
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
+                <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                  <FileText className="size-6 text-purple-600" />
+                  Legal Documents
+                </h2>
+                <p className="text-slate-600 font-medium mb-4">Review the legal documents before bidding.</p>
+                <div className="space-y-3">
+                  {property.media.legalDocuments.map((doc: string, i: number) => (
+                    <a
+                      key={i}
+                      href={doc.startsWith("http") ? doc : `http://localhost:5000${doc}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-6 py-4 bg-purple-50 border-2 border-purple-200 rounded-2xl text-purple-700 font-bold hover:bg-purple-100 transition-colors"
+                    >
+                      <FileText className="size-5 flex-shrink-0" />
+                      <span className="truncate">Document {i + 1} — {doc.split('/').pop()}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {isInLiveAuction && (
               <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
                 <div className="flex items-center justify-between mb-4">
