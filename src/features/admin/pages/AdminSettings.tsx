@@ -512,6 +512,9 @@ export default function AdminSettings() {
       category: "Leads",
     },
     adminReply: { label: "Admin Reply", icon: "💬", category: "Leads" },
+    faqsupport: { label: "FAQ Support", icon: "💬", category: "Leads" },
+    legalenquiry: { label: "Legal Enquiry", icon: "⚖️", category: "Leads" },
+    newsletterwelcome: { label: "Newsletter Welcome", icon: "📰", category: "Leads" },
   };
 
   const ruleLabels: Record<string, string> = {
@@ -543,6 +546,9 @@ export default function AdminSettings() {
     buyingEnquiry: "Buying Overview Enquiry",
     sellingEnquiry: "Selling Overview Enquiry",
     chatEnquiry: "Chat Enquiry (AI Widget)",
+    faqSupport: "FAQ Support Enquiry",
+    legalEnquiry: "Legal Enquiry",
+    newsletterSignup: "Newsletter Signup",
   };
 
   if (isLoading) {

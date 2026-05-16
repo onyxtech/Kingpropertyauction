@@ -41,6 +41,7 @@ const leadSchema = new mongoose.Schema(
         "selling",
         "legal",
         "faq",
+        "newsletter",
       ],
       default: "general",
     },

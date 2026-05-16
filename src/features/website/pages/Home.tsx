@@ -1,8 +1,41 @@
 import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
 import { Building2, LayoutDashboard, Smartphone, ArrowRight, Sparkles, Zap, TrendingUp, Clock, CheckCircle, Tag } from "lucide-react";
 
 export default function Home() {
   const navigate = useNavigate();
+
+  const [siteStats, setSiteStats] = useState({
+    totalProperties: 0,
+    liveAuctions: 0,
+    totalUsers: 0,
+  });
+
+  useEffect(() => {
+    fetch('/api/properties?limit=1')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          setSiteStats(prev => ({
+            ...prev,
+            totalProperties: data.pagination?.total || data.data?.length || 0,
+          }));
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/auctions?status=live')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          setSiteStats(prev => ({
+            ...prev,
+            liveAuctions: data.pagination?.total || data.data?.length || 0,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const platforms = [
     {
@@ -94,14 +127,14 @@ export default function Home() {
             <div className="flex items-center gap-3 px-6 py-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl shadow-xl shadow-blue-500/30 text-white">
               <Zap className="size-5" />
               <div className="text-left">
-                <p className="text-2xl font-black">24</p>
+                <p className="text-2xl font-black">{siteStats.liveAuctions || 0}</p>
                 <p className="text-xs font-semibold opacity-90">Active Auctions</p>
               </div>
             </div>
             <div className="flex items-center gap-3 px-6 py-3 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl shadow-xl shadow-emerald-500/30 text-white">
               <Building2 className="size-5" />
               <div className="text-left">
-                <p className="text-2xl font-black">1,247</p>
+                <p className="text-2xl font-black">{siteStats.totalProperties?.toLocaleString() || '0'}</p>
                 <p className="text-xs font-semibold opacity-90">Properties</p>
               </div>
             </div>

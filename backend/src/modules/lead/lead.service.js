@@ -20,6 +20,12 @@ const getNotificationKeys = (lead) => {
     return { ruleKey: 'valuationRequest', templateKey: 'valuationRequest' };
   if (lead.leadType === 'catalogue')
     return { ruleKey: 'catalogueRequest', templateKey: 'catalogueRequest' };
+  if (lead.leadType === 'faq')
+    return { ruleKey: 'faqSupport', templateKey: 'faqsupport' };
+  if (lead.leadType === 'legal')
+    return { ruleKey: 'legalEnquiry', templateKey: 'legalenquiry' };
+  if (lead.leadType === 'newsletter')
+    return { ruleKey: 'newsletterSignup', templateKey: 'newsletterwelcome' };
   return { ruleKey: 'contactForm', templateKey: 'contactForm' };
 };
 
@@ -35,13 +41,16 @@ export const createLead = async (data) => {
       if (!enabled) return;
       await sendEmail({
         to: lead.email,
-        subject: 'Thank you for contacting King Property Auction',
+        subject: lead.subject || 'Thank you for contacting King Property Auction',
         templateKey,
         variables: {
           user_name: lead.name,
           user_email: lead.email,
           user_phone: lead.phone || 'Not provided',
           message: lead.message || '',
+          subject: lead.subject || '',
+          category: lead.leadType || 'general',
+          site_url: process.env.CLIENT_URL || '/',
           property_type: '',
           property_address: '',
           location: '',

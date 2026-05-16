@@ -53,6 +53,9 @@ export const NotificationRulesSchema = z.object({
   buyingEnquiry: z.boolean().default(true),
   sellingEnquiry: z.boolean().default(true),
   chatEnquiry: z.boolean().default(true),
+  faqSupport: z.boolean().default(true),
+  legalEnquiry: z.boolean().default(true),
+  newsletterSignup: z.boolean().default(true),
 });
 
 // ─── OAuth Configuration Schema ───

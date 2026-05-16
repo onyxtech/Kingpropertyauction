@@ -108,23 +108,13 @@ export const replyToLead = async (req, res) => {
     const result = await sendEmail({
       to: lead.email,
       subject: emailSubject,
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#f8fafc;">
-          <div style="background:linear-gradient(135deg,#1e40af,#4f46e5);padding:24px;border-radius:12px 12px 0 0;">
-            <h2 style="color:white;margin:0;font-size:20px;font-weight:900;">King Property Auction</h2>
-            <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:13px;">Response to your enquiry</p>
-          </div>
-          <div style="background:white;padding:32px;border-radius:0 0 12px 12px;box-shadow:0 4px 6px rgba(0,0,0,0.05);">
-            <p style="color:#374151;font-size:15px;margin-bottom:8px;">Dear ${lead.name},</p>
-            <div style="color:#374151;font-size:15px;line-height:1.7;white-space:pre-wrap;margin:16px 0;">${message}</div>
-            <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
-            <p style="color:#374151;font-size:14px;margin-bottom:4px;font-weight:bold;">Best regards,</p>
-            <p style="color:#374151;font-size:14px;margin:0;">${settings.senderName || 'King Property Auction Team'}</p>
-            <p style="color:#6b7280;font-size:13px;margin:4px 0;">Phone: 0800 123 4567</p>
-            <p style="color:#6b7280;font-size:13px;margin:4px 0;">Email: info@kingauction.com</p>
-          </div>
-        </div>
-      `,
+      templateKey: 'adminReply',
+      variables: {
+        user_name: lead.name,
+        subject: lead.subject || 'Your Enquiry',
+        message: message,
+        site_url: process.env.CLIENT_URL || 'http://localhost:5173',
+      },
     });
 
     if (!result.success) {

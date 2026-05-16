@@ -1,8 +1,11 @@
 import { ThumbsUp, TrendingUp, Award, Users, Sparkles, CheckCircle, Clock, Target, Zap, DollarSign, Shield } from "lucide-react";
+import { useNavigate } from "react-router";
 import Header from "@/features/shared/layout/Header";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 
 export default function WhySellWithFuture() {
+  const navigate = useNavigate();
+
   const benefits = [
     { title: "Maximum Price", desc: "Achieve 95-100% market value", icon: TrendingUp, gradient: "from-purple-500 to-pink-600", stat: "98%" },
     { title: "Fast Sale", desc: "Complete in 28 days guaranteed", icon: Clock, gradient: "from-blue-500 to-indigo-600", stat: "28 Days" },
@@ -252,10 +255,16 @@ export default function WhySellWithFuture() {
             Get your free valuation and discover what your property could achieve at auction
           </p>
           <div className="flex items-center gap-4 justify-center">
-            <button className="px-10 py-5 bg-white text-purple-600 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105">
+            <button
+              onClick={() => navigate('/free-valuation')}
+              className="px-10 py-5 bg-white text-purple-600 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105"
+            >
               Get Free Valuation
             </button>
-            <button className="px-10 py-5 bg-white/20 backdrop-blur-md border-2 border-white/30 text-white rounded-2xl font-bold text-lg hover:bg-white/30 transition-all">
+            <button
+              onClick={() => window.location.href = 'tel:08001234567'}
+              className="px-10 py-5 bg-white/20 backdrop-blur-md border-2 border-white/30 text-white rounded-2xl font-bold text-lg hover:bg-white/30 transition-all"
+            >
               Call 0800 123 4567
             </button>
           </div>

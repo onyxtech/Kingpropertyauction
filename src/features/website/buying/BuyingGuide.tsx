@@ -232,7 +232,10 @@ export default function BuyingGuide() {
             <button className="px-10 py-5 bg-white text-purple-600 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105" onClick={() => navigate('/auctions')}>
               View Auctions
             </button>
-            <button className="px-10 py-5 bg-white/20 backdrop-blur-md border-2 border-white/30 text-white rounded-2xl font-bold text-lg hover:bg-white/30 transition-all">
+            <button
+              onClick={() => navigate('/contact-us')}
+              className="px-10 py-5 bg-white/20 backdrop-blur-md border-2 border-white/30 text-white rounded-2xl font-bold text-lg hover:bg-white/30 transition-all"
+            >
               Contact Us
             </button>
           </div>

@@ -12,6 +12,9 @@ export default function GuideFAQ() {
     category: "",
     message: ""
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
@@ -20,19 +23,34 @@ export default function GuideFAQ() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log("Support form submitted:", formData);
-    setIsContactModalOpen(false);
-    // Reset form
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      category: "",
-      message: ""
-    });
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          subject: `FAQ Support: ${formData.category || 'General'}`,
+          message: formData.message,
+          leadType: 'faq',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSubmitted(true);
+        setFormData({ name: '', email: '', phone: '', category: '', message: '' });
+      } else {
+        setSubmitError(data.message || 'Something went wrong. Please try again.');
+      }
+    } catch (e) {
+      setSubmitError('Network error. Please try again.');
+    }
+    setSubmitting(false);
   };
 
   const categories = [
@@ -237,6 +255,23 @@ export default function GuideFAQ() {
             </div>
 
             {/* Modal Body */}
+            {submitted ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center p-8">
+                <div className="size-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                  <CheckCircle className="size-8 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 mb-2">Message Sent!</h3>
+                <p className="text-slate-600 mb-6">
+                  Our support team will respond within 2-4 hours during business hours.
+                </p>
+                <button
+                  onClick={() => { setSubmitted(false); setIsContactModalOpen(false); }}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
@@ -333,15 +368,22 @@ export default function GuideFAQ() {
                 </div>
               </div>
 
+              {submitError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium mb-4">
+                  {submitError}
+                </div>
+              )}
+
               <div className="flex items-center gap-4">
-                <button 
-                  type="submit" 
-                  className="flex-1 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-3"
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   <Send className="size-5" />
-                  Send Message
+                  {submitting ? 'Sending...' : 'Send Message'}
                 </button>
-                <button 
+                <button
                   type="button"
                   onClick={() => setIsContactModalOpen(false)}
                   className="px-8 py-4 bg-slate-100 text-slate-700 rounded-2xl font-bold text-lg hover:bg-slate-200 transition-all"
@@ -354,6 +396,7 @@ export default function GuideFAQ() {
                 Our support team typically responds within 2-4 hours during business days
               </p>
             </form>
+            )}
           </div>
         </div>
       )}

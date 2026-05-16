@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   Mail, Phone, Search, Eye, X, MessageCircle, UserCheck,
   TrendingUp, Users, CheckCircle, Clock, ArrowUpRight,
-  Download, Send, Trash2, MapPin, Calendar,
+  Download, Send, Trash2, MapPin, Calendar, MessageSquare,
 } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -135,6 +135,15 @@ export default function Leads() {
     catalogue: "bg-orange-100 text-orange-700",
     referral: "bg-pink-100 text-pink-700",
     general: "bg-slate-100 text-slate-700",
+    faq: "bg-cyan-100 text-cyan-700",
+    legal: "bg-indigo-100 text-indigo-700",
+    newsletter: "bg-teal-100 text-teal-700",
+    chat: "bg-violet-100 text-violet-700",
+    alert: "bg-yellow-100 text-yellow-700",
+    solicitor: "bg-rose-100 text-rose-700",
+    "home-report": "bg-emerald-100 text-emerald-700",
+    buying: "bg-sky-100 text-sky-700",
+    selling: "bg-fuchsia-100 text-fuchsia-700",
   };
 
   const statusColors: Record<string, string> = {
@@ -219,6 +228,11 @@ export default function Leads() {
             <option value="referral">Referral</option>
             <option value="buying">Buying Enquiry</option>
             <option value="finance">Finance</option>
+            <option value="home-report">Home Report</option>
+            <option value="selling">Selling Enquiry</option>
+            <option value="legal">Legal Enquiry</option>
+            <option value="faq">FAQ Support</option>
+            <option value="newsletter">Newsletter</option>
           </select>
         </div>
 
@@ -347,8 +361,17 @@ export default function Leads() {
 
                 {/* Message */}
                 <div className="bg-slate-50 rounded-2xl p-5">
-                  <h4 className="font-black text-slate-900 mb-2">📝 Message</h4>
-                  <p className="text-slate-700 whitespace-pre-wrap">{selectedLead.message || "No message provided."}</p>
+                  {selectedLead.subject && (
+                    <div className="flex items-start gap-2 mb-4 pb-4 border-b border-slate-200">
+                      <MessageSquare className="size-4 text-slate-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">Subject</p>
+                        <p className="font-bold text-slate-800 text-sm">{selectedLead.subject}</p>
+                      </div>
+                    </div>
+                  )}
+                  <h4 className="font-black text-slate-900 mb-3">📝 Message</h4>
+                  <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{selectedLead.message || "No message provided."}</p>
                 </div>
 
                 {/* Status Update */}

@@ -39,6 +39,7 @@ const conversationSchema = new mongoose.Schema({
       'selling',
       'legal',
       'faq',
+      'newsletter',
     ],
     default: 'direct',
   },

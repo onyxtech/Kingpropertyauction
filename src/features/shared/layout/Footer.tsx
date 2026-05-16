@@ -35,16 +35,41 @@ export default function Footer() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [newsletterError, setNewsletterError] = useState('');
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle newsletter subscription
-    console.log("Newsletter subscription:", email);
-    setSubscribed(true);
-    setTimeout(() => {
-      setEmail("");
-      setSubscribed(false);
-    }, 3000);
+    if (!email.trim()) return;
+    setNewsletterLoading(true);
+    setNewsletterError('');
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: email.split('@')[0],
+          email: email.trim(),
+          phone: '',
+          subject: 'Newsletter Subscription',
+          message: `Newsletter subscription request from ${email}`,
+          leadType: 'newsletter',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSubscribed(true);
+        setEmail('');
+        setTimeout(() => setSubscribed(false), 5000);
+      } else {
+        setNewsletterError('Failed to subscribe. Please try again.');
+        setTimeout(() => setNewsletterError(''), 3000);
+      }
+    } catch (e) {
+      setNewsletterError('Network error. Please try again.');
+      setTimeout(() => setNewsletterError(''), 3000);
+    }
+    setNewsletterLoading(false);
   };
 
   const currentYear = new Date().getFullYear();
@@ -94,12 +119,16 @@ export default function Footer() {
                             className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white/20 transition-all"
                             required
                           />
+                          {newsletterError && (
+                            <p className="text-red-400 text-xs mt-1">{newsletterError}</p>
+                          )}
                         </div>
                         <button
                           type="submit"
-                          className="w-full py-4 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white rounded-xl font-bold hover:shadow-2xl hover:shadow-blue-500/50 transition-all hover:scale-[1.02] flex items-center justify-center gap-2 group"
+                          disabled={newsletterLoading}
+                          className="w-full py-4 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 text-white rounded-xl font-bold hover:shadow-2xl hover:shadow-blue-500/50 transition-all hover:scale-[1.02] flex items-center justify-center gap-2 group disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
-                          Subscribe Now
+                          {newsletterLoading ? 'Subscribing...' : 'Subscribe Now'}
                           <Send className="size-5 group-hover:translate-x-1 transition-transform" />
                         </button>
                       </form>
