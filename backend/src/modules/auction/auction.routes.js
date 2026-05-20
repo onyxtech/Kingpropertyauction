@@ -10,6 +10,7 @@ import {
   cancel,
   completeAuctionController,
   checkEndedAuctionsController,
+  saveLiveAuctionResults,
 } from "./auction.controller.js";
 import { protect } from "../../middlewares/auth.middleware.js";
 import { authorize } from "../../middlewares/role.middleware.js";
@@ -19,6 +20,10 @@ const router = express.Router();
 // PUBLIC routes (no auth)
 router.get("/", getAll);
 router.post("/check-ended-public", checkEndedAuctionsController);
+
+// Specific sub-resource routes (must precede /:id to avoid param conflict)
+router.post("/:id/live-results", protect, authorize("admin"), saveLiveAuctionResults);
+
 router.get("/:id", getById);
 
 // PROTECTED routes (require auth)

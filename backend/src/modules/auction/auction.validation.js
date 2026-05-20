@@ -17,10 +17,10 @@ export const createAuctionSchema = Joi.object({
   endDateTime: Joi.date().iso().greater(Joi.ref('startDateTime')).required(),
   
   venue: Joi.object({
-    name: Joi.string().optional(),
-    address: Joi.string().optional(),
-    city: Joi.string().optional(),
-    postcode: Joi.string().optional(),
+    name: Joi.string().optional().allow(''),
+    address: Joi.string().optional().allow(''),
+    city: Joi.string().optional().allow(''),
+    postcode: Joi.string().optional().allow(''),
   }).optional(),
 
   auctionImage: Joi.string().optional(),

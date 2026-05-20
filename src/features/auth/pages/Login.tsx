@@ -1,5 +1,4 @@
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { useAuthStore } from "@/stores/authStore";
 import { apiClient } from "@/lib/apiClient";
 import { useState } from "react";
@@ -62,8 +61,8 @@ export default function Login() {
       } else {
         setError(data.message || "Login failed");
       }
-    } catch (err) {
-      setError("Cannot connect to server");
+    } catch (err: any) {
+      setError(err?.message || "Cannot connect to server");
     } finally {
       setLoading(false);
     }
@@ -80,9 +79,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
-      <Header />
-
+    <PublicLayout>
       <div className="relative overflow-hidden py-20">
         {/* Background decorations */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -416,7 +413,6 @@ export default function Login() {
         </div>
       </div>
 
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, Users, Lock, Mail, Phone, User } from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
+import { apiClient } from "@/lib/apiClient";
 
 export default function AddUserModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
   const theme = useTheme();
@@ -39,8 +40,7 @@ export default function AddUserModal({ onClose, onSuccess }: { onClose: () => vo
     };
     
     try {
-      const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      const result = await res.json();
+      const result = await apiClient.fetch('/auth/register', { method: 'POST', body: JSON.stringify(data) });
       if (result.success) {
         setSuccess('✅ User created successfully!');
         if (onSuccess) onSuccess();
@@ -48,7 +48,7 @@ export default function AddUserModal({ onClose, onSuccess }: { onClose: () => vo
       } else {
         setError(result.message || 'Failed to create user');
       }
-    } catch (err) { setError('Cannot connect to server'); }
+    } catch (err: any) { setError(err?.message || 'Cannot connect to server'); }
     finally { setLoading(false); }
   };
 

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\muham\\\\Desktop\\\\Kingpropertyauction\\\\backend\\\\src\\\\modules\\\\chat\\\\\" -File | Select-Object -ExpandProperty Name)",
+      "Bash(npm run *)",
+      "PowerShell(\\(Get-Content src/features/admin/pages/Admin.tsx\\).Count; \\(Get-Content src/features/admin/pages/AdminSettings.tsx\\).Count; \\(Get-Content src/features/website/pages/Website.tsx 2>$null\\).Count; \\(Get-Content src/features/auction/pages/AuctionDetail.tsx\\).Count; \\(Get-Content src/features/property/pages/PropertyDetails.tsx\\).Count)"
+    ]
+  }
+}

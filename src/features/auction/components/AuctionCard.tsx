@@ -2,24 +2,23 @@ import {
   Eye,
   Edit,
   Zap,
-  Clock,
   CheckCircle,
   Gavel,
   ChevronDown,
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useState } from "react";
-import { useCountdown } from "@/features/shared/ui/useCountdown";
 import { Trash2 } from "lucide-react";
 import { useAuctionApi } from "@/features/auction/api/useAuctionApi";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
 import ConfirmModal from "@/features/shared/components/ConfirmModal";
+import AuctionTimer from "@/features/shared/components/AuctionTimer";
+import { formatUKDateTime } from "@/features/shared/utils/dateUtils";
 
 export default function AuctionCard({ auction }: any) {
   const navigate = useNavigate();
-  const countdown = useCountdown(auction.endDateTime);
   const { useDeleteAuction } = useAuctionApi();
   const deleteAuction = useDeleteAuction();
   const queryClient = useQueryClient();
@@ -38,6 +37,7 @@ export default function AuctionCard({ auction }: any) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["auctions"] });
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
     },
   });
 
@@ -57,20 +57,29 @@ export default function AuctionCard({ auction }: any) {
       } shadow-lg`}
     >
       <div className="flex items-center justify-between mb-4">
-        <span
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 ${
-            auction.status === "live"
-              ? "bg-green-100 text-green-700 animate-pulse"
-              : auction.status === "scheduled"
-                ? "bg-blue-100 text-blue-700"
-                : auction.status === "completed"
-                  ? "bg-slate-100 text-slate-700"
-                  : "bg-red-100 text-red-700"
-          }`}
-        >
-          {auction.status === "live" && <Zap className="size-3" />}
-          {auction.status.toUpperCase()}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 ${
+              auction.status === "live"
+                ? "bg-green-100 text-green-700 animate-pulse"
+                : auction.status === "scheduled"
+                  ? "bg-blue-100 text-blue-700"
+                  : auction.status === "completed"
+                    ? "bg-slate-100 text-slate-700"
+                    : "bg-red-100 text-red-700"
+            }`}
+          >
+            {auction.status === "live" && <Zap className="size-3" />}
+            {auction.status.toUpperCase()}
+          </span>
+          {auction.auctionType === "live" ? (
+            <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-700">🏛️ Live Room</span>
+          ) : auction.auctionType === "hybrid" ? (
+            <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700">🔄 Hybrid</span>
+          ) : (
+            <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-600">🖥️ Online</span>
+          )}
+        </div>
         <span className="text-xs font-bold text-slate-500">
           #{auction._id?.slice(-6)}
         </span>
@@ -87,50 +96,44 @@ export default function AuctionCard({ auction }: any) {
         <div>
           <p className="text-xs text-slate-500 font-medium mb-1">Start Date</p>
           <p className="text-sm font-black text-slate-900">
-            {auction.startDateTime
-              ? new Date(auction.startDateTime).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })
-              : "N/A"}
+            {auction.startDateTime ? formatUKDateTime(auction.startDateTime) : "N/A"}
           </p>
         </div>
         <div>
           <p className="text-xs text-slate-500 font-medium mb-1">End Date</p>
           <p className="text-sm font-black text-slate-900">
-            {auction.endDateTime
-              ? new Date(auction.endDateTime).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })
-              : "N/A"}
+            {auction.endDateTime ? formatUKDateTime(auction.endDateTime) : "N/A"}
           </p>
         </div>
-        <div>
-          <p className="text-xs text-slate-500 font-medium mb-1">Total Bids</p>
-          <p className="text-sm font-black text-slate-900">
-            {auction.totalBids || 0}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs text-slate-500 font-medium mb-1">Bidders</p>
-          <p className="text-sm font-black text-slate-900">
-            {auction.totalBidders || 0}
-          </p>
-        </div>
+        {auction.auctionType !== 'live' && (
+          <div>
+            <p className="text-xs text-slate-500 font-medium mb-1">Total Bids</p>
+            <p className="text-sm font-black text-slate-900">
+              {auction.totalBids || 0}
+            </p>
+          </div>
+        )}
+        {auction.auctionType !== 'live' && (
+          <div>
+            <p className="text-xs text-slate-500 font-medium mb-1">Bidders</p>
+            <p className="text-sm font-black text-slate-900">
+              {auction.totalBidders || 0}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Countdown / Status */}
-      <div className="flex items-center gap-2 text-xs font-bold text-slate-500 mb-4">
-        <Clock className="size-4" />
-        {auction.status === "live"
-          ? countdown
-          : auction.status === "scheduled"
-            ? `Starts ${new Date(auction.startDateTime).toLocaleDateString()}`
-            : `Ended ${new Date(auction.endDateTime).toLocaleDateString()}`}
-      </div>
+      {auction.startDateTime && auction.endDateTime && (
+        <div className="mb-4">
+          <AuctionTimer
+            startDateTime={auction.startDateTime}
+            endDateTime={auction.endDateTime}
+            status={auction.status}
+            showLabel={true}
+          />
+        </div>
+      )}
 
       {/* Result Summary for Completed Auctions */}
       {auction.status === "completed" && (
@@ -142,7 +145,7 @@ export default function AuctionCard({ auction }: any) {
       )}
 
       {/* Bidding Activity Toggle */}
-      {auction.properties?.length > 0 && (
+      {auction.auctionType !== 'live' && auction.properties?.length > 0 && (
         <div className="mb-4">
           <button
             onClick={() => setShowActivity(!showActivity)}

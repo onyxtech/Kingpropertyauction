@@ -2,6 +2,8 @@ import Bid from "./bid.model.js";
 import Auction from "../auction/auction.model.js";
 import Property from "../property/property.model.js";
 import notificationService, { NotificationEvents } from '../notifications/trigger.service.js';
+import { emitBidUpdate } from '../../socket.js';
+import cache from '../../utils/cache.js';
 
 // ─── Place Bid (Manual + Auto) ───
 export const placeBid = async (data, userId) => {
@@ -94,6 +96,9 @@ export const placeBid = async (data, userId) => {
     winningBidder: userId,
   });
 
+  await cache.delPattern('properties:*');
+  await cache.delPattern('auctions:*');
+
   // 10. Update auction counters
   const allAuctionBids = await Bid.countDocuments({
     auction: data.auction,
@@ -108,6 +113,22 @@ export const placeBid = async (data, userId) => {
   await Auction.findByIdAndUpdate(data.auction, {
     totalBids: allAuctionBids,
     totalBidders: allAuctionBidders.length,
+  });
+
+  // Get fresh property data for the emit
+  const updatedProperty = await Property.findById(data.property)
+    .select('currentBid pricing totalBids');
+
+  emitBidUpdate(data.auction.toString(), {
+    propertyId: data.property.toString(),
+    auctionId: data.auction.toString(),
+    newBid: data.amount,
+    currentBid: data.amount,
+    totalBids: (updatedProperty?.totalBids || 0),
+    reservePrice: updatedProperty?.pricing?.reservePrice || 0,
+    reserveMet: data.amount >= (updatedProperty?.pricing?.reservePrice || 0),
+    auctionStatus: auction.status,
+    isAutoBid: data.isAutoBid || false,
   });
 
   // 11. Process auto-bids AFTER placing this bid
@@ -164,6 +185,13 @@ const processAutoBids = async (auctionId, propertyId, currentBidAmount) => {
       // Calculate what they should bid
       const nextBid = newCurrentBid + bidIncrement;
       if (nextBid <= autoBidConfig.maxBid && nextBid > newCurrentBid) {
+        // Find previous winner before outbidding them
+        const previousWinner = await Bid.findOne({
+          auction: auctionId,
+          property: propertyId,
+          status: "winning",
+        }).populate('bidder', 'name email');
+
         // Place auto-bid on their behalf
         await Bid.updateMany(
           { auction: auctionId, property: propertyId, status: "winning" },
@@ -180,11 +208,52 @@ const processAutoBids = async (auctionId, propertyId, currentBidAmount) => {
           status: "winning",
         });
 
+        // Emit bid confirmation for the auto-bidder
+        notificationService.emit(NotificationEvents.BID_PLACED, {
+          userId: bidderId,
+          propertyId,
+          auctionId,
+          amount: nextBid,
+          isAutoBid: true,
+        }).catch(e => console.error('Auto-bid confirmation event failed:', e.message));
+
+        // Emit outbid notification for the previous winner
+        if (previousWinner && previousWinner.bidder) {
+          const prevBidderId = previousWinner.bidder._id?.toString() || previousWinner.bidder.toString();
+          if (prevBidderId !== bidderId.toString()) {
+            notificationService.emit(NotificationEvents.BID_OUTBID, {
+              userId: prevBidderId,
+              propertyId,
+              auctionId,
+              newAmount: nextBid,
+              previousAmount: previousWinner.amount,
+            }).catch(e => console.error('Auto-bid outbid event failed:', e.message));
+          }
+        }
+
         // Update property
         await Property.findByIdAndUpdate(propertyId, {
           currentBid: nextBid,
           $inc: { totalBids: 1 },
           winningBidder: bidderId,
+        });
+
+        await cache.delPattern('properties:*');
+        await cache.delPattern('auctions:*');
+
+        // Notify clients of the auto-bid
+        const autoBidProperty = await Property.findById(propertyId)
+          .select('currentBid pricing totalBids');
+
+        emitBidUpdate(auctionId.toString(), {
+          propertyId: propertyId.toString(),
+          auctionId: auctionId.toString(),
+          newBid: nextBid,
+          currentBid: nextBid,
+          totalBids: (autoBidProperty?.totalBids || 0),
+          reservePrice: autoBidProperty?.pricing?.reservePrice || 0,
+          reserveMet: nextBid >= (autoBidProperty?.pricing?.reservePrice || 0),
+          isAutoBid: true,
         });
 
         newCurrentBid = nextBid;

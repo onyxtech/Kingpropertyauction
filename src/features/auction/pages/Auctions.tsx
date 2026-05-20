@@ -10,12 +10,14 @@ import {
   Download,
   Building2,
   ChevronDown,
-  Clock,
 } from "lucide-react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { useAuctionApi } from "@/features/auction/api/useAuctionApi";
+import { useQueryClient } from "@tanstack/react-query";
+import AuctionTimer from "@/features/shared/components/AuctionTimer";
+import { useAuctionSocket } from "@/hooks/useAuctionSocket";
+import { formatUKDateTime } from "@/features/shared/utils/dateUtils";
 
 export default function Auctions() {
   const navigate = useNavigate();
@@ -25,8 +27,11 @@ export default function Auctions() {
   const [filterStatus, setFilterStatus] = useState("All Status");
 
   const { useGetAuctions } = useAuctionApi();
-  const { data, isLoading } = useGetAuctions();
+  const { data, isLoading } = useGetAuctions({ excludeType: 'live' });
   const auctions = data?.data || [];
+  const queryClient = useQueryClient();
+
+  useAuctionSocket();
 
   // Map backend data to exact static design format
   const auctionLots = auctions.map((a: any, index: number) => {
@@ -46,34 +51,10 @@ export default function Auctions() {
           ? `${a.venue.city}, England`
           : "Location TBD",
       type: typeMap[category] || "Mixed Portfolio",
-      startDate: a.startDateTime
-        ? new Date(a.startDateTime).toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })
-        : "TBD",
-      startTime: a.startDateTime
-        ? new Date(a.startDateTime).toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            timeZoneName: "short",
-          })
-        : "TBD",
-      endDate: a.endDateTime
-        ? new Date(a.endDateTime).toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })
-        : "TBD",
-      endTime: a.endDateTime
-        ? new Date(a.endDateTime).toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            timeZoneName: "short",
-          })
-        : "TBD",
+      startDate: a.startDateTime ? formatUKDateTime(a.startDateTime) : "TBD",
+      startTime: "",
+      endDate: a.endDateTime ? formatUKDateTime(a.endDateTime) : "TBD",
+      endTime: "",
       totalProperties: a.properties?.length || 1,
       auctionId: a._id,
       estimatedValue: a.startingBid
@@ -94,6 +75,9 @@ export default function Auctions() {
       registeredBidders: a.totalBidders || 0,
       slug: a.slug || a._id,
       propertySlug: a.property?.slug || a.property?._id || "",
+      rawStatus: a.status,
+      startDateTime: a.startDateTime,
+      endDateTime: a.endDateTime,
     };
   });
 
@@ -123,18 +107,16 @@ export default function Auctions() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
-        <Header />
+      <PublicLayout>
         <div className="flex items-center justify-center h-96">
           <div className="size-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
         </div>
-        <Footer />
-      </div>
+      </PublicLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl animate-pulse" />
         <div
@@ -142,8 +124,6 @@ export default function Auctions() {
           style={{ animationDelay: "2s" }}
         />
       </div>
-
-      <Header />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
@@ -347,9 +327,6 @@ export default function Auctions() {
                       <div className="text-sm font-black text-blue-600">
                         {lot.startDate}
                       </div>
-                      <div className="text-xs font-bold text-slate-500">
-                        {lot.startTime}
-                      </div>
                     </div>
                     <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
                       <div className="flex items-center justify-between mb-1">
@@ -360,9 +337,6 @@ export default function Auctions() {
                       <div className="text-sm font-black text-purple-600">
                         {lot.endDate}
                       </div>
-                      <div className="text-xs font-bold text-slate-500">
-                        {lot.endTime}
-                      </div>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl">
                       <span className="text-sm font-bold text-slate-600">
@@ -372,6 +346,16 @@ export default function Auctions() {
                         {lot.totalProperties}
                       </span>
                     </div>
+                    {lot.rawStatus && lot.startDateTime && lot.endDateTime && (
+                      <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between">
+                        <AuctionTimer
+                          startDateTime={lot.startDateTime}
+                          endDateTime={lot.endDateTime}
+                          status={lot.rawStatus}
+                          showLabel={true}
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-200">
                     <div className="flex items-center gap-1.5 text-sm font-bold text-slate-600">
@@ -467,16 +451,10 @@ export default function Auctions() {
                         <div className="text-sm font-bold text-slate-900">
                           {lot.startDate}
                         </div>
-                        <div className="text-xs text-slate-600 font-medium">
-                          {lot.startTime}
-                        </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className="text-sm font-bold text-slate-900">
                           {lot.endDate}
-                        </div>
-                        <div className="text-xs text-slate-600 font-medium">
-                          {lot.endTime}
                         </div>
                       </td>
                       <td className="px-6 py-5 text-center">
@@ -573,7 +551,6 @@ export default function Auctions() {
           </div>
         </div>
       </div>
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }

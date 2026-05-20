@@ -5,7 +5,9 @@ import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import { env } from "./config/env.js";
 import { errorHandler, notFound } from "./middlewares/error.middleware.js";
-import { requestLogger } from "./utils/logger.js";
+import { apiRateLimit } from "./middlewares/rateLimiter.middleware.js";
+import logger from "./middlewares/logger.middleware.js";
+import { redisConnection } from "./config/redis.js";
 
 const app = express();
 
@@ -27,8 +29,9 @@ app.use(
     },
   }),
 );
-app.use(requestLogger);
 app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
+app.use(logger);
+app.use(apiRateLimit);
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -56,6 +59,41 @@ const chatLimiter = rateLimit({
 
 app.get("/", (req, res) => {
   res.json({ message: "King Property Auction API is running..." });
+});
+
+// ─── Health Check ───
+app.get('/health', async (req, res) => {
+  try {
+    const mongoose = (await import('mongoose')).default;
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+
+    let redisStatus = 'disconnected';
+    try {
+      await redisConnection.ping();
+      redisStatus = 'connected';
+    } catch (e) {
+      redisStatus = 'error';
+    }
+
+    const healthy = dbStatus === 'connected' && redisStatus === 'connected';
+
+    res.status(healthy ? 200 : 503).json({
+      status: healthy ? 'healthy' : 'degraded',
+      timestamp: new Date().toISOString(),
+      services: {
+        database: dbStatus,
+        redis: redisStatus,
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        environment: process.env.NODE_ENV,
+      },
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      error: error.message,
+    });
+  }
 });
 
 // ─── Routes ───
@@ -98,6 +136,15 @@ app.use("/api/chat", chatLimiter, chatRoutes);
 
 import knowledgeRoutes from "./modules/knowledge/knowledge.routes.js";
 app.use("/api/knowledge", knowledgeRoutes);
+
+import analyticsRoutes from "./modules/analytics/analytics.routes.js";
+app.use("/api/analytics", analyticsRoutes);
+
+import menuRoutes from "./modules/menu/menu.routes.js";
+app.use("/api/menus", menuRoutes);
+
+import campaignRoutes from "./modules/campaign/campaign.routes.js";
+app.use("/api/campaigns", campaignRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

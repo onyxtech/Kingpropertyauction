@@ -21,8 +21,7 @@ import {
   Save,
   ChevronRight,
 } from "lucide-react";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { useTheme } from "@/app/hooks/useTheme";
 import {
   useSettingsApi,
@@ -234,8 +233,8 @@ export default function Settings() {
   ];
 
   return (
+    <PublicLayout>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      <Header />
 
       {/* Hero Section */}
       <div className={`bg-gradient-to-r ${theme.primary} py-12`}>
@@ -673,12 +672,12 @@ export default function Settings() {
         </div>
       )}
 
-      <Footer />
       {toastMsg && (
         <div className="fixed bottom-6 right-6 z-50 px-6 py-3 bg-green-500 text-white rounded-2xl shadow-2xl font-bold">
           {toastMsg}
         </div>
       )}
     </div>
+    </PublicLayout>
   );
 }

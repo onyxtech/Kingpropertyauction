@@ -1,7 +1,6 @@
 import { CheckCircle, BookOpen, FileText, Shield, Users, TrendingUp, Clock, Award, Home, DollarSign, Scale, Lightbulb, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
 
 export default function BuyingGuide() {
   const navigate = useNavigate();
@@ -80,14 +79,12 @@ export default function BuyingGuide() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-purple-400/20 to-indigo-400/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
-
-      <Header />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
@@ -242,8 +239,7 @@ export default function BuyingGuide() {
         </div>
       </div>
 
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }
 

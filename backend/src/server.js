@@ -4,13 +4,17 @@ dotenv.config();
 import http from "http";
 import app from "./app.js";
 import { connectDB } from "./config/db.js";
-import { checkAndCompleteEndedAuctions } from "./modules/auction/auction.service.js";
 import Auction from "./modules/auction/auction.model.js";
-import notificationService, { NotificationEvents } from "./modules/notifications/trigger.service.js";
 import { warmCache } from "./modules/settings/settings.service.js";
 import { initSocket } from "./socket.js";
+import { redisConnection } from "./config/redis.js";
+import { scheduleAuctionStart, scheduleAuctionEnd } from "./modules/auction/auction.queue.js";
+import { startAuctionWorker, stopAuctionWorker } from "./modules/auction/auction.worker.js";
+import { startBidWorker, stopBidWorker } from "./modules/bid/bid.worker.js";
 import { seedDefaultKnowledge, fixKnowledgeURLs } from "./modules/knowledge/knowledge.service.js";
 import { resetAllTemplatesToDefault } from "./modules/notifications/template.service.js";
+import { startCampaignWorker, stopCampaignWorker } from "./modules/campaign/campaign.worker.js";
+import { seedDefaultMenus } from "./modules/menu/menu.service.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -28,60 +32,71 @@ await fixKnowledgeURLs();
 await resetAllTemplatesToDefault();
 console.log("🔧 Notification service initialized");
 
-// ─── Smart auction completion scheduler ───
-const scheduleNextCompletion = async () => {
-  try {
-    const next = await Auction.findOne({ status: "live" }).sort({ endDateTime: 1 }).select("endDateTime");
-    if (next) {
-      const delay = Math.max(next.endDateTime.getTime() - Date.now() + 500, 500);
-      console.log(`⏰ Next auction completion in ${Math.round(delay / 1000)}s`);
-      setTimeout(async () => {
-        await checkAndCompleteEndedAuctions();
-        scheduleNextCompletion();
-      }, delay);
-    } else {
-      console.log("⏰ No live auctions, checking in 5 minutes");
-      setTimeout(scheduleNextCompletion, 5 * 60 * 1000);
-    }
-  } catch (e) {
-    console.error("Completion scheduler error:", e.message);
-    setTimeout(scheduleNextCompletion, 60 * 1000);
-  }
-};
+// ─── Start BullMQ workers ───
+startAuctionWorker();
+startBidWorker();
+startCampaignWorker();
+console.log("📧 Campaign worker started");
 
-// ─── Smart auction start scheduler ───
-const scheduleNextStart = async () => {
+// ─── Menu Editor Seeds ───
+await seedDefaultMenus();
+// ─── On startup: reschedule all pending auctions (handles server restarts) ───
+const rescheduleAllPendingAuctions = async () => {
   try {
-    const next = await Auction.findOne({ status: "scheduled" }).sort({ startDateTime: 1 }).select("startDateTime _id auctionTitle");
-    if (next) {
-      const delay = Math.max(next.startDateTime.getTime() - Date.now() + 500, 500);
-      console.log(`🔵 Next auction start in ${Math.round(delay / 1000)}s`);
-      setTimeout(async () => {
-        const auction = await Auction.findOneAndUpdate(
-          { _id: next._id, status: "scheduled" },
-          { status: "live" },
-          { new: true }
+    const now = new Date();
+
+    // Find all scheduled auctions and queue start jobs
+    const scheduledAuctions = await Auction.find({ status: 'scheduled' });
+    for (const auction of scheduledAuctions) {
+      await scheduleAuctionStart(
+        auction._id,
+        auction.startDateTime,
+        auction.auctionTitle
+      );
+    }
+
+    // Find all live auctions and queue end jobs (or complete immediately if overdue)
+    const liveAuctions = await Auction.find({ status: 'live' });
+    for (const auction of liveAuctions) {
+      if (new Date(auction.endDateTime) > now) {
+        await scheduleAuctionEnd(
+          auction._id,
+          auction.endDateTime,
+          auction.auctionTitle
         );
-        if (auction) {
-          console.log(`🔵 Auction started: ${auction.auctionTitle}`);
-          notificationService.emit(NotificationEvents.AUCTION_STARTED, { auctionId: auction._id }).catch(() => {});
-        }
-        scheduleNextStart();
-      }, delay);
-    } else {
-      console.log("🔵 No scheduled auctions, checking in 5 minutes");
-      setTimeout(scheduleNextStart, 5 * 60 * 1000);
+      } else {
+        // Already past end time - complete immediately
+        const { checkAndCompleteEndedAuctions } = await import('./modules/auction/auction.service.js');
+        await checkAndCompleteEndedAuctions();
+      }
     }
+
+    console.log(`✅ Rescheduled ${scheduledAuctions.length} scheduled and ${liveAuctions.length} live auctions`);
   } catch (e) {
-    console.error("Start scheduler error:", e.message);
-    setTimeout(scheduleNextStart, 60 * 1000);
+    console.error('❌ Reschedule error:', e.message);
   }
 };
 
-scheduleNextCompletion();
-scheduleNextStart();
-console.log("⏰ Smart auction scheduler started");
-console.log("🔵 Smart auction starter initialized");
+await rescheduleAllPendingAuctions();
+
+// ─── Graceful shutdown ───
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  await stopAuctionWorker();
+  await stopBidWorker();
+  await stopCampaignWorker();
+  await redisConnection.quit();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  await stopAuctionWorker();
+  await stopBidWorker();
+  await stopCampaignWorker();
+  await redisConnection.quit();
+  process.exit(0);
+});
 
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);

@@ -53,6 +53,7 @@ const userSchema = new mongoose.Schema(
       emailNotifications: { type: Boolean, default: true },
       smsAlerts: { type: Boolean, default: false },
     },
+    marketingOptOut: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
@@ -68,6 +69,9 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
+
+userSchema.index({ createdAt: -1 });
+userSchema.index({ role: 1, isActive: 1 });
 
 const User = mongoose.model("User", userSchema);
 export default User;

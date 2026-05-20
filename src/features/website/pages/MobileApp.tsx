@@ -24,6 +24,7 @@ import {
   Video,
 } from "lucide-react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
 
 export default function MobileApp() {
   const navigate = useNavigate();
@@ -316,6 +317,7 @@ export default function MobileApp() {
   );
 
   return (
+    <PublicLayout>
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
       <button
         onClick={() => navigate("/")}
@@ -400,6 +402,7 @@ export default function MobileApp() {
         </div>
       </div>
     </div>
+    </PublicLayout>
   );
 }
 

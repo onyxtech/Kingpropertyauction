@@ -1,7 +1,9 @@
 import { ArrowRight, Database, Server, Globe, Shield, Upload, Users, FileText, Briefcase, CheckSquare, FileSpreadsheet, Settings, Lock, FileCheck, Zap, GitBranch, AlertCircle, Eye, Building2, Gavel, TrendingUp, UserCheck, CreditCard, BrainCircuit, DollarSign, Send, Bell, BarChart3, Menu, Mail, Smartphone, Map, Video } from 'lucide-react';
+import PublicLayout from "@/features/shared/layout/PublicLayout";
 
 export default function SystemArchitecture() {
   return (
+    <PublicLayout>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 py-12 px-4">
       <div className="max-w-[1600px] mx-auto">
         {/* Header */}
@@ -589,5 +591,6 @@ export default function SystemArchitecture() {
         </div>
       </div>
     </div>
+    </PublicLayout>
   );
 }

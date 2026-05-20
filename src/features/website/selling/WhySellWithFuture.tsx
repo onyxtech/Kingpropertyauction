@@ -1,6 +1,6 @@
 import { ThumbsUp, TrendingUp, Award, Users, Sparkles, CheckCircle, Clock, Target, Zap, DollarSign, Shield } from "lucide-react";
 import { useNavigate } from "react-router";
-import Header from "@/features/shared/layout/Header";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 
 export default function WhySellWithFuture() {
@@ -79,14 +79,12 @@ export default function WhySellWithFuture() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-rose-400/20 to-red-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
-
-      <Header />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
@@ -270,9 +268,6 @@ export default function WhySellWithFuture() {
           </div>
         </div>
       </div>
-    </div>
+    </PublicLayout>
   );
 }
-
-
-

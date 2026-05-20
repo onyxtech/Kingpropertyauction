@@ -1,5 +1,6 @@
 import { HelpCircle, BookOpen, Sparkles, CheckCircle, Info, AlertCircle, ChevronDown, Search, X, Send, Phone, Mail, MessageSquare } from "lucide-react";
-import Header from "@/features/shared/layout/Header";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
+import { apiClient } from "@/lib/apiClient";
 import { useState } from "react";
 
 export default function GuideFAQ() {
@@ -28,9 +29,8 @@ export default function GuideFAQ() {
     setSubmitting(true);
     setSubmitError('');
     try {
-      const res = await fetch('/api/leads', {
+      const data = await apiClient.fetch('/leads', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
@@ -40,17 +40,17 @@ export default function GuideFAQ() {
           leadType: 'faq',
         }),
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setSubmitted(true);
         setFormData({ name: '', email: '', phone: '', category: '', message: '' });
       } else {
         setSubmitError(data.message || 'Something went wrong. Please try again.');
       }
-    } catch (e) {
-      setSubmitError('Network error. Please try again.');
+    } catch (e: any) {
+      setSubmitError(e?.message || 'Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const categories = [
@@ -114,14 +114,12 @@ export default function GuideFAQ() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
-
-      <Header />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
@@ -380,8 +378,20 @@ export default function GuideFAQ() {
                   disabled={submitting}
                   className="flex-1 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
-                  <Send className="size-5" />
-                  {submitting ? 'Sending...' : 'Send Message'}
+                  {submitting ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin size-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      </svg>
+                      Sending...
+                    </span>
+                  ) : (
+                    <>
+                      <Send className="size-5" />
+                      Send Message
+                    </>
+                  )}
                 </button>
                 <button
                   type="button"
@@ -400,7 +410,7 @@ export default function GuideFAQ() {
           </div>
         </div>
       )}
-    </div>
+    </PublicLayout>
   );
 }
 

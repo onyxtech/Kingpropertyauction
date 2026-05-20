@@ -1,39 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
+import type { Auction, Property, Bid } from "@/types";
 import {
   ArrowLeft,
   Gavel,
-  Users,
-  TrendingUp,
-  Heart,
-  Share2,
-  Video,
-  Clock,
-  MapPin,
-  Bed,
-  Bath,
-  Maximize,
   CheckCircle,
   AlertCircle,
-  ChevronRight,
-  ChevronDown,
-  X,
-  Eye,
-  User,
-  Mail,
-  Lock,
-  Phone,
-  EyeOff,
   Building2,
-  Calendar,
-  PoundSterling,
-  Hash,
-  Info,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { useAuctionApi } from "@/features/auction/api/useAuctionApi";
 import { useBiddingApi } from "@/features/bid/api/useBiddingApi";
 import { useAuthStore } from "@/stores/authStore";
@@ -41,6 +17,10 @@ import { useAuthApi } from "@/features/auth/api/useAuthApi";
 import { useQueryClient } from "@tanstack/react-query";
 import AuthModal from "@/features/shared/components/AuthModal";
 import BidModal from "@/features/shared/components/BidModal";
+import { useAuctionSocket } from "@/hooks/useAuctionSocket";
+import AuctionHeader from "@/features/auction/components/AuctionHeader";
+import AuctionSidebar from "@/features/auction/components/AuctionSidebar";
+import LotCard from "@/features/auction/components/LotCard";
 
 // ─── Countdown Timer Component ───
 function AuctionCountdown({
@@ -102,19 +82,18 @@ export default function AuctionDetail() {
   const authApi = useAuthApi();
 
   // ─── API Hooks ───
-  // ─── API Hooks ───
   const { useGetAuctions, useGetAuctionById } = useAuctionApi();
-  const { usePlaceBid, useGetBidHistory } = useBiddingApi();
+  const { usePlaceBid } = useBiddingApi();
   const placeBidMutation = usePlaceBid();
 
   // First find the auction ID from the slug
   const { data: auctionsData } = useGetAuctions({});
-  const auctions = auctionsData?.data || [];
-  const auctionFromList = auctions.find((a: any) => a.slug === slug);
+  const auctions = (auctionsData?.data || []) as Auction[];
+  const auctionFromList = auctions.find((a) => a.slug === slug);
   const auctionId = auctionFromList?._id;
 
   // Then fetch the full auction with populated properties by ID
-  const { data: auction, isLoading } = useGetAuctionById(auctionId || "");
+  const { data: auction, isLoading } = useGetAuctionById(auctionId || "") as { data: Auction | undefined; isLoading: boolean };
 
   // Auto-refresh when params change or bid is placed
   useEffect(() => {
@@ -123,8 +102,24 @@ export default function AuctionDetail() {
     }
   }, [slug, auctionId]);
 
+  // Real-time auction status updates
+  useAuctionSocket({
+    auctionId: auctionId,
+    onAuctionUpdate: (data) => {
+      if (data.auctionId === auction?._id) {
+        queryClient.invalidateQueries({ queryKey: ['auctions', auctionId] });
+        queryClient.invalidateQueries({ queryKey: ['auctions'] });
+      }
+    },
+    onBidUpdate: () => {
+      queryClient.invalidateQueries({ queryKey: ['auctions', auctionId] });
+      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
+    },
+  });
+
   // ─── State ───
-  const [selectedLot, setSelectedLot] = useState<any>(null);
+  const [selectedLot, setSelectedLot] = useState<Property | null>(null);
   const [bidAmount, setBidAmount] = useState("");
   const [bidSuccess, setBidSuccess] = useState(false);
   const [useAutoBid, setUseAutoBid] = useState(false);
@@ -161,6 +156,8 @@ export default function AuctionDetail() {
   };
 
   // ─── Derived Data ───
+  const isLiveRoomAuction = auction?.auctionType === 'live';
+
   const propertyDetails =
     auction?.properties
       ?.map((p: any) => {
@@ -292,6 +289,19 @@ export default function AuctionDetail() {
       );
       return;
     }
+
+    // Optimistic update
+    const previousData = queryClient.getQueryData(['auctions', auctionId]);
+    queryClient.setQueryData(['auctions', auctionId], (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        properties: old.properties?.map((p: any) =>
+          p._id === selectedLot._id ? { ...p, currentBid: amount } : p,
+        ),
+      };
+    });
+
     try {
       await placeBidMutation.mutateAsync({
         auction: auction._id,
@@ -304,7 +314,6 @@ export default function AuctionDetail() {
       showNotification("Bid placed successfully! 🎉", "success");
       queryClient.invalidateQueries({ queryKey: ["auctions"] });
       queryClient.invalidateQueries({ queryKey: ["properties"] });
-      // Reset history so it reloads fresh on next view
       setLotHistories((prev) => ({ ...prev, [selectedLot._id]: null }));
       setExpandedLot(null);
       setTimeout(() => {
@@ -314,6 +323,7 @@ export default function AuctionDetail() {
         setMaxBidAmount("");
       }, 2000);
     } catch (err: any) {
+      queryClient.setQueryData(['auctions', auctionId], previousData);
       showNotification(err.message || "Bid failed", "error");
     }
   };
@@ -350,43 +360,23 @@ export default function AuctionDetail() {
     }
   };
 
-  // ─── Helpers ───
-  const getPropertyImage = (property: any) => {
-    if (property?.media?.propertyImages?.length > 0) {
-      const img = property.media.propertyImages[0];
-      if (img.startsWith("http")) return img;
-      return img.startsWith("/uploads") ? img : `/uploads/properties/${img}`;
-    }
-    return "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600";
-  };
-
-  const formatPrice = (val: number) =>
-    new Intl.NumberFormat("en-GB", {
-      style: "currency",
-      currency: "GBP",
-      maximumFractionDigits: 0,
-    }).format(val);
-
   // ─── Loading State ───
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
-        <Header />
+      <PublicLayout>
         <div className="container mx-auto px-6 py-20 text-center">
           <div className="animate-spin size-16 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-6" />
           <p className="text-xl font-bold text-slate-600">
             Loading auction details...
           </p>
         </div>
-        <Footer />
-      </div>
+      </PublicLayout>
     );
   }
 
   if (!auction) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
-        <Header />
+      <PublicLayout>
         <div className="container mx-auto px-6 py-20 text-center">
           <Gavel className="size-20 text-slate-300 mx-auto mb-4" />
           <h2 className="text-2xl font-black text-slate-900 mb-2">
@@ -402,13 +392,12 @@ export default function AuctionDetail() {
             Browse Auctions
           </button>
         </div>
-        <Footer />
-      </div>
+      </PublicLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
+    <PublicLayout>
       {/* ─── NOTIFICATION TOAST ─── */}
       <AnimatePresence>
         {notification && (
@@ -456,8 +445,6 @@ export default function AuctionDetail() {
         onSubmit={handleAuthSubmit}
       />
 
-      <Header />
-
       {/* Back Button */}
       <div className="container mx-auto px-6 pt-6">
         <button
@@ -473,75 +460,11 @@ export default function AuctionDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* ─── LEFT: Auction Header + Lot Cards ─── */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Auction Header */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 border-2 border-white/60 shadow-xl">
-              <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full text-sm font-bold mb-3">
-                    <span className="size-2 bg-white rounded-full animate-pulse" />
-                    {auction.status === "live"
-                      ? "LIVE AUCTION"
-                      : auction.status?.toUpperCase()}
-                  </div>
-                  <h1 className="text-3xl font-black text-slate-900 mb-2">
-                    {auction.auctionTitle}
-                  </h1>
-                  {auction.description && (
-                    <p className="text-slate-600">{auction.description}</p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-slate-500">Ends in</p>
-                  <p className="text-xl">
-                    {auction.status === "live" ? (
-                      <AuctionCountdown
-                        endTime={new Date(auction.endDateTime)}
-                        onEnded={async () => {
-                          try {
-                            await fetch(`/api/auctions/check-ended-public`, {
-                              method: "POST",
-                            });
-                          } catch (e) {}
-                          queryClient.invalidateQueries({
-                            queryKey: ["auctions"],
-                          });
-                          queryClient.invalidateQueries({
-                            queryKey: ["properties"],
-                          });
-                        }}
-                      />
-                    ) : auction.status === "completed" ? (
-                      <span className="font-bold text-slate-500">
-                        Auction Completed
-                      </span>
-                    ) : (
-                      <span className="font-bold text-blue-600">
-                        Starts{" "}
-                        {new Date(auction.startDateTime).toLocaleDateString()}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                <span className="flex items-center gap-1">
-                  <Calendar className="size-4" />{" "}
-                  {new Date(auction.startDateTime).toLocaleDateString()} -{" "}
-                  {new Date(auction.endDateTime).toLocaleDateString()}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Hash className="size-4" /> {propertyDetails.length} Lots
-                </span>
-                <span className="flex items-center gap-1">
-                  <Users className="size-4" /> {auction.totalBidders || 0}{" "}
-                  Bidders
-                </span>
-                <span className="flex items-center gap-1">
-                  <Gavel className="size-4" /> {auction.totalBids || 0} Total
-                  Bids
-                </span>
-              </div>
-            </div>
+            <AuctionHeader
+              auction={auction}
+              isLiveRoomAuction={isLiveRoomAuction}
+              propertyCount={propertyDetails.length}
+            />
 
             {/* ─── LOT CARDS (One per Property) ─── */}
             {propertyDetails.length === 0 ? (
@@ -552,330 +475,35 @@ export default function AuctionDetail() {
                 </h3>
               </div>
             ) : (
-              propertyDetails.map((property: any) => {
-                const currentBid =
-                  property.currentBid ||
-                  property.pricing?.startingAuctionPrice ||
-                  0;
-                const bidIncrement =
-                  property.pricing?.minimumBidIncrement ||
-                  auction.bidIncrement ||
-                  1000;
-                const nextMinBid = currentBid + bidIncrement;
-                const reservePrice = property.pricing?.reservePrice || 0;
-                const reserveMet = currentBid >= reservePrice;
-                const imageUrl = getPropertyImage(property);
-                const history = lotHistories[property._id];
-                const isLoadingHistory = loadingHistory[property._id];
-                const isExpanded = expandedLot === property._id;
-
-                return (
-                  <div
-                    key={property._id}
-                    className="bg-white/80 backdrop-blur-xl rounded-3xl border-2 border-white/60 shadow-xl overflow-hidden"
-                  >
-                    {/* Property Image */}
-                    <div className="relative h-64">
-                      <ImageWithFallback
-                        src={imageUrl}
-                        alt={property.propertyTitle}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-4 left-4">
-                        <span className="px-3 py-1.5 bg-black/60 backdrop-blur-md text-white text-xs font-bold rounded-full">
-                          LOT {propertyDetails.indexOf(property) + 1}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Property Details */}
-                    <div className="p-6">
-                      <h3 className="text-xl font-black text-slate-900 mb-2">
-                        {property.propertyTitle}
-                      </h3>
-                      <div className="flex items-center gap-2 text-slate-600 mb-4">
-                        <MapPin className="size-4 text-blue-600" />
-                        <span className="text-sm font-medium">
-                          {property.location?.city}, {property.location?.area}
-                        </span>
-                      </div>
-
-                      {/* Specs */}
-                      <div className="flex items-center gap-4 mb-6 pb-6 border-b-2 border-slate-100">
-                        <div className="flex items-center gap-2">
-                          <Bed className="size-4 text-blue-600" />
-                          <span className="text-sm font-bold">
-                            {property.specifications?.bedrooms || 0}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Bath className="size-4 text-purple-600" />
-                          <span className="text-sm font-bold">
-                            {property.specifications?.bathrooms || 0}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Maximize className="size-4 text-emerald-600" />
-                          <span className="text-sm font-bold">
-                            {property.specifications?.totalArea?.toLocaleString() ||
-                              "N/A"}{" "}
-                            sqft
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* ─── BIDDING SECTION (PER LOT) ─── */}
-                      <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-5 mb-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <p className="text-xs font-semibold text-slate-600 uppercase">
-                              Current Bid
-                            </p>
-                            <p className="text-2xl font-black text-green-600">
-                              £{currentBid.toLocaleString()}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs font-semibold text-slate-600">
-                              Next Min Bid
-                            </p>
-                            <p className="text-lg font-bold text-slate-900">
-                              £{nextMinBid.toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between text-xs font-semibold mb-2">
-                          <span className="text-slate-500">Bid Increment</span>
-                          <span className="text-slate-900">
-                            £{bidIncrement.toLocaleString()}
-                          </span>
-                        </div>
-                        {reservePrice > 0 && (
-                          <div
-                            className={`flex items-center gap-1.5 text-xs font-bold ${reserveMet ? "text-green-600" : "text-amber-600"}`}
-                          >
-                            {reserveMet ? (
-                              <CheckCircle className="size-3.5" />
-                            ) : (
-                              <AlertCircle className="size-3.5" />
-                            )}
-                            {reserveMet
-                              ? "Reserve Met"
-                              : `Reserve Not Met (£${reservePrice.toLocaleString()})`}
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
-                          <span>{property.totalBids || 0} bids</span>
-                          <span>
-                            Starting: £
-                            {(
-                              property.pricing?.startingAuctionPrice || 0
-                            ).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* ─── ACTION BUTTONS ─── */}
-                      <div className="flex gap-3">
-                        {auction.status === "live" ? (
-                          <button
-                            onClick={() => handlePlaceBid(property)}
-                            className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold..."
-                          >
-                            <Gavel className="size-5" /> Place Bid
-                          </button>
-                        ) : (
-                          <div className="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-xl font-bold text-center">
-                            {auction.status === "completed"
-                              ? "Auction Ended"
-                              : "Not Started"}
-                          </div>
-                        )}
-                        <button
-                          onClick={() => loadBidHistory(property._id)}
-                          className={`px-4 py-3.5 rounded-xl font-bold transition-all flex items-center gap-2 ${
-                            isExpanded
-                              ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
-                              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                          }`}
-                        >
-                          <Eye className="size-4" />
-                          {isExpanded ? "Hide History" : "Bid History"}
-                          <ChevronDown
-                            className={`size-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                          />
-                        </button>
-                      </div>
-
-                      {/* ─── EXPANDABLE BID HISTORY ─── */}
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="mt-4 pt-4 border-t-2 border-slate-100">
-                              {isLoadingHistory ? (
-                                <div className="text-center py-4">
-                                  <div className="animate-spin size-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto" />
-                                </div>
-                              ) : history?.bids?.length > 0 ? (
-                                <div className="space-y-2 max-h-64 overflow-y-auto">
-                                  {history.bids.map((bid: any, i: number) => (
-                                    <div
-                                      key={bid._id || i}
-                                      className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100"
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <div className="size-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                                          {bid.bidder?.name?.charAt(0) || "?"}
-                                        </div>
-                                        <div>
-                                          <p className="text-sm font-bold text-slate-900">
-                                            {bid.bidder?.name || "Anonymous"}
-                                          </p>
-                                          <p className="text-xs text-slate-500">
-                                            {new Date(
-                                              bid.createdAt,
-                                            ).toLocaleString()}
-                                          </p>
-                                        </div>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-lg font-black text-green-600">
-                                          £{bid.amount?.toLocaleString()}
-                                        </p>
-                                        <span
-                                          className={`text-xs font-bold ${bid.status === "winning" ? "text-green-600" : "text-slate-500"}`}
-                                        >
-                                          {bid.status === "winning"
-                                            ? "🏆 Winning"
-                                            : bid.status}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <p className="text-center text-sm text-slate-500 py-4">
-                                  No bids yet for this lot.
-                                </p>
-                              )}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-                );
-              })
+              propertyDetails.map((property: any, idx: number) => (
+                <LotCard
+                  key={property._id}
+                  property={property}
+                  auction={auction}
+                  isLiveRoomAuction={isLiveRoomAuction}
+                  lotIndex={idx}
+                  onPlaceBid={handlePlaceBid}
+                  bidHistory={lotHistories[property._id]}
+                  onLoadHistory={loadBidHistory}
+                  isExpanded={expandedLot === property._id}
+                  isLoadingHistory={loadingHistory[property._id] || false}
+                />
+              ))
             )}
           </div>
 
           {/* ─── RIGHT SIDEBAR: Auction Info ─── */}
-          <div className="space-y-6">
-            {/* Auction Status */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 border-2 border-white/60 shadow-xl">
-              <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
-                <Info className="size-5 text-blue-600" /> Auction Status
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Status</span>
-                  <span
-                    className={`font-bold ${auction.status === "live" ? "text-green-600" : "text-slate-900"}`}
-                  >
-                    {auction.status === "live"
-                      ? "🟢 Live"
-                      : auction.status?.charAt(0).toUpperCase() +
-                        auction.status?.slice(1)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Total Lots</span>
-                  <span className="font-bold">{propertyDetails.length}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Total Bids</span>
-                  <span className="font-bold">{auction.totalBids || 0}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Registered Bidders</span>
-                  <span className="font-bold">{auction.totalBidders || 0}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Venue Info */}
-            {auction.venue?.name && (
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 border-2 border-white/60 shadow-xl">
-                <h3 className="text-lg font-black text-slate-900 mb-3 flex items-center gap-2">
-                  <MapPin className="size-5 text-purple-600" /> Venue
-                </h3>
-                <p className="font-bold text-slate-900">{auction.venue.name}</p>
-                {auction.venue.address && (
-                  <p className="text-sm text-slate-600">
-                    {auction.venue.address}
-                  </p>
-                )}
-                {auction.venue.city && (
-                  <p className="text-sm text-slate-600">
-                    {auction.venue.city}
-                    {auction.venue.postcode
-                      ? `, ${auction.venue.postcode}`
-                      : ""}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Auction Details */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 border-2 border-white/60 shadow-xl">
-              <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
-                <Calendar className="size-5 text-indigo-600" /> Auction Details
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Start Date</span>
-                  <span className="font-bold">
-                    {new Date(auction.startDateTime).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">End Date</span>
-                  <span className="font-bold">
-                    {new Date(auction.endDateTime).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Auction Type</span>
-                  <span className="font-bold capitalize">
-                    {auction.auctionType}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Registration Fee</span>
-                  <span className="font-bold">
-                    £{auction.registrationFee?.toLocaleString() || "0"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Deposit Required</span>
-                  <span className="font-bold">
-                    £{auction.depositRequired?.toLocaleString() || "0"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <AuctionSidebar
+            auction={auction}
+            isLiveRoomAuction={isLiveRoomAuction}
+            propertyCount={propertyDetails.length}
+          />
         </div>
       </div>
 
       {/* ─── BID MODAL ─── */}
       <BidModal
-        show={!!selectedLot}
+        show={!!selectedLot && !isLiveRoomAuction}
         onClose={() => setSelectedLot(null)}
         property={selectedLot}
         currentBid={
@@ -920,7 +548,6 @@ export default function AuctionDetail() {
         }
       />
 
-      <Footer />
-    </div>
+  </PublicLayout>
   );
 }

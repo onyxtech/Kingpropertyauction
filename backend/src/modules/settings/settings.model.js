@@ -56,6 +56,19 @@ export const NotificationRulesSchema = z.object({
   faqSupport: z.boolean().default(true),
   legalEnquiry: z.boolean().default(true),
   newsletterSignup: z.boolean().default(true),
+  liveAuctionRegistration: z.boolean().default(true),
+  adminLiveRegistrationAlert: z.boolean().default(true),
+  liveRegistrationApproved: z.boolean().default(true),
+  liveRegistrationRejected: z.boolean().default(true),
+});
+
+// ─── API Integrations Schema ───
+export const ApiIntegrationsSchema = z.object({
+  groqApiKey: z.string().default(""),
+  geminiApiKey: z.string().default(""),
+  googlePlacesApiKey: z.string().default(""),
+  openaiApiKey: z.string().default(""),
+  activeAiProvider: z.enum(["groq", "gemini", "openai"]).default("groq"),
 });
 
 // ─── OAuth Configuration Schema ───
@@ -77,6 +90,7 @@ export const SettingKeySchema = z.enum([
   "notification_rules",
   "oauth_config",
   "general",
+  "api_integrations",
 ]);
 
 // ─── Mongoose Schema ───

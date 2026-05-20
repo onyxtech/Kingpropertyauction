@@ -1,6 +1,7 @@
 import { Gift, DollarSign, Users, TrendingUp, Sparkles, CheckCircle, Award, Target, Zap, X, Mail, User, Phone, Building, MessageSquare, MapPin, Home, Info, HelpCircle, BookOpen } from "lucide-react";
 import { useState } from "react";
-import Header from "@/features/shared/layout/Header";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
+import { apiClient } from "@/lib/apiClient";
 
 export default function ReferralFee() {
   const [showReferralForm, setShowReferralForm] = useState(false);
@@ -25,9 +26,8 @@ export default function ReferralFee() {
     setSubmitting(true);
     setError('');
     try {
-      const res = await fetch('/api/leads', {
+      const data = await apiClient.fetch('/leads', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.fullName,
           email: formData.email,
@@ -37,17 +37,17 @@ export default function ReferralFee() {
           leadType: 'referral',
         }),
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setSubmitted(true);
         setFormData({ fullName: "", email: "", phone: "", company: "", role: "", address: "", city: "", postcode: "", message: "" });
       } else {
         setError(data.message || 'Something went wrong. Please try again.');
       }
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (e: any) {
+      setError(e?.message || 'Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const tiers = [
@@ -97,14 +97,12 @@ export default function ReferralFee() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-orange-400/20 to-yellow-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
-
-      <Header />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
@@ -502,10 +500,22 @@ export default function ReferralFee() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-60"
+                    className="flex-1 py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <Gift className="size-6" />
-                    {submitting ? 'Submitting...' : 'Submit Application'}
+                    {submitting ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin size-4" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                        </svg>
+                        Submitting...
+                      </span>
+                    ) : (
+                      <>
+                        <Gift className="size-6" />
+                        Submit Application
+                      </>
+                    )}
                   </button>
                   <button
                     type="button"
@@ -799,7 +809,6 @@ export default function ReferralFee() {
           </div>
         </div>
       )}
-    </div>
+    </PublicLayout>
   );
 }
-

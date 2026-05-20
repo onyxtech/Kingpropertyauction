@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Save, Gavel, Search } from "lucide-react";
+import { X, Save, Gavel, Search, MapPin } from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
 import { useAuctionApi } from "@/features/auction/api/useAuctionApi";
@@ -56,7 +56,7 @@ export default function AuctionFormModal({
 
   const [formData, setFormData] = useState({
     auctionTitle: editData?.auctionTitle || "",
-    auctionType: editData?.auctionType || "live",
+    auctionType: editData?.auctionType || "online",
     selectedProperties:
       editData?.properties?.map((p: any) =>
         typeof p === "object" ? p._id?.toString() : p?.toString(),
@@ -116,12 +116,12 @@ export default function AuctionFormModal({
       startDateTime: new Date(formData.startDateTime).toISOString(),
       endDateTime: new Date(formData.endDateTime).toISOString(),
       description: formData.description,
-      venue: {
-        name: formData.venueName,
-        address: formData.venueAddress,
-        city: formData.venueCity,
-        postcode: formData.venuePostcode,
-      },
+      venue: formData.auctionType === 'live' ? {
+        name: formData.venueName || '',
+        address: formData.venueAddress || '',
+        city: formData.venueCity || '',
+        postcode: formData.venuePostcode || '',
+      } : undefined,
       registrationFee: Number(formData.registrationFee) || 0,
       depositRequired: Number(formData.depositRequired) || 0,
       status: formData.status,
@@ -216,9 +216,8 @@ export default function AuctionFormModal({
                   }
                   className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="live">Live Auction</option>
-                  <option value="online">Online Only</option>
-                  <option value="hybrid">Hybrid (Live + Online)</option>
+                  <option value="online">🖥️ Online Auction (bidding on website)</option>
+                  <option value="live">🏛️ Live Room Auction (physical venue)</option>
                 </select>
               </div>
               <div>
@@ -414,67 +413,74 @@ export default function AuctionFormModal({
           </div>
 
           {/* Venue */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-black text-slate-900">Venue Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Venue Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.venueName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, venueName: e.target.value })
-                  }
-                  placeholder="e.g., Grand Hotel London"
-                  className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  City
-                </label>
-                <input
-                  type="text"
-                  value={formData.venueCity}
-                  onChange={(e) =>
-                    setFormData({ ...formData, venueCity: e.target.value })
-                  }
-                  placeholder="e.g., London"
-                  className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Address
-                </label>
-                <input
-                  type="text"
-                  value={formData.venueAddress}
-                  onChange={(e) =>
-                    setFormData({ ...formData, venueAddress: e.target.value })
-                  }
-                  placeholder="Full address"
-                  className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Postcode
-                </label>
-                <input
-                  type="text"
-                  value={formData.venuePostcode}
-                  onChange={(e) =>
-                    setFormData({ ...formData, venuePostcode: e.target.value })
-                  }
-                  placeholder="e.g., SW1A 1AA"
-                  className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+          {formData.auctionType === 'live' && (
+            <div className="space-y-4 bg-blue-50/60 border-2 border-blue-100 rounded-2xl p-5">
+              <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <MapPin className="size-5 text-blue-600" /> Venue Details
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Venue Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.venueName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, venueName: e.target.value })
+                    }
+                    placeholder="e.g., Grand Hotel London"
+                    className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.venueCity}
+                    onChange={(e) =>
+                      setFormData({ ...formData, venueCity: e.target.value })
+                    }
+                    placeholder="e.g., London"
+                    className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Address *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.venueAddress}
+                    onChange={(e) =>
+                      setFormData({ ...formData, venueAddress: e.target.value })
+                    }
+                    placeholder="Full address"
+                    className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Postcode
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.venuePostcode}
+                    onChange={(e) =>
+                      setFormData({ ...formData, venuePostcode: e.target.value })
+                    }
+                    placeholder="e.g., SW1A 1AA"
+                    className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Banner Image */}
           <div className="space-y-4">

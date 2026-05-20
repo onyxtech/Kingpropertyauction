@@ -42,6 +42,7 @@ const leadSchema = new mongoose.Schema(
         "legal",
         "faq",
         "newsletter",
+        "live-registration",
       ],
       default: "general",
     },
@@ -58,6 +59,15 @@ const leadSchema = new mongoose.Schema(
       type: mongoose.Schema.ObjectId,
       ref: "User",
     },
+    approvalStatus: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+    },
+    auctionRef: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Auction',
+    },
     notes: [
       {
         text: String,
@@ -68,6 +78,10 @@ const leadSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+leadSchema.index({ createdAt: -1 });
+leadSchema.index({ leadType: 1 });
+leadSchema.index({ status: 1 });
 
 const Lead = mongoose.model("Lead", leadSchema);
 export default Lead;

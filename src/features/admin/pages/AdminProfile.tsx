@@ -2,6 +2,7 @@ import { useState } from "react";
 import { User, Mail, Shield, Clock, Save } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import AdminLayout from "../components/AdminLayout";
+import { apiClient } from "@/lib/apiClient";
 
 export default function AdminProfile() {
   const { user } = useAuthStore();
@@ -25,12 +26,8 @@ export default function AdminProfile() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/auth/profile", {
+      const data = await apiClient.fetch("/auth/profile", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
@@ -38,7 +35,6 @@ export default function AdminProfile() {
           newPassword: formData.newPassword || undefined,
         }),
       });
-      const data = await response.json();
       if (data.success) {
         const updatedUser = { ...user, name: data.user.name, email: data.user.email };
         localStorage.setItem("user", JSON.stringify(updatedUser));

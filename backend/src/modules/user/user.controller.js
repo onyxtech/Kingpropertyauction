@@ -9,6 +9,7 @@ export const getAllUsers = async (req, res) => {
     const users = await User.find({}).select("-password -refreshToken");
     res.status(200).json({ success: true, data: users });
   } catch (error) {
+    console.error('[User] getAllUsers error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -62,6 +63,7 @@ export const updateUserStatus = async (req, res) => {
       message: `User ${newIsActive ? "activated" : "deactivated"} successfully`,
     });
   } catch (error) {
+    console.error('[User] updateUserStatus error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -85,6 +87,7 @@ export const updateUser = async (req, res) => {
       .status(200)
       .json({ success: true, data: user, message: "User updated" });
   } catch (error) {
+    console.error('[User] updateUser error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };

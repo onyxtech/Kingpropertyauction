@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
+import { apiClient } from "@/lib/apiClient";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -17,26 +17,23 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/forgot-password", {
+      const data = await apiClient.fetch("/auth/forgot-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const data = await response.json();
       if (data.success) {
         setSent(true);
       } else {
         setError(data.message);
       }
-    } catch (err) {
-      setError("Cannot connect to server");
+    } catch (err: any) {
+      setError(err?.message || "Cannot connect to server");
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
-      <Header />
+    <PublicLayout>
       <div className="flex items-center justify-center min-h-[80vh] px-4">
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 w-full max-w-md shadow-xl border-2 border-white/60">
           <button
@@ -109,7 +106,6 @@ export default function ForgotPassword() {
           )}
         </div>
       </div>
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }

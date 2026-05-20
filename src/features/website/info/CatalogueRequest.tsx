@@ -9,8 +9,8 @@ import {
   MapPin,
   Calendar,
 } from "lucide-react";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
+import { apiClient } from "@/lib/apiClient";
 
 export default function CatalogueRequest() {
   const [submitted, setSubmitted] = useState(false);
@@ -19,8 +19,7 @@ export default function CatalogueRequest() {
   const [loadingAuctions, setLoadingAuctions] = useState(true);
 
   useEffect(() => {
-    fetch('/api/auctions?status=scheduled&limit=10')
-      .then(r => r.json())
+    apiClient.fetch('/auctions?status=scheduled&limit=10')
       .then(data => {
         if (data.success && data.data?.length > 0) {
           setUpcomingAuctions(data.data.map((a: any) => ({
@@ -66,9 +65,8 @@ export default function CatalogueRequest() {
       .join(', ') || 'None selected';
 
     try {
-      await fetch("/api/leads", {
+      await apiClient.fetch("/leads", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name:
             `${fd.get("firstName") || ""} ${fd.get("lastName") || ""}`.trim() ||
@@ -85,14 +83,14 @@ export default function CatalogueRequest() {
         }),
       });
       setSubmitted(true);
-    } catch (e) {
-      console.error('Catalogue submit error:', e);
+    } catch (e: any) {
+      console.error('Catalogue submit error:', e?.message || e);
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-rose-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse" />
@@ -101,8 +99,6 @@ export default function CatalogueRequest() {
           style={{ animationDelay: "2s" }}
         />
       </div>
-
-      <Header />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
@@ -408,7 +404,6 @@ export default function CatalogueRequest() {
           </div>
         </div>
       </div>
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }

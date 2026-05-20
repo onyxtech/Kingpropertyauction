@@ -4,27 +4,29 @@ import {
   MapPin,
   Clock,
   Calendar,
-  Users,
   Gavel,
-  Phone,
-  Mail,
   Navigation,
   CheckCircle,
   AlertCircle,
   Sparkles,
-  TrendingUp,
-  Award,
-  Target,
   ArrowRight,
   X,
 } from "lucide-react";
-import Header from "@/features/shared/layout/Header";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
+import { apiClient } from "@/lib/apiClient";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { CACHE_KEYS } from "@/constants";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
+import AuctionTimer from "@/features/shared/components/AuctionTimer";
+import { useAuctionSocket } from "@/hooks/useAuctionSocket";
 
 export default function ViewLiveLocations() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -32,165 +34,94 @@ export default function ViewLiveLocations() {
     address: "",
     city: "",
     postcode: "",
-    location: "",
+    selectedAuction: "",
     interests: "",
   });
 
-  const liveLocations = [
-    {
-      id: 1,
-      city: "London",
-      venue: "Royal Convention Centre",
-      address: "123 Westminster Road, London, SW1A 1AA",
-      nextAuction: "March 15, 2026",
-      time: "2:00 PM GMT",
-      lots: 45,
-      registeredBidders: 234,
-      image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsb25kb24lMjBjaXR5fGVufDF8fHx8MTc3MTIzMzMwOHww&ixlib=rb-4.1.0&q=80&w=1080",
-      gradient: "from-blue-500 via-blue-600 to-indigo-600",
-      status: "Live Today",
-      featured: true,
+  const { data: venueData, isLoading: loading } = useQuery({
+    queryKey: [CACHE_KEYS.AUCTIONS, 'venues'],
+    queryFn: async () => {
+      const data = await apiClient.fetch('/auctions?limit=20');
+      const all = (data.data || []) as any[];
+      return all.filter((a) => a.auctionType === "live" && a.venue?.name);
     },
-    {
-      id: 2,
-      city: "Manchester",
-      venue: "Manchester Grand Hall",
-      address: "456 Deansgate, Manchester, M3 2FF",
-      nextAuction: "March 18, 2026",
-      time: "1:00 PM GMT",
-      lots: 38,
-      registeredBidders: 189,
-      image: "https://images.unsplash.com/photo-1560363199-a1264d4ea5fc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYW5jaGVzdGVyJTIwY2l0eXxlbnwxfHx8fDE3NzEyMzMzMDh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      gradient: "from-purple-500 via-purple-600 to-pink-600",
-      status: "Upcoming",
-      featured: false,
-    },
-    {
-      id: 3,
-      city: "Birmingham",
-      venue: "Birmingham International Centre",
-      address: "789 Broad Street, Birmingham, B1 2EA",
-      nextAuction: "March 22, 2026",
-      time: "3:00 PM GMT",
-      lots: 52,
-      registeredBidders: 312,
-      image: "https://images.unsplash.com/photo-1617348003030-5dc3be5b0b0d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaXJtaW5naGFtJTIwY2l0eXxlbnwxfHx8fDE3NzEyMzMzMDh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      gradient: "from-emerald-500 via-emerald-600 to-teal-600",
-      status: "Upcoming",
-      featured: true,
-    },
-    {
-      id: 4,
-      city: "Edinburgh",
-      venue: "Edinburgh Conference Center",
-      address: "321 Princes Street, Edinburgh, EH2 2AN",
-      nextAuction: "March 25, 2026",
-      time: "12:00 PM GMT",
-      lots: 41,
-      registeredBidders: 201,
-      image: "https://images.unsplash.com/photo-1555881788-0e39d8f207b0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlZGluYnVyZ2glMjBjaXR5fGVufDF8fHx8MTc3MTIzMzMwOHww&ixlib=rb-4.1.0&q=80&w=1080",
-      gradient: "from-orange-500 via-orange-600 to-amber-600",
-      status: "Upcoming",
-      featured: false,
-    },
-    {
-      id: 5,
-      city: "Bristol",
-      venue: "Bristol Auction House",
-      address: "555 Harbourside, Bristol, BS1 6HG",
-      nextAuction: "March 29, 2026",
-      time: "2:30 PM GMT",
-      lots: 36,
-      registeredBidders: 167,
-      image: "https://images.unsplash.com/photo-1558537348-cb7c7e0dfd97?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxicmlzdG9sJTIwY2l0eXxlbnwxfHx8fDE3NzEyMzMzMDh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      gradient: "from-rose-500 via-rose-600 to-red-600",
-      status: "Upcoming",
-      featured: false,
-    },
-    {
-      id: 6,
-      city: "Leeds",
-      venue: "Leeds Central Venue",
-      address: "888 Wellington Street, Leeds, LS1 4JJ",
-      nextAuction: "April 1, 2026",
-      time: "1:30 PM GMT",
-      lots: 44,
-      registeredBidders: 223,
-      image: "https://images.unsplash.com/photo-1566404791232-af9fe0ae8f8b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsZWVkcyUyMGNpdHl8ZW58MXx8fHwxNzcxMjMzMzA4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      gradient: "from-cyan-500 via-cyan-600 to-blue-600",
-      status: "Upcoming",
-      featured: true,
-    },
-  ];
+    refetchInterval: 30000,
+  });
+  const auctions = venueData || [];
 
-  const stats = [
-    {
-      label: "Live Locations",
-      value: "6",
-      icon: MapPin,
-      gradient: "from-blue-500 to-cyan-500",
-    },
-    {
-      label: "Total Lots",
-      value: "256",
-      icon: Gavel,
-      gradient: "from-purple-500 to-pink-500",
-    },
-    {
-      label: "Registered Bidders",
-      value: "1,326",
-      icon: Users,
-      gradient: "from-emerald-500 to-teal-500",
-    },
-    {
-      label: "Success Rate",
-      value: "96%",
-      icon: Award,
-      gradient: "from-orange-500 to-amber-500",
-    },
-  ];
+  useAuctionSocket({
+    onAuctionUpdate: () => queryClient.invalidateQueries({ queryKey: [CACHE_KEYS.AUCTIONS, 'venues'] }),
+  });
 
-  const handleRegister = (location: any) => {
-    setFormData({ ...formData, location: location.city });
+  const handleRegister = (auction: any) => {
+    setFormData((prev) => ({ ...prev, selectedAuction: auction._id }));
     setRegisterModalOpen(true);
     setRegistrationSuccess(false);
+    setSubmitError("");
   };
 
-  const handleSubmitRegistration = (e: React.FormEvent) => {
+  const handleSubmitRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !formData.fullName ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.location
-    )
-      return;
+    if (!formData.fullName || !formData.email || !formData.phone) return;
 
-    // Simulate registration
-    setTimeout(() => {
-      setRegistrationSuccess(true);
-    }, 500);
+    const selected = auctions.find((a) => a._id === formData.selectedAuction);
+    const auctionName = selected?.auctionTitle || "Live Auction";
+    const venueName = selected?.venue?.name || "";
+    const venueAddress = [selected?.venue?.address, selected?.venue?.city, selected?.venue?.postcode]
+      .filter(Boolean)
+      .join(", ");
+    const auctionDate = selected?.startDateTime
+      ? new Date(selected.startDateTime).toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+      : "";
+    const auctionTime = selected?.startDateTime
+      ? new Date(selected.startDateTime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" }) + " GMT"
+      : "";
+
+    const messageLines = [
+      `Auction: ${auctionName}`,
+      `Venue: ${venueName}`,
+      `Address: ${venueAddress}`,
+      `Date: ${auctionDate}`,
+      `Time: ${auctionTime}`,
+      `Registrant Address: ${formData.address}, ${formData.city}, ${formData.postcode}`,
+      formData.interests ? `Property Interests: ${formData.interests}` : "",
+    ].filter(Boolean).join("\n");
+
+    setIsSubmitting(true);
+    setSubmitError("");
+    try {
+      const data = await apiClient.fetch("/leads", {
+        method: "POST",
+        body: JSON.stringify({
+          name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          subject: "Live Auction Registration",
+          message: messageLines,
+          leadType: "live-registration",
+          auctionRef: formData.selectedAuction,
+        }),
+      });
+      if (data.success) {
+        setRegistrationSuccess(true);
+      } else {
+        setSubmitError(data.message || "Registration failed. Please try again.");
+      }
+    } catch (e: any) {
+      setSubmitError(e?.message || "Network error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" />
-        <div
-          className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        />
-      </div>
-
-      <Header />
-
+    <PublicLayout>
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 opacity-95" />
@@ -207,7 +138,7 @@ export default function ViewLiveLocations() {
             <div className="inline-flex items-center gap-2 px-5 py-2 bg-white/20 backdrop-blur-lg rounded-full mb-6 border border-white/40">
               <MapPin className="size-5 text-white" />
               <span className="text-sm font-bold text-white">
-                6 Live Locations Nationwide
+                {loading ? "Loading..." : `${auctions.length} Live Venue${auctions.length !== 1 ? "s" : ""}`}
               </span>
             </div>
 
@@ -220,8 +151,7 @@ export default function ViewLiveLocations() {
             </h1>
 
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Register now for upcoming auctions at our premium venues across
-              the UK. Experience the thrill of live bidding with expert support.
+              Register now for upcoming auctions at our premium venues. Experience the thrill of live bidding with expert support.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4">
@@ -244,155 +174,200 @@ export default function ViewLiveLocations() {
         </div>
       </div>
 
-      {/* Stats Section */}
-      <div className="container mx-auto px-6 py-12 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => (
-            <div
-              key={index}
-              className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 border-2 border-white/60 shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
-            >
-              <div
-                className={`size-16 rounded-2xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center mb-4 shadow-lg`}
-              >
-                <stat.icon className="size-8 text-white" />
-              </div>
-              <div className="text-4xl font-black text-slate-900 mb-2">
-                {stat.value}
-              </div>
-              <div className="text-sm font-semibold text-slate-600">
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Locations Grid */}
-      <div className="container mx-auto px-6 py-12 relative z-10">
+      <div className="container mx-auto px-6 py-16 relative z-10">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-black text-slate-900 mb-4">
             Our Live Auction Venues
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Choose from our premium locations nationwide and register for
-            upcoming auctions
+            Choose from our upcoming live auctions and register to attend in person
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {liveLocations.map((location) => (
-            <div
-              key={location.id}
-              className="bg-white rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all group border-2 border-white/60"
-            >
-              {/* Image */}
-              <div className="relative h-56 overflow-hidden">
-                <ImageWithFallback
-                  src={location.image}
-                  alt={location.city}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                {location.featured && (
-                  <div className="absolute top-4 right-4 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-black rounded-full flex items-center gap-1 shadow-lg">
-                    <Award className="size-3" />
-                    Featured
-                  </div>
-                )}
-                {location.status === "Live Today" && (
-                  <div className="absolute top-4 left-4 px-3 py-1.5 bg-red-500 text-white text-xs font-black rounded-full animate-pulse shadow-lg">
-                    🔴 {location.status}
-                  </div>
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-2xl font-black text-slate-900 mb-1">
-                      {location.city}
-                    </h3>
-                    <p className="text-sm font-bold text-slate-600">
-                      {location.venue}
-                    </p>
-                  </div>
-                  <div
-                    className={`size-12 rounded-xl bg-gradient-to-br ${location.gradient} flex items-center justify-center shadow-lg`}
-                  >
-                    <MapPin className="size-6 text-white" />
-                  </div>
-                </div>
-
-                <div className="space-y-3 mb-5">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Navigation className="size-4 text-slate-400" />
-                    <span className="font-medium">{location.address}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Calendar className="size-4 text-slate-400" />
-                    <span className="font-medium">{location.nextAuction}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Clock className="size-4 text-slate-400" />
-                    <span className="font-medium">{location.time}</span>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="flex items-center gap-4 mb-5 pb-5 border-b border-slate-200">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`size-10 rounded-lg bg-gradient-to-br ${location.gradient} flex items-center justify-center`}
-                    >
-                      <Gavel className="size-5 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-xl font-black text-slate-900">
-                        {location.lots}
-                      </div>
-                      <div className="text-xs font-semibold text-slate-500">
-                        Lots
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`size-10 rounded-lg bg-gradient-to-br ${location.gradient} flex items-center justify-center`}
-                    >
-                      <Users className="size-5 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-xl font-black text-slate-900">
-                        {location.registeredBidders}
-                      </div>
-                      <div className="text-xs font-semibold text-slate-500">
-                        Bidders
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => handleRegister(location)}
-                    className={`flex-1 py-3.5 bg-gradient-to-r ${location.gradient} text-white rounded-xl font-bold hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2`}
-                  >
-                    <CheckCircle className="size-5" />
-                    Register
-                  </button>
-                  <button
-                    onClick={() => navigate(`/view-all-lots`)}
-                    className="px-5 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all"
-                  >
-                    <Navigation className="size-5" />
-                  </button>
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-3xl overflow-hidden shadow-xl border-2 border-white/60 animate-pulse">
+                <div className="h-56 bg-slate-200" />
+                <div className="p-6 space-y-4">
+                  <div className="h-6 bg-slate-200 rounded-lg w-3/4" />
+                  <div className="h-4 bg-slate-200 rounded-lg w-1/2" />
+                  <div className="h-4 bg-slate-200 rounded-lg w-2/3" />
+                  <div className="h-4 bg-slate-200 rounded-lg w-1/3" />
+                  <div className="h-12 bg-slate-200 rounded-xl" />
                 </div>
               </div>
+            ))}
+          </div>
+        ) : auctions.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="size-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <MapPin className="size-10 text-slate-400" />
             </div>
-          ))}
-        </div>
+            <h3 className="text-2xl font-black text-slate-700 mb-3">No Live Venues at the Moment</h3>
+            <p className="text-slate-500 mb-8 max-w-md mx-auto">
+              We don't have any live auction venues scheduled right now. Check back soon or browse our online auctions.
+            </p>
+            <button
+              onClick={() => navigate("/online-auctions")}
+              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all"
+            >
+              Browse Online Auctions
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {auctions.map((auction) => {
+              const startDate = auction.startDateTime ? new Date(auction.startDateTime) : null;
+              const dateStr = startDate?.toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                timeZone: 'Europe/London',
+              }) || 'TBC';
+              const timeStr = startDate
+                ? startDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' }) + ' GMT'
+                : '';
+              const lots = auction.properties?.length || 0;
+              const gradients = [
+                "from-blue-500 via-blue-600 to-indigo-600",
+                "from-purple-500 via-purple-600 to-pink-600",
+                "from-emerald-500 via-emerald-600 to-teal-600",
+                "from-orange-500 via-orange-600 to-amber-600",
+                "from-rose-500 via-rose-600 to-red-600",
+                "from-cyan-500 via-cyan-600 to-blue-600",
+              ];
+              const gradient = gradients[auctions.indexOf(auction) % gradients.length];
+
+              return (
+                <div
+                  key={auction._id}
+                  className="bg-white rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all group border-2 border-white/60"
+                >
+                  <div className="relative h-56 overflow-hidden">
+                    {(() => {
+                      const auctionImage = auction.auctionImage ||
+                        auction.properties?.[0]?.media?.propertyImages?.[0] ||
+                        null;
+                      return auctionImage ? (
+                        <ImageWithFallback
+                          src={auctionImage}
+                          alt={auction.auctionTitle}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className={`w-full h-full bg-gradient-to-br ${gradient} flex items-center justify-center`}>
+                          <MapPin className="size-16 text-white/50" />
+                          <span className="text-white font-black text-xl ml-2">{auction.venue?.city}</span>
+                        </div>
+                      );
+                    })()}
+                    {auction.status === 'live' && (
+                      <div className="absolute top-4 left-4 px-3 py-1.5 bg-red-500 text-white text-xs font-black rounded-full animate-pulse shadow-lg flex items-center gap-1">
+                        🔴 Live Now
+                      </div>
+                    )}
+                    {auction.status === 'scheduled' && (
+                      <div className="absolute top-4 left-4 px-3 py-1.5 bg-blue-500 text-white text-xs font-black rounded-full shadow-lg flex items-center gap-1">
+                        📅 Scheduled
+                      </div>
+                    )}
+                    {auction.status === 'completed' && (
+                      <div className="absolute top-4 left-4 px-3 py-1.5 bg-slate-500 text-white text-xs font-black rounded-full shadow-lg flex items-center gap-1">
+                        ✅ Completed
+                      </div>
+                    )}
+                    {lots > 0 && (
+                      <div className="absolute top-4 right-4 px-3 py-1.5 bg-black/60 backdrop-blur-sm text-white text-xs font-black rounded-full shadow-lg">
+                        {lots} {lots === 1 ? "Lot" : "Lots"}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-xl font-black text-slate-900 mb-1 leading-tight">
+                          {auction.auctionTitle}
+                        </h3>
+                        <p className="text-sm font-bold text-blue-600">
+                          {auction.venue?.name}
+                        </p>
+                      </div>
+                      <div className={`size-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg flex-shrink-0`}>
+                        <MapPin className="size-6 text-white" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2.5 mb-5">
+                      {auction.venue?.address && (
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Navigation className="size-4 text-slate-400 flex-shrink-0" />
+                          <span className="font-medium">
+                            {[auction.venue.address, auction.venue.city, auction.venue.postcode].filter(Boolean).join(", ")}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Calendar className="size-4 text-slate-400" />
+                        <span className="font-medium">{dateStr}</span>
+                      </div>
+                      {timeStr && (
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <Clock className="size-4 text-slate-400" />
+                          <span className="font-medium">{timeStr}</span>
+                        </div>
+                      )}
+                      {auction.startDateTime && auction.endDateTime && (
+                        <AuctionTimer
+                          startDateTime={auction.startDateTime}
+                          endDateTime={auction.endDateTime}
+                          status={auction.status}
+                          showLabel={true}
+                        />
+                      )}
+                    </div>
+
+                    <div className="flex gap-3">
+                      {auction.status === 'scheduled' && (
+                        <button
+                          onClick={() => handleRegister(auction)}
+                          className={`flex-1 py-3.5 bg-gradient-to-r ${gradient} text-white rounded-xl font-bold hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-2`}
+                        >
+                          <CheckCircle className="size-5" />
+                          Register
+                        </button>
+                      )}
+                      {auction.status === 'live' && (
+                        <button
+                          disabled
+                          className="flex-1 py-3.5 bg-red-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 cursor-not-allowed"
+                        >
+                          🔴 Live Now
+                        </button>
+                      )}
+                      {auction.status === 'completed' && (
+                        <button
+                          disabled
+                          className="flex-1 py-3.5 bg-slate-300 text-slate-600 rounded-xl font-bold flex items-center justify-center gap-2 cursor-not-allowed"
+                        >
+                          ✅ Completed
+                        </button>
+                      )}
+                      <button
+                        onClick={() => navigate(`/auctions/${auction.slug || auction._id}/properties`)}
+                        className="px-5 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all"
+                      >
+                        <Gavel className="size-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* CTA Section */}
@@ -400,19 +375,12 @@ export default function ViewLiveLocations() {
         <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-12 text-center relative overflow-hidden shadow-2xl">
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 left-0 size-96 bg-white rounded-full blur-3xl animate-pulse" />
-            <div
-              className="absolute bottom-0 right-0 size-96 bg-cyan-300 rounded-full blur-3xl animate-pulse"
-              style={{ animationDelay: "1.5s" }}
-            />
+            <div className="absolute bottom-0 right-0 size-96 bg-cyan-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1.5s" }} />
           </div>
-
           <div className="relative z-10">
-            <h2 className="text-4xl font-black text-white mb-4">
-              Ready to Start Bidding?
-            </h2>
+            <h2 className="text-4xl font-black text-white mb-4">Ready to Start Bidding?</h2>
             <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Register now for any of our upcoming auctions and gain access to
-              exclusive properties
+              Register now for any of our upcoming auctions and gain access to exclusive properties
             </p>
             <button
               onClick={() => setRegisterModalOpen(true)}
@@ -430,50 +398,25 @@ export default function ViewLiveLocations() {
       {registerModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-6 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
-            {/* Gradient Top */}
             <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
-            {/* Close Button */}
             <button
               className="absolute top-6 right-6 size-10 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center transition-all hover:rotate-90"
-              onClick={() => {
-                setRegisterModalOpen(false);
-                setRegistrationSuccess(false);
-              }}
+              onClick={() => { setRegisterModalOpen(false); setRegistrationSuccess(false); setSubmitError(""); }}
             >
               <X className="size-5 text-slate-600" />
             </button>
 
             {registrationSuccess ? (
-              // Success State
               <div className="text-center py-8">
                 <div className="size-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
                   <CheckCircle className="size-14 text-white" />
                 </div>
-                <h3 className="text-3xl font-black text-slate-900 mb-4">
-                  Registration Successful! 🎉
-                </h3>
+                <h3 className="text-3xl font-black text-slate-900 mb-4">Registration Successful! 🎉</h3>
                 <p className="text-lg text-slate-600 mb-8">
-                  Thank you for registering, {formData.fullName}! We've sent a
-                  confirmation email to{" "}
-                  <span className="font-bold text-blue-600">
-                    {formData.email}
-                  </span>
+                  Thank you, <strong>{formData.fullName}</strong>! We've sent a confirmation email to{" "}
+                  <span className="font-bold text-blue-600">{formData.email}</span>
                 </p>
-
-                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 mb-8 border-2 border-blue-200">
-                  <div className="flex items-center gap-3 mb-3">
-                    <MapPin className="size-5 text-blue-600" />
-                    <span className="font-bold text-slate-900">
-                      Your Location: {formData.location}
-                    </span>
-                  </div>
-                  <p className="text-sm text-slate-600">
-                    We'll notify you about upcoming auctions and exclusive lots
-                    in your area.
-                  </p>
-                </div>
-
                 <div className="flex gap-3">
                   <button
                     onClick={() => navigate("/view-all-lots")}
@@ -482,20 +425,7 @@ export default function ViewLiveLocations() {
                     Browse Lots
                   </button>
                   <button
-                    onClick={() => {
-                      setRegisterModalOpen(false);
-                      setRegistrationSuccess(false);
-                      setFormData({
-                        fullName: "",
-                        email: "",
-                        phone: "",
-                        address: "",
-                        city: "",
-                        postcode: "",
-                        location: "",
-                        interests: "",
-                      });
-                    }}
+                    onClick={() => { setRegisterModalOpen(false); setRegistrationSuccess(false); }}
                     className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all"
                   >
                     Close
@@ -503,180 +433,94 @@ export default function ViewLiveLocations() {
                 </div>
               </div>
             ) : (
-              // Registration Form
               <>
                 <div className="mb-6">
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full mb-4">
                     <Sparkles className="size-4" />
-                    <span className="text-sm font-bold">
-                      Free Registration
-                    </span>
+                    <span className="text-sm font-bold">Free Registration</span>
                   </div>
-                  <h3 className="text-3xl font-black text-slate-900 mb-2">
-                    Register for Live Auctions
-                  </h3>
-                  <p className="text-slate-600">
-                    Complete the form below to register for upcoming auctions at
-                    our live locations
-                  </p>
+                  <h3 className="text-3xl font-black text-slate-900 mb-2">Register for Live Auctions</h3>
+                  <p className="text-slate-600">Complete the form below to register for an upcoming live auction</p>
                 </div>
 
                 <form onSubmit={handleSubmitRegistration} className="space-y-5">
-                  {/* Full Name */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-900 mb-2">Full Name *</label>
+                      <input type="text" name="fullName" value={formData.fullName} onChange={handleInputChange}
+                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400"
+                        placeholder="John Smith" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-900 mb-2">Email Address *</label>
+                      <input type="email" name="email" value={formData.email} onChange={handleInputChange}
+                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400"
+                        placeholder="john@example.com" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-900 mb-2">Phone Number *</label>
+                      <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange}
+                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400"
+                        placeholder="+44 7700 900000" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-900 mb-2">City *</label>
+                      <input type="text" name="city" value={formData.city} onChange={handleInputChange}
+                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400"
+                        placeholder="London" required />
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleInputChange}
+                    <label className="block text-sm font-bold text-slate-900 mb-2">Address</label>
+                    <input type="text" name="address" value={formData.address} onChange={handleInputChange}
                       className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400"
-                      placeholder="John Smith"
-                      required
-                    />
+                      placeholder="123 Main Street, SW1A 1AA" />
                   </div>
 
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400"
-                      placeholder="john@example.com"
-                      required
-                    />
-                  </div>
+                  {auctions.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-bold text-slate-900 mb-2">Select Auction Venue *</label>
+                      <select name="selectedAuction" value={formData.selectedAuction} onChange={handleInputChange}
+                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-slate-900"
+                        required>
+                        <option value="">Select an auction</option>
+                        {auctions.map((a) => (
+                          <option key={a._id} value={a._id}>
+                            {a.auctionTitle} — {a.venue?.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
-                  {/* Phone */}
                   <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400"
-                      placeholder="+44 7700 900000"
-                      required
-                    />
-                  </div>
-
-                  {/* Address */}
-                  <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2">
-                      Address *
-                    </label>
-                    <input
-                      type="text"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400"
-                      placeholder="123 Main Street"
-                      required
-                    />
-                  </div>
-
-                  {/* City */}
-                  <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400"
-                      placeholder="London"
-                      required
-                    />
-                  </div>
-
-                  {/* Postcode */}
-                  <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2">
-                      Postcode *
-                    </label>
-                    <input
-                      type="text"
-                      name="postcode"
-                      value={formData.postcode}
-                      onChange={handleInputChange}
-                      className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400"
-                      placeholder="SW1A 1AA"
-                      required
-                    />
-                  </div>
-
-                  {/* Location */}
-                  <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2">
-                      Preferred Location *
-                    </label>
-                    <select
-                      name="location"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-slate-900"
-                      required
-                    >
-                      <option value="">Select a location</option>
-                      {liveLocations.map((location) => (
-                        <option key={location.id} value={location.city}>
-                          {location.city} - {location.venue}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Interests */}
-                  <div>
-                    <label className="block text-sm font-bold text-slate-900 mb-2">
-                      Property Interests (Optional)
-                    </label>
-                    <textarea
-                      name="interests"
-                      value={formData.interests}
-                      onChange={handleInputChange}
+                    <label className="block text-sm font-bold text-slate-900 mb-2">Property Interests (Optional)</label>
+                    <textarea name="interests" value={formData.interests} onChange={handleInputChange}
                       className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-slate-400 resize-none"
-                      placeholder="E.g., Residential, Commercial, Investment Properties..."
-                      rows={3}
-                    />
+                      placeholder="E.g., Residential, Commercial, Investment Properties..." rows={3} />
                   </div>
 
-                  {/* Info Box */}
+                  {submitError && (
+                    <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                      {submitError}
+                    </div>
+                  )}
+
                   <div className="bg-blue-50 rounded-2xl p-4 border-2 border-blue-200">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="size-5 text-blue-600 mt-0.5" />
                       <div className="text-sm text-blue-900">
-                        <p className="font-bold mb-1">
-                          Your data is secure with us
-                        </p>
-                        <p className="text-blue-700">
-                          We'll only use your information to contact you about
-                          relevant auctions and properties.
-                        </p>
+                        <p className="font-bold mb-1">Your data is secure with us</p>
+                        <p className="text-blue-700">We'll only use your information to contact you about relevant auctions.</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    className="w-full py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl font-bold hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2 text-lg"
-                  >
+                  <button type="submit" disabled={isSubmitting}
+                    className="w-full py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl font-bold hover:shadow-2xl hover:scale-105 disabled:opacity-60 disabled:scale-100 transition-all flex items-center justify-center gap-2 text-lg">
                     <CheckCircle className="size-6" />
-                    Complete Registration
+                    {isSubmitting ? "Submitting..." : "Complete Registration"}
                   </button>
                 </form>
               </>
@@ -684,8 +528,6 @@ export default function ViewLiveLocations() {
           </div>
         </div>
       )}
-    </div>
+    </PublicLayout>
   );
 }
-
-

@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router";
-import { 
-  Globe, 
-  Users, 
-  Clock, 
+import {
+  Globe,
+  Users,
+  Clock,
   Shield,
   Sparkles,
   TrendingUp,
@@ -12,12 +12,43 @@ import {
   Award,
   Gavel
 } from "lucide-react";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
+import AuctionTimer from "@/features/shared/components/AuctionTimer";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "@/lib/apiClient";
+import { CACHE_KEYS } from "@/constants";
+import { useAuctionSocket } from "@/hooks/useAuctionSocket";
 
 export default function OnlineAuctions() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data: liveData, isLoading: liveLoading } = useQuery({
+    queryKey: [CACHE_KEYS.AUCTIONS, 'live'],
+    queryFn: () => apiClient.fetch('/auctions?status=live&limit=3'),
+    refetchInterval: 30000,
+  });
+  const { data: allData } = useQuery({
+    queryKey: [CACHE_KEYS.AUCTIONS, 'all'],
+    queryFn: () => apiClient.fetch('/auctions?limit=6&excludeType=live'),
+    refetchInterval: 30000,
+  });
+
+  const liveAuctions = liveData?.data || [];
+  const allAuctions = allData?.data || [];
+  const dynamicStats = {
+    totalAuctions: allData?.pagination?.total || 0,
+    liveAuctions: liveData?.pagination?.total || liveData?.data?.length || 0,
+    totalProperties: 0,
+  };
+
+  useAuctionSocket({
+    onAuctionUpdate: () => {
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEYS.AUCTIONS, 'live'] });
+      queryClient.invalidateQueries({ queryKey: [CACHE_KEYS.AUCTIONS, 'all'] });
+    },
+  });
 
   const features = [
     {
@@ -46,49 +77,21 @@ export default function OnlineAuctions() {
     }
   ];
 
-  const upcomingAuctions = [
-    {
-      id: 1,
-      title: "Premium London Properties",
-      date: "March 15, 2026",
-      time: "2:00 PM GMT",
-      lots: 45,
-      image: "https://images.unsplash.com/photo-1706808849777-96e0d7be3bb7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBtb2Rlcm4lMjBob3VzZSUyMGV4dGVyaW9yfGVufDF8fHx8MTc3MTIzMzMwOHww&ixlib=rb-4.1.0&q=80&w=1080"
-    },
-    {
-      id: 2,
-      title: "Investment Portfolio Sale",
-      date: "March 22, 2026",
-      time: "3:00 PM GMT",
-      lots: 67,
-      image: "https://images.unsplash.com/photo-1614622350812-96b09c78af77?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb250ZW1wb3JhcnklMjBhcGFydG1lbnQlMjBpbnRlcmlvcnxlbnwxfHx8fDE3NzEyNTEzMDV8MA&ixlib=rb-4.1.0&q=80&w=1080"
-    },
-    {
-      id: 3,
-      title: "Commercial Property Auction",
-      date: "March 29, 2026",
-      time: "1:00 PM GMT",
-      lots: 34,
-      image: "https://images.unsplash.com/photo-1763114766629-724ce8da8f58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwdmlsbGElMjBwb29sfGVufDF8fHx8MTc3MTMxNjgwOHww&ixlib=rb-4.1.0&q=80&w=1080"
-    }
-  ];
 
   const stats = [
-    { label: "Active Bidders", value: "8,934", icon: Users, gradient: "from-blue-500 to-cyan-500" },
-    { label: "Properties Sold", value: "2,456", icon: Award, gradient: "from-purple-500 to-pink-500" },
-    { label: "Success Rate", value: "94%", icon: TrendingUp, gradient: "from-emerald-500 to-teal-500" },
+    { label: "Live Auctions", value: dynamicStats.liveAuctions || "—", icon: Users, gradient: "from-blue-500 to-cyan-500" },
+    { label: "Total Auctions", value: dynamicStats.totalAuctions || "—", icon: Award, gradient: "from-purple-500 to-pink-500" },
+    { label: "Properties Listed", value: dynamicStats.totalProperties || "—", icon: TrendingUp, gradient: "from-emerald-500 to-teal-500" },
     { label: "Avg. Savings", value: "15%", icon: Target, gradient: "from-orange-500 to-amber-500" }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
-
-      <Header />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
@@ -193,39 +196,109 @@ export default function OnlineAuctions() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {upcomingAuctions.map((auction) => (
-              <div key={auction.id} className="bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden shadow-xl border-2 border-white/60 hover:shadow-2xl transition-all hover:scale-105">
-                <div className="relative h-64">
-                  <ImageWithFallback
-                    src={auction.image}
-                    alt={auction.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-bold text-sm shadow-xl">
-                    {auction.lots} Lots
+            {liveLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden shadow-xl border-2 border-white/60 animate-pulse">
+                  <div className="h-64 bg-slate-200" />
+                  <div className="p-6 space-y-4">
+                    <div className="h-6 bg-slate-200 rounded-lg w-3/4" />
+                    <div className="h-4 bg-slate-200 rounded-lg w-1/2" />
+                    <div className="h-4 bg-slate-200 rounded-lg w-2/3" />
+                    <div className="h-12 bg-slate-200 rounded-xl" />
                   </div>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-2xl font-black text-slate-900 mb-4">{auction.title}</h3>
-                  <div className="space-y-2 mb-6">
-                    <div className="flex items-center gap-2 text-slate-600 font-medium">
-                      <Clock className="size-5 text-blue-600" />
-                      {auction.date} at {auction.time}
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-600 font-medium">
-                      <Gavel className="size-5 text-purple-600" />
-                      Online Bidding
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => navigate('/register')}
-                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                  >
-                    Register for Auction
-                  </button>
-                </div>
+              ))
+            ) : allAuctions.length === 0 ? (
+              <div className="col-span-3 text-center py-12">
+                <p className="text-slate-500 font-medium">
+                  No auctions currently scheduled. Check back soon!
+                </p>
               </div>
-            ))}
+            ) : (
+              allAuctions.map((auction: any) => {
+                const startDate = auction.startDateTime ? new Date(auction.startDateTime) : null;
+                const dateStr = startDate?.toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  timeZone: 'Europe/London',
+                }) || 'TBC';
+                const timeStr = startDate?.toLocaleTimeString('en-GB', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  timeZone: 'Europe/London',
+                }) || '';
+                const lotCount = auction.totalLots || auction.properties?.length || 0;
+                const auctionImage = auction.auctionImage ||
+                  auction.properties?.[0]?.media?.propertyImages?.[0] || null;
+                return (
+                  <div key={auction._id} className="bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden shadow-xl border-2 border-white/60 hover:shadow-2xl transition-all hover:scale-105">
+                    <div className="relative h-64">
+                      {auctionImage ? (
+                        <ImageWithFallback
+                          src={auctionImage}
+                          alt={auction.auctionTitle}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          <Gavel className="size-16 text-white/60" />
+                        </div>
+                      )}
+                      <div className="absolute top-4 left-4">
+                        {auction.status === 'live' && (
+                          <span className="px-3 py-1.5 bg-red-500 text-white text-xs font-black rounded-full animate-pulse shadow-lg">
+                            🔴 Live
+                          </span>
+                        )}
+                        {auction.status === 'scheduled' && (
+                          <span className="px-3 py-1.5 bg-blue-500 text-white text-xs font-black rounded-full shadow-lg">
+                            📅 Scheduled
+                          </span>
+                        )}
+                        {auction.status === 'completed' && (
+                          <span className="px-3 py-1.5 bg-slate-500 text-white text-xs font-black rounded-full shadow-lg">
+                            ✅ Completed
+                          </span>
+                        )}
+                      </div>
+                      {lotCount > 0 && (
+                        <div className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-bold text-sm shadow-xl">
+                          {lotCount} Lot{lotCount !== 1 ? 's' : ''}
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-6">
+                      <h3 className="text-2xl font-black text-slate-900 mb-4">{auction.auctionTitle}</h3>
+                      <div className="space-y-2 mb-6">
+                        <div className="flex items-center gap-2 text-slate-600 font-medium">
+                          <Clock className="size-5 text-blue-600" />
+                          {dateStr}{timeStr ? ` at ${timeStr}` : ''}
+                        </div>
+                        <div className="flex items-center gap-2 text-slate-600 font-medium">
+                          <Gavel className="size-5 text-purple-600" />
+                          {auction.auctionType === 'live' ? 'Live Room Auction' : auction.auctionType === 'hybrid' ? 'Hybrid Auction' : 'Online Bidding'}
+                        </div>
+                      </div>
+                      {auction.startDateTime && auction.endDateTime && (
+                        <AuctionTimer
+                          startDateTime={auction.startDateTime}
+                          endDateTime={auction.endDateTime}
+                          status={auction.status}
+                          showLabel={true}
+                        />
+                      )}
+                      <button
+                        onClick={() => navigate(`/auctions/${auction.slug || auction._id}`)}
+                        className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                      >
+                        View Auction
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -253,8 +326,7 @@ export default function OnlineAuctions() {
         </div>
       </div>
 
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }
 

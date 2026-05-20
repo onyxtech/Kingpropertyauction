@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Bell, Mail, MapPin, DollarSign, Home, Sparkles, CheckCircle, Zap, TrendingUp, Target } from "lucide-react";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
+import { apiClient } from "@/lib/apiClient";
 
 export default function RegisterAlert() {
   const [submitted, setSubmitted] = useState(false);
@@ -13,20 +13,31 @@ export default function RegisterAlert() {
     const form = e.target as HTMLFormElement;
     const fd = new FormData(form);
     try {
-      await fetch("/api/leads", {
+      await apiClient.fetch("/leads", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: fd.get("name") || "Alert Registration",
           email: fd.get("email") || "",
           phone: fd.get("phone") || "",
           subject: "Register for Alerts",
-          message: `Property type: ${fd.get("propertyType") || "All"}. Location: ${fd.get("location") || "All"}. Frequency: ${fd.get("frequency") || "Instant"}`,
+          message: [
+            `Property Type: ${fd.get("propertyType") || "All Property Types"}`,
+            `Location: ${fd.get("location") || "All Locations"}`,
+            `Budget: ${fd.get("minPrice") && fd.get("maxPrice")
+              ? `£${fd.get("minPrice")} - £${fd.get("maxPrice")}`
+              : fd.get("maxPrice")
+              ? `Up to £${fd.get("maxPrice")}`
+              : "No budget specified"}`,
+            `Bedrooms: ${fd.get("bedrooms") || "Any"}`,
+            `Frequency: ${fd.get("frequency") || "Instant"}`,
+          ].join('\n'),
           leadType: "alert",
         }),
       });
       setSubmitted(true);
-    } catch {}
+    } catch (e: any) {
+      console.error("Alert registration error:", e);
+    }
     setLoading(false);
   };
   const alertTypes = [
@@ -46,14 +57,12 @@ export default function RegisterAlert() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-emerald-400/20 to-teal-400/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-cyan-400/20 to-blue-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
-
-      <Header />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
@@ -201,6 +210,7 @@ export default function RegisterAlert() {
                   <label className="block text-sm font-bold text-slate-700 mb-2">Min Price (£)</label>
                   <input
                     type="number"
+                    name="minPrice"
                     placeholder="100,000"
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium"
                   />
@@ -209,6 +219,7 @@ export default function RegisterAlert() {
                   <label className="block text-sm font-bold text-slate-700 mb-2">Max Price (£)</label>
                   <input
                     type="number"
+                    name="maxPrice"
                     placeholder="500,000"
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium"
                   />
@@ -218,7 +229,7 @@ export default function RegisterAlert() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Min Bedrooms</label>
-                  <select className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium">
+                  <select name="bedrooms" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium">
                     <option>Any</option>
                     <option>1+</option>
                     <option>2+</option>
@@ -355,8 +366,7 @@ export default function RegisterAlert() {
         </div>
       </div>
 
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }
 

@@ -1,7 +1,7 @@
 import { Zap, CheckCircle, Home, TrendingUp, Shield, Award, Sparkles, Target, Users, Clock, X, User, Mail, Phone, FileText, Landmark, DollarSign } from "lucide-react";
 import { useState } from "react";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
+import { apiClient } from "@/lib/apiClient";
 
 export default function BuyingOverview() {
   const [showGetStartedModal, setShowGetStartedModal] = useState(false);
@@ -25,9 +25,8 @@ export default function BuyingOverview() {
     setSubmitting(true);
     setSubmitError('');
     try {
-      const res = await fetch('/api/leads', {
+      const data = await apiClient.fetch('/leads', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.fullName,
           email: formData.email,
@@ -44,8 +43,7 @@ export default function BuyingOverview() {
           leadType: 'buying',
         }),
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setSubmitted(true);
         setFormData({
           fullName: '', email: '', phone: '',
@@ -55,10 +53,11 @@ export default function BuyingOverview() {
       } else {
         setSubmitError(data.message || 'Something went wrong. Please try again.');
       }
-    } catch {
-      setSubmitError('Network error. Please try again.');
+    } catch (e: any) {
+      setSubmitError(e?.message || 'Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const steps = [
@@ -76,12 +75,10 @@ export default function BuyingOverview() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" />
       </div>
-
-      <Header />
 
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 opacity-95" />
@@ -451,10 +448,22 @@ export default function BuyingOverview() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-60"
+                    className="flex-1 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <Home className="size-6" />
-                    {submitting ? 'Submitting...' : 'Start My Journey'}
+                    {submitting ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin size-4" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                        </svg>
+                        Submitting...
+                      </span>
+                    ) : (
+                      <>
+                        <Home className="size-6" />
+                        Start My Journey
+                      </>
+                    )}
                   </button>
                   <button
                     type="button"
@@ -471,8 +480,7 @@ export default function BuyingOverview() {
         </div>
       )}
 
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }
 

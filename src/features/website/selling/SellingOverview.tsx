@@ -1,5 +1,6 @@
 import { Briefcase, TrendingUp, Clock, Award, Users, CheckCircle, Sparkles, DollarSign, Shield, Target, X, Building2 } from "lucide-react";
-import Header from "@/features/shared/layout/Header";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
+import { apiClient } from "@/lib/apiClient";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -27,9 +28,8 @@ export default function SellingOverview() {
     setSubmitting(true);
     setSubmitError('');
     try {
-      const res = await fetch('/api/leads', {
+      const data = await apiClient.fetch('/leads', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: `${formData.firstName} ${formData.lastName}`.trim(),
           email: formData.email,
@@ -46,8 +46,7 @@ export default function SellingOverview() {
           leadType: 'valuation',
         }),
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setSubmitted(true);
         setFormData({
           propertyType: '', address: '', postcode: '',
@@ -57,8 +56,8 @@ export default function SellingOverview() {
       } else {
         setSubmitError(data.message || 'Something went wrong. Please try again.');
       }
-    } catch {
-      setSubmitError('Network error. Please try again.');
+    } catch (e: any) {
+      setSubmitError(e?.message || 'Network error. Please try again.');
     }
     setSubmitting(false);
   };
@@ -71,12 +70,10 @@ export default function SellingOverview() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse" />
       </div>
-
-      <Header />
 
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 opacity-95" />
@@ -391,7 +388,6 @@ export default function SellingOverview() {
           </div>
         </div>
       )}
-    </div>
+    </PublicLayout>
   );
 }
-

@@ -7,6 +7,7 @@ import Property from "./property.model.js";
 import notificationService, {
   NotificationEvents,
 } from "../notifications/trigger.service.js";
+import cache from '../../utils/cache.js';
 
 export const create = async (req, res) => {
   console.log(
@@ -122,6 +123,7 @@ export const create = async (req, res) => {
       message: "Property created successfully",
     });
   } catch (error) {
+    console.error('[Property] create error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -136,6 +138,7 @@ export const getAll = async (req, res) => {
       pagination: result.pagination,
     });
   } catch (error) {
+    console.error('[Property] getAll error:', error.message);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -157,6 +160,7 @@ export const getById = async (req, res) => {
     }
     res.status(200).json({ success: true, data: property });
   } catch (error) {
+    console.error('[Property] getById error:', error.message);
     res.status(404).json({ success: false, message: error.message });
   }
 };
@@ -179,6 +183,7 @@ export const update = async (req, res) => {
       message: "Property updated successfully",
     });
   } catch (error) {
+    console.error('[Property] update error:', error.message);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -195,6 +200,7 @@ export const remove = async (req, res) => {
       message: "Property deleted successfully",
     });
   } catch (error) {
+    console.error('[Property] remove error:', error.message);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -208,6 +214,7 @@ export const getByIds = async (req, res) => {
     const properties = await Property.find({ _id: { $in: ids } });
     res.status(200).json({ success: true, data: properties });
   } catch (error) {
+    console.error('[Property] getByIds error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -226,6 +233,9 @@ export const approve = async (req, res) => {
       req.params.id,
       status,
     );
+
+    await cache.delPattern('properties:*');
+    await cache.del(`property:${req.params.id}`);
 
     res.status(200).json({
       success: true,
@@ -253,6 +263,7 @@ export const approve = async (req, res) => {
         );
     }
   } catch (error) {
+    console.error('[Property] approve error:', error.message);
     res.status(500).json({
       success: false,
       message: error.message,

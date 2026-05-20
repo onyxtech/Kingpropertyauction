@@ -18,8 +18,7 @@ import {
   Maximize,
 } from "lucide-react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
 
 export default function Buying() {
   const navigate = useNavigate();
@@ -91,8 +90,7 @@ export default function Buying() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Header />
+    <PublicLayout>
 
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white py-20">
@@ -311,9 +309,7 @@ export default function Buying() {
         </div>
       </div>
 
-      {/* Footer */}
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }
 

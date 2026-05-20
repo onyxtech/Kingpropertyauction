@@ -1,8 +1,8 @@
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import { Navigate } from "react-router";
 import { createBrowserRouter } from "react-router";
+import ErrorBoundary from "@/features/shared/components/ErrorBoundary";
 import Website from "@/features/website/pages/Website";
-import Admin from "@/features/admin/pages/Admin";
 import MobileApp from "@/features/website/pages/MobileApp";
 import LiveAuctions from "@/features/auction/pages/LiveAuctions";
 import Auctions from "@/features/auction/pages/Auctions";
@@ -11,6 +11,15 @@ const AuctionDetail = lazy(
 );
 const EditAuction = lazy(() => import("../features/admin/pages/EditAuction"));
 const Bids = lazy(() => import("../features/admin/pages/Bids"));
+const Admin = lazy(() => import("../features/admin/pages/Admin"));
+const AdminSettings = lazy(
+  () => import("../features/admin/pages/AdminSettings"),
+);
+const Leads = lazy(() => import("../features/admin/pages/Leads"));
+const Inbox = lazy(() => import("../features/admin/pages/Inbox"));
+const LiveRegistrations = lazy(
+  () => import("../features/admin/pages/LiveRegistrations"),
+);
 import AuctionGuide from "@/features/auction/pages/AuctionGuide";
 import Buying from "@/features/website/buying/Buying";
 import Selling from "@/features/website/selling/Selling";
@@ -47,230 +56,252 @@ const EditProperty = lazy(() => import("../features/admin/pages/EditProperty"));
 import ProtectedRoute from "@/features/shared/layout/ProtectedRoute";
 
 const AdminProfile = lazy(() => import("../features/admin/pages/AdminProfile"));
-import AdminSettings from "@/features/admin/pages/AdminSettings";
-import Leads from "@/features/admin/pages/Leads";
-import Inbox from "@/features/admin/pages/Inbox";
+import Analytics from "@/features/admin/pages/Analytics";
+import Campaigns from "@/features/admin/pages/Campaigns";
+import MenuManager from "@/features/admin/pages/MenuManager";
+
+const eb = (node: React.ReactNode) => <ErrorBoundary>{node}</ErrorBoundary>;
+const lazy_eb = (node: React.ReactNode) => (
+  <ErrorBoundary>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="size-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      {node}
+    </Suspense>
+  </ErrorBoundary>
+);
 
 export const router = createBrowserRouter([
-  { path: "/", Component: Website },
-  { path: "/website", Component: Website },
+  { path: "/", element: eb(<Website />) },
+  { path: "/website", element: eb(<Website />) },
   {
     path: "/admin",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Admin />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/profile",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <AdminProfile />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/settings",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <AdminSettings />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/leads",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Leads />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/inbox",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Inbox />
-      </ProtectedRoute>
+      </ProtectedRoute>,
+    ),
+  },
+  {
+    path: "/admin/live-registrations",
+    element: lazy_eb(
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <LiveRegistrations />
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/overview",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Admin />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/properties",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Admin />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/auctions",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Admin />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/bids",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Bids />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/auctions/:id/edit",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <EditAuction />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/users",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Admin />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/pageBuilder",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Admin />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
-    path: "/admin/menuManager",
-    Component: () => (
+    path: "/admin/menus",
+    element: eb(
       <ProtectedRoute allowedRoles={["admin"]}>
-        <Admin />
-      </ProtectedRoute>
+        <MenuManager />
+      </ProtectedRoute>,
     ),
   },
   {
-    path: "/admin/marketing",
-    Component: () => (
+    path: "/admin/campaigns",
+    element: eb(
       <ProtectedRoute allowedRoles={["admin"]}>
-        <Admin />
-      </ProtectedRoute>
+        <Campaigns />
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/social",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Admin />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/investors",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Admin />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/ai",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Admin />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/compliance",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Admin />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/financial",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Admin />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/analytics",
-    Component: () => (
+    element: eb(
       <ProtectedRoute allowedRoles={["admin"]}>
-        <Admin />
-      </ProtectedRoute>
+        <Analytics />
+      </ProtectedRoute>,
     ),
   },
-  { path: "/mobile", Component: MobileApp },
-  { path: "/live-auctions", Component: LiveAuctions },
-  { path: "/auctions", Component: Auctions },
-  { path: "/auctions/:slug", Component: AuctionDetail },
-  { path: "/auctions/:slug/properties", Component: ViewAllLots },
-  { path: "/auction-guide", Component: AuctionGuide },
-  { path: "/buying", Component: Buying },
-  { path: "/selling", Component: Selling },
-  { path: "/commercial", Component: Commercial },
-  { path: "/online", Component: Online },
-  { path: "/about", Component: About },
-  { path: "/register", Component: Register },
-  { path: "/login", Component: Login },
-  { path: "/forgot-password", Component: ForgotPassword },
-  { path: "/reset-password/:token", Component: ResetPassword },
-  { path: "/oauth-callback", Component: OAuthCallback },
-  { path: "/contact-us", Component: ContactUs },
-  { path: "/online-auctions", Component: OnlineAuctions },
-  { path: "/free-valuation", Component: FreeValuation },
-  { path: "/auction-finance", Component: AuctionFinance },
-  { path: "/view-all-lots", Component: ViewAllLots },
-  { path: "/buying-overview", Component: BuyingOverview },
-  { path: "/selling-overview", Component: SellingOverview },
-  { path: "/catalogue-request", Component: CatalogueRequest },
-  { path: "/buying-guide", Component: BuyingGuide },
-  { path: "/register-alert", Component: RegisterAlert },
-  { path: "/terms-of-sale", Component: TermsOfSale },
-  { path: "/why-buy-at-king", Component: WhyBuyAtKing },
-  { path: "/solicitor", Component: Solicitor },
-  { path: "/why-sell-with-future", Component: WhySellWithFuture },
-  { path: "/guide-faq", Component: GuideFAQ },
-  { path: "/referral-fee", Component: ReferralFee },
-  { path: "/home-report", Component: HomeReport },
-  { path: "/view-live-locations", Component: ViewLiveLocations },
-  { path: "/property-details", Component: PropertyDetails },
-  // New SEO-friendly routes
-  { path: "/properties", Component: ViewAllLots },
-  { path: "/properties/:slug", Component: PropertyDetails },
-  { path: "/architecture", Component: SystemArchitecture },
+  { path: "/mobile", element: eb(<MobileApp />) },
+  { path: "/live-auctions", element: eb(<LiveAuctions />) },
+  { path: "/auctions", element: eb(<Auctions />) },
+  { path: "/auctions/:slug", element: lazy_eb(<AuctionDetail />) },
+  { path: "/auctions/:slug/properties", element: eb(<ViewAllLots />) },
+  { path: "/auction-guide", element: eb(<AuctionGuide />) },
+  { path: "/buying", element: eb(<Buying />) },
+  { path: "/selling", element: eb(<Selling />) },
+  { path: "/commercial", element: eb(<Commercial />) },
+  { path: "/online", element: eb(<Online />) },
+  { path: "/about", element: eb(<About />) },
+  { path: "/register", element: eb(<Register />) },
+  { path: "/login", element: eb(<Login />) },
+  { path: "/forgot-password", element: eb(<ForgotPassword />) },
+  { path: "/reset-password/:token", element: eb(<ResetPassword />) },
+  { path: "/oauth-callback", element: eb(<OAuthCallback />) },
+  { path: "/contact-us", element: eb(<ContactUs />) },
+  { path: "/online-auctions", element: eb(<OnlineAuctions />) },
+  { path: "/free-valuation", element: eb(<FreeValuation />) },
+  { path: "/auction-finance", element: eb(<AuctionFinance />) },
+  { path: "/view-all-lots", element: eb(<ViewAllLots />) },
+  { path: "/buying-overview", element: eb(<BuyingOverview />) },
+  { path: "/selling-overview", element: eb(<SellingOverview />) },
+  { path: "/catalogue-request", element: eb(<CatalogueRequest />) },
+  { path: "/buying-guide", element: eb(<BuyingGuide />) },
+  { path: "/register-alert", element: eb(<RegisterAlert />) },
+  { path: "/terms-of-sale", element: eb(<TermsOfSale />) },
+  { path: "/why-buy-at-king", element: eb(<WhyBuyAtKing />) },
+  { path: "/solicitor", element: eb(<Solicitor />) },
+  { path: "/why-sell-with-future", element: eb(<WhySellWithFuture />) },
+  { path: "/guide-faq", element: eb(<GuideFAQ />) },
+  { path: "/referral-fee", element: eb(<ReferralFee />) },
+  { path: "/home-report", element: eb(<HomeReport />) },
+  { path: "/view-live-locations", element: eb(<ViewLiveLocations />) },
+  { path: "/property-details", element: eb(<PropertyDetails />) },
+  { path: "/properties", element: eb(<ViewAllLots />) },
+  { path: "/properties/:slug", element: eb(<PropertyDetails />) },
+  { path: "/architecture", element: eb(<SystemArchitecture />) },
   {
     path: "/admin/properties/new",
-    Component: () => (
+    element: eb(
       <ProtectedRoute allowedRoles={["admin", "agent"]}>
         <AddProperty />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/admin/properties/:id/edit",
-    Component: () => (
+    element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <EditProperty />
-      </ProtectedRoute>
+      </ProtectedRoute>,
     ),
   },
   {
     path: "/add-property",
-    Component: () => <Navigate to="/admin/properties/new" replace />,
+    element: <Navigate to="/admin/properties/new" replace />,
   },
 ]);

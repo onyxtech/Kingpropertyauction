@@ -44,6 +44,10 @@ const bidSchema = new mongoose.Schema(
 bidSchema.index({ auction: 1, amount: -1 });
 bidSchema.index({ bidder: 1 });
 bidSchema.index({ status: 1 });
+bidSchema.index({ createdAt: -1 });
+bidSchema.index({ auction: 1, createdAt: -1 });
+bidSchema.index({ bidder: 1, createdAt: -1 });
+bidSchema.index({ property: 1, createdAt: -1 });
 
 // After saving a bid, update auction stats
 bidSchema.post('save', async function () {

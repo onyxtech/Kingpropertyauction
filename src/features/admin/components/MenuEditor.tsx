@@ -24,31 +24,43 @@ import { useTheme } from "../../../app/hooks/useTheme";
 interface MenuEditorProps {
   onClose: () => void;
   editData?: any;
-  onSave?: (menuData: any) => void;
+  onSave?: (menuData: any) => Promise<void>;
 }
 
-export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProps) {
+export default function MenuEditor({
+  onClose,
+  editData,
+  onSave,
+}: MenuEditorProps) {
   const theme = useTheme();
   const [menuSettings, setMenuSettings] = useState({
     name: editData?.name || "",
     location: editData?.location || "Header",
-    status: editData?.status || "Active",
+    status: editData?.status || "active",
   });
 
   // Fix: Ensure menuItems is always an array
-  const [menuItems, setMenuItems] = useState<any[]>(
-    Array.isArray(editData?.items) ? editData.items : []
-  );
+  const [menuItems, setMenuItems] = useState<any[]>(() => {
+    if (Array.isArray(editData?.items)) {
+      // Normalize: ensure every item has an 'id' field
+      return editData.items.map((item: any, index: number) => ({
+        ...item,
+        id: item.id || item._id || Date.now() + index,
+      }));
+    }
+    return [];
+  });
   const [editingItem, setEditingItem] = useState<any>(null);
   const [showItemForm, setShowItemForm] = useState(false);
 
   const [itemForm, setItemForm] = useState({
     label: "",
     url: "",
-    type: "custom",
+    type: "link",
     icon: "FileText",
     target: "_self",
     parent: null,
+    badge: false,
   });
 
   const availableIcons = [
@@ -64,11 +76,13 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
   const handleAddItem = () => {
     if (itemForm.label && itemForm.url) {
       if (editingItem) {
-        setMenuItems(menuItems.map(item => 
-          item.id === editingItem.id 
-            ? { ...itemForm, id: editingItem.id }
-            : item
-        ));
+        setMenuItems(
+          menuItems.map((item) =>
+            (item.id || item._id) === (editingItem.id || editingItem._id)
+              ? { ...itemForm, id: editingItem.id }
+              : item,
+          ),
+        );
         setEditingItem(null);
       } else {
         setMenuItems([...menuItems, { ...itemForm, id: Date.now() }]);
@@ -76,79 +90,94 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
       setItemForm({
         label: "",
         url: "",
-        type: "custom",
+        type: "link",
         icon: "FileText",
         target: "_self",
         parent: null,
+        badge: false,
       });
       setShowItemForm(false);
     }
   };
 
   const handleEditItem = (item: any) => {
-    setEditingItem(item);
-    setItemForm(item);
+    const normalizedItem = { ...item, id: item.id || item._id };
+    setEditingItem(normalizedItem);
+    setItemForm(normalizedItem);
     setShowItemForm(true);
   };
 
-  const handleDeleteItem = (id: number) => {
-    // Also delete any children of this item
-    setMenuItems(menuItems.filter(item => item.id !== id && item.parent !== id));
+  const handleDeleteItem = (id: any) => {
+    setMenuItems(
+      menuItems.filter((item) => {
+        const itemId = item.id || item._id;
+        const parentId = item.parent?._id || item.parent;
+        return itemId !== id && parentId !== id;
+      }),
+    );
   };
 
   // Get parent items (items with no parent)
   const getParentItems = () => {
-    return menuItems.filter(item => !item.parent);
+    return menuItems.filter((item) => !item.parent);
   };
 
   // Get children of a specific parent
   const getChildItems = (parentId: number) => {
-    return menuItems.filter(item => item.parent === parentId);
+    return menuItems.filter((item) => item.parent === parentId);
   };
 
   // Count children for a parent
   const countChildren = (parentId: number) => {
-    return menuItems.filter(item => item.parent === parentId).length;
+    return menuItems.filter((item) => item.parent === parentId).length;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const menuData = {
       ...menuSettings,
       items: menuItems,
       itemCount: menuItems.length,
     };
-    
+
     if (onSave) {
-      onSave(menuData);
+      try {
+        await onSave(menuData);
+        onClose();
+      } catch (err) {
+        // Error handled by parent
+      }
     }
-    
-    alert(`Menu "${menuSettings.name}" saved successfully!`);
-    onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in duration-300">
         {/* Header */}
-        <div className={`bg-gradient-to-r ${theme.primary} p-6 flex items-center justify-between text-white`}>
+        <div
+          className={`bg-gradient-to-r ${theme.primary} p-6 flex items-center justify-between text-white`}
+        >
           <div className="flex items-center gap-4">
             <div className="size-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center">
               <MenuIcon className="size-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-black">{editData ? 'Edit' : 'Create'} Menu</h2>
-              <p className="text-sm text-white/80 font-medium">Build your navigation menu with drag & drop</p>
+              <h2 className="text-2xl font-black">
+                {editData ? "Edit" : "Create"} Menu
+              </h2>
+              <p className="text-sm text-white/80 font-medium">
+                Build your navigation menu with drag & drop
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={handleSave}
               className="px-4 py-2.5 bg-white text-blue-600 rounded-xl font-bold hover:bg-white/90 transition-all flex items-center gap-2 shadow-lg"
             >
               <Save className="size-4" />
               Save Menu
             </button>
-            <button 
+            <button
               onClick={onClose}
               className="p-2.5 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-xl transition-all"
             >
@@ -163,23 +192,36 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
           <div className="w-96 bg-slate-50 border-r-2 border-slate-200 overflow-y-auto">
             <div className="p-6">
               {/* Menu Settings */}
-              <h3 className="text-lg font-black text-slate-900 mb-4">Menu Settings</h3>
+              <h3 className="text-lg font-black text-slate-900 mb-4">
+                Menu Settings
+              </h3>
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Menu Name *</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Menu Name *
+                  </label>
                   <input
                     type="text"
                     value={menuSettings.name}
-                    onChange={(e) => setMenuSettings({...menuSettings, name: e.target.value})}
+                    onChange={(e) =>
+                      setMenuSettings({ ...menuSettings, name: e.target.value })
+                    }
                     placeholder="e.g., Main Navigation"
                     className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Location *</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Location *
+                  </label>
                   <select
                     value={menuSettings.location}
-                    onChange={(e) => setMenuSettings({...menuSettings, location: e.target.value})}
+                    onChange={(e) =>
+                      setMenuSettings({
+                        ...menuSettings,
+                        location: e.target.value,
+                      })
+                    }
                     className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="Header">Header</option>
@@ -190,14 +232,21 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Status *</label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Status *
+                  </label>
                   <select
                     value={menuSettings.status}
-                    onChange={(e) => setMenuSettings({...menuSettings, status: e.target.value})}
+                    onChange={(e) =>
+                      setMenuSettings({
+                        ...menuSettings,
+                        status: e.target.value,
+                      })
+                    }
                     className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
                   </select>
                 </div>
               </div>
@@ -206,17 +255,20 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
 
               {/* Add Menu Item */}
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-black text-slate-900">Menu Items</h3>
+                <h3 className="text-lg font-black text-slate-900">
+                  Menu Items
+                </h3>
                 <button
                   onClick={() => {
                     setEditingItem(null);
                     setItemForm({
                       label: "",
                       url: "",
-                      type: "custom",
+                      type: "link",
                       icon: "FileText",
                       target: "_self",
                       parent: null,
+                      badge: false,
                     });
                     setShowItemForm(true);
                   }}
@@ -231,24 +283,32 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
               {showItemForm && (
                 <div className="bg-white rounded-xl p-4 border-2 border-blue-200 mb-4 space-y-3">
                   <h4 className="font-bold text-slate-900 text-sm">
-                    {editingItem ? 'Edit' : 'Add'} Menu Item
+                    {editingItem ? "Edit" : "Add"} Menu Item
                   </h4>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Label *</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Label *
+                    </label>
                     <input
                       type="text"
                       value={itemForm.label}
-                      onChange={(e) => setItemForm({...itemForm, label: e.target.value})}
+                      onChange={(e) =>
+                        setItemForm({ ...itemForm, label: e.target.value })
+                      }
                       placeholder="e.g., Home"
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">URL *</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      URL *
+                    </label>
                     <input
                       type="text"
                       value={itemForm.url}
-                      onChange={(e) => setItemForm({...itemForm, url: e.target.value})}
+                      onChange={(e) =>
+                        setItemForm({ ...itemForm, url: e.target.value })
+                      }
                       placeholder="e.g., /home or https://..."
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -260,12 +320,21 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                     </label>
                     <select
                       value={itemForm.parent || ""}
-                      onChange={(e) => setItemForm({...itemForm, parent: e.target.value ? Number(e.target.value) : null})}
+                      onChange={(e) =>
+                        setItemForm({
+                          ...itemForm,
+                          parent: e.target.value
+                            ? Number(e.target.value)
+                            : null,
+                        })
+                      }
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">None (Top Level)</option>
                       {getParentItems()
-                        .filter(item => !editingItem || item.id !== editingItem.id)
+                        .filter(
+                          (item) => !editingItem || item.id !== editingItem.id,
+                        )
                         .map((item) => (
                           <option key={item.id} value={item.id}>
                             {item.label}
@@ -273,26 +342,71 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                         ))}
                     </select>
                     <p className="text-xs text-slate-500 mt-1">
-                      {itemForm.parent ? "This will be a submenu item" : "This will be a top-level item"}
+                      {itemForm.parent
+                        ? "This will be a submenu item"
+                        : "This will be a top-level item"}
                     </p>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Icon</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Icon
+                    </label>
                     <select
                       value={itemForm.icon}
-                      onChange={(e) => setItemForm({...itemForm, icon: e.target.value})}
+                      onChange={(e) =>
+                        setItemForm({ ...itemForm, icon: e.target.value })
+                      }
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       {availableIcons.map((icon) => (
-                        <option key={icon.name} value={icon.name}>{icon.name}</option>
+                        <option key={icon.name} value={icon.name}>
+                          {icon.name}
+                        </option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Open In</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Type
+                    </label>
+                    <select
+                      value={itemForm.type}
+                      onChange={(e) =>
+                        setItemForm({ ...itemForm, type: e.target.value })
+                      }
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="link">Simple Link</option>
+                      <option value="dropdown">Dropdown Menu</option>
+                    </select>
+                  </div>
+                  {itemForm.type === "link" && !itemForm.parent && (
+                    <div>
+                      <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={itemForm.badge}
+                          onChange={(e) =>
+                            setItemForm({
+                              ...itemForm,
+                              badge: e.target.checked,
+                            })
+                          }
+                          className="size-4 rounded accent-blue-600"
+                        />
+                        Show Live Count Badge
+                      </label>
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Open In
+                    </label>
                     <select
                       value={itemForm.target}
-                      onChange={(e) => setItemForm({...itemForm, target: e.target.value})}
+                      onChange={(e) =>
+                        setItemForm({ ...itemForm, target: e.target.value })
+                      }
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="_self">Same Window</option>
@@ -313,7 +427,7 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                       onClick={handleAddItem}
                       className="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-bold hover:bg-blue-600 transition-all"
                     >
-                      {editingItem ? 'Update' : 'Add'}
+                      {editingItem ? "Update" : "Add"}
                     </button>
                   </div>
                 </div>
@@ -321,7 +435,9 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
 
               {/* Quick Links */}
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200">
-                <h4 className="font-bold text-blue-900 mb-2 text-sm">💡 Common Pages</h4>
+                <h4 className="font-bold text-blue-900 mb-2 text-sm">
+                  💡 Common Pages
+                </h4>
                 <div className="space-y-1">
                   {[
                     { label: "Home", url: "/" },
@@ -362,14 +478,17 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                         {menuSettings.name || "Untitled Menu"}
                       </h3>
                       <p className="text-sm text-slate-600 font-medium">
-                        Location: {menuSettings.location} • Items: {menuItems.length}
+                        Location: {menuSettings.location} • Items:{" "}
+                        {menuItems.length}
                       </p>
                     </div>
-                    <span className={`px-4 py-2 rounded-lg text-sm font-bold ${
-                      menuSettings.status === "Active" 
-                        ? "bg-green-100 text-green-700" 
-                        : "bg-slate-100 text-slate-700"
-                    }`}>
+                    <span
+                      className={`px-4 py-2 rounded-lg text-sm font-bold ${
+                        menuSettings.status === "active"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-slate-100 text-slate-700"
+                      }`}
+                    >
                       {menuSettings.status}
                     </span>
                   </div>
@@ -378,17 +497,25 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                 {/* Menu Items List */}
                 <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
                   <div className="bg-slate-50 border-b-2 border-slate-200 p-4">
-                    <h4 className="font-black text-slate-900">Menu Structure</h4>
-                    <p className="text-xs text-slate-500 font-medium">Drag items to reorder</p>
+                    <h4 className="font-black text-slate-900">
+                      Menu Structure
+                    </h4>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Drag items to reorder
+                    </p>
                   </div>
 
                   <div className="p-4">
                     {menuItems.length === 0 ? (
                       <div className="text-center py-12">
-                        <div className={`size-16 rounded-2xl bg-gradient-to-br ${theme.primary} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+                        <div
+                          className={`size-16 rounded-2xl bg-gradient-to-br ${theme.primary} flex items-center justify-center mx-auto mb-4 shadow-lg`}
+                        >
                           <MenuIcon className="size-8 text-white" />
                         </div>
-                        <h3 className="text-lg font-black text-slate-900 mb-2">No Menu Items Yet</h3>
+                        <h3 className="text-lg font-black text-slate-900 mb-2">
+                          No Menu Items Yet
+                        </h3>
                         <p className="text-slate-600 font-medium text-sm">
                           Click "Add Item" to start building your menu
                         </p>
@@ -397,44 +524,51 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                       <div className="space-y-2">
                         {/* Show parent items first */}
                         {getParentItems().map((item) => {
-                          const IconComponent = availableIcons.find(i => i.name === item.icon)?.icon || FileText;
+                          const IconComponent =
+                            availableIcons.find((i) => i.name === item.icon)
+                              ?.icon || FileText;
                           const childrenCount = countChildren(item.id);
                           const children = getChildItems(item.id);
-                          
+
                           return (
                             <div key={item.id}>
                               {/* Parent Item */}
-                              <div 
-                                className="group bg-gradient-to-r from-slate-50 to-white border-2 border-slate-200 rounded-xl p-4 hover:border-blue-500 transition-all"
-                              >
+                              <div className="group bg-gradient-to-r from-slate-50 to-white border-2 border-slate-200 rounded-xl p-4 hover:border-blue-500 transition-all">
                                 <div className="flex items-center gap-3">
                                   <GripVertical className="size-5 text-slate-400 cursor-move" />
-                                  <div className={`size-10 rounded-lg bg-gradient-to-br ${theme.secondary} flex items-center justify-center shadow-md`}>
+                                  <div
+                                    className={`size-10 rounded-lg bg-gradient-to-br ${theme.secondary} flex items-center justify-center shadow-md`}
+                                  >
                                     <IconComponent className="size-5 text-white" />
                                   </div>
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
-                                      <h4 className="font-bold text-slate-900">{item.label}</h4>
+                                      <h4 className="font-bold text-slate-900">
+                                        {item.label}
+                                      </h4>
                                       {item.target === "_blank" && (
                                         <ExternalLink className="size-3 text-slate-400" />
                                       )}
                                       {childrenCount > 0 && (
                                         <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-bold flex items-center gap-1">
                                           <Layers className="size-3" />
-                                          {childrenCount} submenu{childrenCount > 1 ? 's' : ''}
+                                          {childrenCount} submenu
+                                          {childrenCount > 1 ? "s" : ""}
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-xs text-slate-500 font-medium">{item.url}</p>
+                                    <p className="text-xs text-slate-500 font-medium">
+                                      {item.url}
+                                    </p>
                                   </div>
                                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button 
+                                    <button
                                       onClick={() => handleEditItem(item)}
                                       className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-all"
                                     >
                                       <Edit className="size-4" />
                                     </button>
-                                    <button 
+                                    <button
                                       onClick={() => handleDeleteItem(item.id)}
                                       className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                                     >
@@ -448,24 +582,31 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                               {children.length > 0 && (
                                 <div className="ml-8 mt-2 space-y-2">
                                   {children.map((child) => {
-                                    const ChildIconComponent = availableIcons.find(i => i.name === child.icon)?.icon || FileText;
-                                    
+                                    const ChildIconComponent =
+                                      availableIcons.find(
+                                        (i) => i.name === child.icon,
+                                      )?.icon || FileText;
+
                                     return (
-                                      <div 
+                                      <div
                                         key={child.id}
                                         className="group bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-3 hover:border-purple-400 transition-all relative"
                                       >
                                         {/* Submenu Indicator Line */}
                                         <div className="absolute -left-4 top-1/2 w-4 h-px bg-purple-300" />
-                                        
+
                                         <div className="flex items-center gap-2">
                                           <ChevronRight className="size-4 text-purple-500" />
-                                          <div className={`size-8 rounded-lg bg-gradient-to-br ${theme.secondary} flex items-center justify-center shadow-md`}>
+                                          <div
+                                            className={`size-8 rounded-lg bg-gradient-to-br ${theme.secondary} flex items-center justify-center shadow-md`}
+                                          >
                                             <ChildIconComponent className="size-4 text-white" />
                                           </div>
                                           <div className="flex-1">
                                             <div className="flex items-center gap-2">
-                                              <h4 className="font-bold text-slate-800 text-sm">{child.label}</h4>
+                                              <h4 className="font-bold text-slate-800 text-sm">
+                                                {child.label}
+                                              </h4>
                                               {child.target === "_blank" && (
                                                 <ExternalLink className="size-3 text-slate-400" />
                                               )}
@@ -473,17 +614,23 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                                                 Submenu
                                               </span>
                                             </div>
-                                            <p className="text-xs text-slate-500 font-medium">{child.url}</p>
+                                            <p className="text-xs text-slate-500 font-medium">
+                                              {child.url}
+                                            </p>
                                           </div>
                                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button 
-                                              onClick={() => handleEditItem(child)}
+                                            <button
+                                              onClick={() =>
+                                                handleEditItem(child)
+                                              }
                                               className="p-1.5 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-all"
                                             >
                                               <Edit className="size-3" />
                                             </button>
-                                            <button 
-                                              onClick={() => handleDeleteItem(child.id)}
+                                            <button
+                                              onClick={() =>
+                                                handleDeleteItem(child.id)
+                                              }
                                               className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                                             >
                                               <Trash2 className="size-3" />
@@ -507,21 +654,35 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                 {menuItems.length > 0 && (
                   <div className="mt-6 bg-white rounded-2xl shadow-lg overflow-hidden">
                     <div className="bg-slate-50 border-b-2 border-slate-200 p-4">
-                      <h4 className="font-black text-slate-900">Live Preview</h4>
-                      <p className="text-xs text-slate-500 font-medium">How your menu will look with submenus</p>
+                      <h4 className="font-black text-slate-900">
+                        Live Preview
+                      </h4>
+                      <p className="text-xs text-slate-500 font-medium">
+                        How your menu will look with submenus
+                      </p>
                     </div>
                     <div className="p-6">
                       {menuSettings.location.includes("Header") ? (
-                        <div className={`bg-gradient-to-r ${theme.primary} rounded-xl p-4`}>
+                        <div
+                          className={`bg-gradient-to-r ${theme.primary} rounded-xl p-4`}
+                        >
                           <div className="flex items-center gap-6">
-                            <div className="text-white font-black text-xl">LOGO</div>
+                            <div className="text-white font-black text-xl">
+                              LOGO
+                            </div>
                             <nav className="flex items-center gap-4">
                               {getParentItems().map((item) => {
-                                const IconComponent = availableIcons.find(i => i.name === item.icon)?.icon || FileText;
+                                const IconComponent =
+                                  availableIcons.find(
+                                    (i) => i.name === item.icon,
+                                  )?.icon || FileText;
                                 const children = getChildItems(item.id);
-                                
+
                                 return (
-                                  <div key={item.id} className="relative group/menu">
+                                  <div
+                                    key={item.id}
+                                    className="relative group/menu"
+                                  >
                                     <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold text-sm transition-all">
                                       <IconComponent className="size-4" />
                                       {item.label}
@@ -529,12 +690,15 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                                         <ChevronDown className="size-3" />
                                       )}
                                     </button>
-                                    
+
                                     {/* Submenu Dropdown */}
                                     {children.length > 0 && (
                                       <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl p-2 min-w-[200px] opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-50">
                                         {children.map((child) => {
-                                          const ChildIconComponent = availableIcons.find(i => i.name === child.icon)?.icon || FileText;
+                                          const ChildIconComponent =
+                                            availableIcons.find(
+                                              (i) => i.name === child.icon,
+                                            )?.icon || FileText;
                                           return (
                                             <button
                                               key={child.id}
@@ -558,9 +722,11 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                         <div className="bg-slate-50 rounded-xl p-4">
                           <div className="space-y-2">
                             {getParentItems().map((item) => {
-                              const IconComponent = availableIcons.find(i => i.name === item.icon)?.icon || FileText;
+                              const IconComponent =
+                                availableIcons.find((i) => i.name === item.icon)
+                                  ?.icon || FileText;
                               const children = getChildItems(item.id);
-                              
+
                               return (
                                 <div key={item.id}>
                                   <button className="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-slate-100 text-slate-700 rounded-lg font-bold text-sm transition-all">
@@ -570,19 +736,24 @@ export default function MenuEditor({ onClose, editData, onSave }: MenuEditorProp
                                     </div>
                                     {children.length > 0 ? (
                                       <div className="flex items-center gap-1">
-                                        <span className="text-xs text-purple-600 font-bold">{children.length}</span>
+                                        <span className="text-xs text-purple-600 font-bold">
+                                          {children.length}
+                                        </span>
                                         <ChevronDown className="size-4 text-slate-400" />
                                       </div>
                                     ) : (
                                       <ChevronRight className="size-4 text-slate-400" />
                                     )}
                                   </button>
-                                  
+
                                   {/* Submenus */}
                                   {children.length > 0 && (
                                     <div className="ml-6 mt-1 space-y-1">
                                       {children.map((child) => {
-                                        const ChildIconComponent = availableIcons.find(i => i.name === child.icon)?.icon || FileText;
+                                        const ChildIconComponent =
+                                          availableIcons.find(
+                                            (i) => i.name === child.icon,
+                                          )?.icon || FileText;
                                         return (
                                           <button
                                             key={child.id}

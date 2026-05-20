@@ -100,8 +100,23 @@ const propertySchema = new mongoose.Schema(
       bidDepositAmount: { type: Number },
       autoBidEnabled: { type: Boolean, default: false },
       maximumBidLimit: { type: Number },
-      numberOfBidders: { type: Number, default: 0 },
+      // numberOfBidders removed — use top-level totalBids instead
+      // winner removed — use top-level winningBidder instead
+      // currentBid removed — use top-level currentBid instead
+      // soldPrice removed — use top-level currentBid/soldPrice instead
     },
+
+    /*
+     * Run in mongosh after deploying:
+     * db.properties.updateMany({}, {
+     *   $unset: {
+     *     "auctionDetails.currentBid": "",
+     *     "auctionDetails.numberOfBidders": "",
+     *     "auctionDetails.winner": "",
+     *     "auctionDetails.soldPrice": ""
+     *   }
+     * })
+     */
 
     // 6. Features
     features: {

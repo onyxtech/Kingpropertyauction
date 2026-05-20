@@ -6,6 +6,7 @@ export const create = async (req, res) => {
     const lead = await leadService.createLead(req.body);
     res.status(201).json({ success: true, data: lead, message: 'Your message has been received!' });
   } catch (error) {
+    console.error('[Lead] create error:', error.message);
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -15,6 +16,7 @@ export const getAll = async (req, res) => {
     const result = await leadService.getLeads(req.query);
     res.status(200).json({ success: true, data: result.leads, pagination: result.pagination });
   } catch (error) {
+    console.error('[Lead] getAll error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -25,6 +27,7 @@ export const getById = async (req, res) => {
     if (!lead) return res.status(404).json({ success: false, message: 'Lead not found' });
     res.status(200).json({ success: true, data: lead });
   } catch (error) {
+    console.error('[Lead] getById error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -34,6 +37,7 @@ export const update = async (req, res) => {
     const lead = await leadService.updateLead(req.params.id, req.body);
     res.status(200).json({ success: true, data: lead });
   } catch (error) {
+    console.error('[Lead] update error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -43,6 +47,7 @@ export const remove = async (req, res) => {
     await leadService.deleteLead(req.params.id);
     res.status(200).json({ success: true, message: 'Lead deleted' });
   } catch (error) {
+    console.error('[Lead] remove error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -62,6 +67,7 @@ export const addNote = async (req, res) => {
 
     res.status(200).json({ success: true, data: lead, message: 'Note added' });
   } catch (error) {
+    console.error('[Lead] addNote error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -71,6 +77,7 @@ export const getStats = async (req, res) => {
     const stats = await leadService.getLeadsStats();
     res.status(200).json({ success: true, data: stats });
   } catch (error) {
+    console.error('[Lead] getStats error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -81,6 +88,97 @@ export const getMyLeads = async (req, res) => {
     const result = await leadService.getLeadsByEmail(req.user.email, req.query);
     res.status(200).json({ success: true, data: result.leads, pagination: result.pagination });
   } catch (error) {
+    console.error('[Lead] getMyLeads error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getLiveRegistrations = async (req, res) => {
+  try {
+    const { auctionId } = req.query;
+    const filter = { leadType: 'live-registration' };
+    if (auctionId) filter.auctionRef = auctionId;
+    const leads = await Lead.find(filter)
+      .sort('-createdAt')
+      .populate('auctionRef', 'auctionTitle venue startDateTime');
+    res.json({ success: true, data: leads });
+  } catch (error) {
+    console.error('[Lead] getLiveRegistrations error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const approveLead = async (req, res) => {
+  try {
+    const lead = await Lead.findByIdAndUpdate(
+      req.params.id,
+      { approvalStatus: 'approved', status: 'qualified' },
+      { new: true }
+    );
+    if (!lead) return res.status(404).json({ success: false, message: 'Lead not found' });
+
+    const { sendEmail } = await import('../notifications/email.service.js');
+    const { isNotificationEnabled } = await import('../settings/settings.service.js');
+    const enabled = await isNotificationEnabled('liveRegistrationApproved');
+    if (enabled) {
+      let auctionDetails = { auction_name: 'Live Auction', venue_name: '', venue_address: '', auction_date: '', auction_time: '' };
+      if (lead.auctionRef) {
+        const { default: Auction } = await import('../auction/auction.model.js');
+        const auction = await Auction.findById(lead.auctionRef);
+        if (auction) {
+          auctionDetails = {
+            auction_name: auction.auctionTitle,
+            venue_name: auction.venue?.name || '',
+            venue_address: [auction.venue?.address, auction.venue?.city, auction.venue?.postcode].filter(Boolean).join(', '),
+            auction_date: new Date(auction.startDateTime).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' }),
+            auction_time: new Date(auction.startDateTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' }),
+          };
+        }
+      }
+      await sendEmail({
+        to: lead.email,
+        subject: `✅ Registration Approved — ${auctionDetails.auction_name}`,
+        templateKey: 'liveRegistrationApproved',
+        variables: { user_name: lead.name, site_url: process.env.CLIENT_URL || 'http://localhost:5173', ...auctionDetails },
+      }).catch(e => console.error('[Email] liveRegistrationApproved failed:', e.message));
+    }
+
+    res.json({ success: true, data: lead, message: 'Registration approved and email sent' });
+  } catch (error) {
+    console.error('[Lead] approveLead error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const rejectLead = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const lead = await Lead.findByIdAndUpdate(
+      req.params.id,
+      { approvalStatus: 'rejected', status: 'closed' },
+      { new: true }
+    );
+    if (!lead) return res.status(404).json({ success: false, message: 'Lead not found' });
+
+    const { sendEmail } = await import('../notifications/email.service.js');
+    const { isNotificationEnabled } = await import('../settings/settings.service.js');
+    const enabled = await isNotificationEnabled('liveRegistrationRejected');
+    if (enabled) {
+      await sendEmail({
+        to: lead.email,
+        subject: 'Live Auction Registration Update',
+        templateKey: 'liveRegistrationRejected',
+        variables: {
+          user_name: lead.name,
+          reason: reason || 'Your registration did not meet our current requirements.',
+          site_url: process.env.CLIENT_URL || 'http://localhost:5173',
+        },
+      }).catch(e => console.error('[Email] liveRegistrationRejected failed:', e.message));
+    }
+
+    res.json({ success: true, data: lead, message: 'Registration rejected and email sent' });
+  } catch (error) {
+    console.error('[Lead] rejectLead error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -188,6 +286,7 @@ export const replyToLead = async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Reply sent successfully to ' + lead.email });
   } catch (error) {
+    console.error('[Lead] replyToLead error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };

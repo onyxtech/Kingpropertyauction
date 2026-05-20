@@ -40,6 +40,7 @@ const conversationSchema = new mongoose.Schema({
       'legal',
       'faq',
       'newsletter',
+      'live-registration',
     ],
     default: 'direct',
   },

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Lock, CheckCircle, AlertCircle } from "lucide-react";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
+import { apiClient } from "@/lib/apiClient";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -28,26 +28,23 @@ export default function ResetPassword() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/auth/reset-password/${token}`, {
+      const data = await apiClient.fetch(`/auth/reset-password/${token}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
-      const data = await response.json();
       if (data.success) {
         setDone(true);
       } else {
         setError(data.message);
       }
-    } catch (err) {
-      setError("Cannot connect to server");
+    } catch (err: any) {
+      setError(err?.message || "Cannot connect to server");
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
-      <Header />
+    <PublicLayout>
       <div className="flex items-center justify-center min-h-[80vh] px-4">
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 w-full max-w-md shadow-xl border-2 border-white/60">
           {done ? (
@@ -96,7 +93,6 @@ export default function ResetPassword() {
           )}
         </div>
       </div>
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }

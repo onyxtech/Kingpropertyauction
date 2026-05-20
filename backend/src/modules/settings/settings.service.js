@@ -2,32 +2,11 @@ import Settings, {
   EmailConfigSchema,
   NotificationRulesSchema,
   OAuthConfigSchema,
+  ApiIntegrationsSchema,
 } from "./settings.model.js";
+import cache from "../../utils/cache.js";
 
-// ─── In-Memory Cache (Production: swap with Redis) ───
-const cache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-const cacheTimestamps = new Map();
-
-const getFromCache = (key) => {
-  const timestamp = cacheTimestamps.get(key);
-  if (timestamp && Date.now() - timestamp < CACHE_TTL) {
-    return cache.get(key);
-  }
-  cache.delete(key);
-  cacheTimestamps.delete(key);
-  return null;
-};
-
-const setCache = (key, value) => {
-  cache.set(key, value);
-  cacheTimestamps.set(key, Date.now());
-};
-
-const clearCache = (key) => {
-  cache.delete(key);
-  cacheTimestamps.delete(key);
-};
+const SETTINGS_TTL = 5 * 60; // 5 minutes in seconds
 
 // ─── Default Values ───
 const defaultEmailConfig = EmailConfigSchema.parse({});
@@ -37,16 +16,13 @@ const defaultOAuthConfig = OAuthConfigSchema.parse({});
 
 // ─── Core Functions ───
 export const getSetting = async (key) => {
-  // Check cache first
-  const cached = getFromCache(key);
+  const cached = await cache.get(`setting:${key}`);
   if (cached) return cached;
 
-  // Fetch from DB
   const setting = await Settings.findOne({ key });
 
   let value;
   if (!setting) {
-    // Return defaults if not set
     if (key === "email_config") value = defaultEmailConfig;
     else if (key === "notification_rules") value = defaultNotificationRules;
     else if (key === "oauth_config") value = defaultOAuthConfig;
@@ -55,8 +31,7 @@ export const getSetting = async (key) => {
     value = setting.value;
   }
 
-  // Cache for next time
-  setCache(key, value);
+  await cache.set(`setting:${key}`, value, SETTINGS_TTL);
   return value;
 };
 
@@ -77,8 +52,7 @@ export const updateSetting = async (key, value, userId) => {
     { upsert: true, new: true, runValidators: true },
   );
 
-  // Invalidate cache
-  clearCache(key);
+  await cache.del(`setting:${key}`);
 
   return setting.value;
 };
@@ -110,12 +84,11 @@ export const isNotificationEnabled = async (ruleKey) => {
 };
 
 // ─── Cache Management ───
-export const invalidateCache = (key) => {
+export const invalidateCache = async (key) => {
   if (key) {
-    clearCache(key);
+    await cache.del(`setting:${key}`);
   } else {
-    cache.clear();
-    cacheTimestamps.clear();
+    await cache.delPattern('setting:*');
   }
 };
 
@@ -123,6 +96,27 @@ export const warmCache = async () => {
   await getSetting("email_config");
   await getSetting("notification_rules");
   console.log("✅ Settings cache warmed");
+};
+
+// ─── API Integrations ───
+export const getApiIntegrations = async () => {
+  const setting = await Settings.findOne({ key: 'api_integrations' });
+  if (!setting) {
+    return ApiIntegrationsSchema.parse({
+      groqApiKey: process.env.GROQ_API_KEY || '',
+      geminiApiKey: process.env.GEMINI_API_KEY || '',
+    });
+  }
+  return setting.value;
+};
+
+export const updateApiIntegrations = async (data, userId) => {
+  const validated = ApiIntegrationsSchema.parse({ ...ApiIntegrationsSchema.parse({}), ...data });
+  return Settings.findOneAndUpdate(
+    { key: 'api_integrations' },
+    { value: validated, updatedBy: userId },
+    { upsert: true, new: true, runValidators: true },
+  );
 };
 
 // ─── OAuth Convenience ───

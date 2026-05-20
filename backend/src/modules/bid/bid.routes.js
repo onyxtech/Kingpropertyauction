@@ -2,6 +2,7 @@ import express from 'express';
 import { place, getHistory, getMyBids, getHighBid, retract, getStats, getAllBidsAdmin, getBidsStatsAdmin } from './bid.controller.js';
 import { protect } from '../../middlewares/auth.middleware.js';
 import { authorize } from '../../middlewares/role.middleware.js';
+import { bidRateLimit } from '../../middlewares/rateLimiter.middleware.js';
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get('/auction/:auctionId/stats', getStats);
 router.get('/auction/:auctionId/property/:propertyId/stats', getStats);
 
 // Protected routes
-router.post('/', protect, place);
+router.post('/', protect, bidRateLimit, place);
 router.get('/my-bids', protect, getMyBids);
 router.patch('/:id/retract', protect, retract);
 

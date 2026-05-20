@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuctionSocket } from "@/hooks/useAuctionSocket";
 import {
   ArrowLeft,
   Gavel,
@@ -16,13 +17,17 @@ import {
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { useAuctionApi } from "@/features/auction/api/useAuctionApi";
+import AuctionTimer from "@/features/shared/components/AuctionTimer";
 
 export default function LiveAuctions() {
   const navigate = useNavigate();
 
   const { useGetAuctions } = useAuctionApi();
-  const { data: auctionsData, isLoading } = useGetAuctions({ status: "live" });
+  const { data: auctionsData, isLoading } = useGetAuctions({ status: "live", excludeType: "live" });
   const auctions = auctionsData?.data || [];
+  const queryClient = useQueryClient();
+
+  useAuctionSocket();
 
   // Map auctions to display format
   const liveAuctions = auctions.map((a: any) => {
@@ -58,40 +63,11 @@ export default function LiveAuctions() {
       totalBidders: a.totalBidders || 0,
       totalValue: totalCurrentBids || a.startingBid || 0,
       status: a.status === "live" ? "active" : "ending",
+      rawStatus: a.status,
       auctionType: a.auctionType || "live",
     };
   });
 
-  // Countdown timers
-  const [timers, setTimers] = useState<{ [key: string]: string }>({});
-  const liveAuctionsRef = useRef(liveAuctions);
-  liveAuctionsRef.current = liveAuctions;
-
-  useEffect(() => {
-    const updateTimers = () => {
-      const newTimers: { [key: string]: string } = {};
-      liveAuctionsRef.current.forEach((auction) => {
-        const now = new Date().getTime();
-        const end = auction.endTime.getTime();
-        const distance = end - now;
-        if (distance > 0) {
-          const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-          const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-          const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-          if (days > 0) newTimers[auction.id] = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-          else if (hours > 0) newTimers[auction.id] = `${hours}h ${minutes}m ${seconds}s`;
-          else newTimers[auction.id] = `${minutes}m ${seconds}s`;
-        } else {
-          newTimers[auction.id] = "ENDED";
-        }
-      });
-      setTimers(newTimers);
-    };
-    updateTimers();
-    const interval = setInterval(updateTimers, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const formatPrice = (price: number) => `£${price.toLocaleString()}`;
   const totalActiveBidders = liveAuctions.reduce((s, a) => s + a.totalBidders, 0);
@@ -221,11 +197,13 @@ export default function LiveAuctions() {
 
                   {/* Timer */}
                   <div className="absolute top-5 right-5">
-                    <div className="px-4 py-2 bg-black/70 backdrop-blur-md text-white rounded-xl shadow-lg flex items-center gap-2">
-                      <Clock className="size-4 text-red-400" />
-                      <span className="font-bold text-sm">
-                        {timers[auction.id] || "Calculating..."}
-                      </span>
+                    <div className="px-3 py-2 bg-black/70 backdrop-blur-md rounded-xl shadow-lg">
+                      <AuctionTimer
+                        startDateTime={auction.startDateTime}
+                        endDateTime={auction.endDateTime}
+                        status={auction.rawStatus || "live"}
+                        showLabel={true}
+                      />
                     </div>
                   </div>
 

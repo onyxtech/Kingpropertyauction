@@ -1,7 +1,7 @@
 import { Shield, FileText, CheckCircle, AlertTriangle, Scale, Download, BookOpen, Info, Clock, User, Mail, Phone, MapPin, Home, X, Printer, Eye, Send } from "lucide-react";
 import { useState } from "react";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
+import { apiClient } from "@/lib/apiClient";
 
 export default function TermsOfSale() {
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
@@ -29,9 +29,8 @@ export default function TermsOfSale() {
     setSubmitting(true);
     setSubmitError('');
     try {
-      const res = await fetch('/api/leads', {
+      const data = await apiClient.fetch('/leads', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
@@ -41,15 +40,14 @@ export default function TermsOfSale() {
           leadType: 'legal',
         }),
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setSubmitted(true);
         setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
       } else {
         setSubmitError(data.message || 'Something went wrong. Please try again.');
       }
-    } catch (e) {
-      setSubmitError('Network error. Please try again.');
+    } catch (e: any) {
+      setSubmitError(e?.message || 'Network error. Please try again.');
     }
     setSubmitting(false);
   };
@@ -150,14 +148,12 @@ export default function TermsOfSale() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-amber-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-yellow-400/20 to-red-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
-
-      <Header />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
@@ -577,8 +573,6 @@ export default function TermsOfSale() {
         </div>
       )}
 
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }
-

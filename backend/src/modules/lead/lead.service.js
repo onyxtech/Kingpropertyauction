@@ -26,7 +26,24 @@ const getNotificationKeys = (lead) => {
     return { ruleKey: 'legalEnquiry', templateKey: 'legalenquiry' };
   if (lead.leadType === 'newsletter')
     return { ruleKey: 'newsletterSignup', templateKey: 'newsletterwelcome' };
+  if (subject.includes('live auction registration') || lead.leadType === 'live-registration')
+    return { ruleKey: 'liveAuctionRegistration', templateKey: 'liveauctionpending' };
   return { ruleKey: 'contactForm', templateKey: 'contactForm' };
+};
+
+const extractVariable = (message, label) => {
+  if (!message) return '';
+  // Try newline format first (Label: value)
+  const lines = message.split('\n');
+  const line = lines.find(l =>
+    l.toLowerCase().startsWith(label.toLowerCase() + ':') ||
+    l.toLowerCase().startsWith(label.toLowerCase() + ' :')
+  );
+  if (line) return line.split(':').slice(1).join(':').trim();
+  // Fallback: period/comma-separated format
+  const pattern = new RegExp(label + '[: ]+([^.\\n,]+)', 'i');
+  const match = message.match(pattern);
+  return match ? match[1].trim() : '';
 };
 
 export const createLead = async (data) => {
@@ -51,12 +68,17 @@ export const createLead = async (data) => {
           subject: lead.subject || '',
           category: lead.leadType || 'general',
           site_url: process.env.CLIENT_URL || '/',
-          property_type: '',
-          property_address: '',
-          location: '',
-          budget: '',
-          timeline: '',
-          bedrooms: '',
+          property_type: extractVariable(lead.message, 'Property Type') || 'Any',
+          property_address: extractVariable(lead.message, 'Property Address') || '',
+          location: extractVariable(lead.message, 'Location') || 'Not specified',
+          budget: extractVariable(lead.message, 'Budget') || 'Not specified',
+          timeline: extractVariable(lead.message, 'Timeline') || '',
+          bedrooms: extractVariable(lead.message, 'Bedrooms') || 'Any',
+          auction_name: extractVariable(lead.message, 'Auction') || '',
+          venue_name: extractVariable(lead.message, 'Venue') || '',
+          venue_address: extractVariable(lead.message, 'Address') || '',
+          auction_date: extractVariable(lead.message, 'Date') || '',
+          auction_time: extractVariable(lead.message, 'Time') || '',
         },
       });
     } catch (e) {
@@ -91,6 +113,38 @@ export const createLead = async (data) => {
       console.error('[Lead] Admin alert failed:', e.message);
     }
   })();
+
+  // Live registration: send specific admin alert
+  if (lead.leadType === 'live-registration') {
+    (async () => {
+      try {
+        const enabled = await isNotificationEnabled('adminLiveRegistrationAlert');
+        if (!enabled) return;
+        const { default: User } = await import('../user/user.model.js');
+        const admins = await User.find({ role: 'admin', isActive: true }).select('email name');
+        for (const admin of admins) {
+          await sendEmail({
+            to: admin.email,
+            subject: `🏛️ New Live Auction Registration: ${lead.name}`,
+            templateKey: 'adminliveregistrationalert',
+            variables: {
+              admin_name: admin.name,
+              user_name: lead.name,
+              user_email: lead.email,
+              user_phone: lead.phone || 'Not provided',
+              auction_name: extractVariable(lead.message, 'Auction'),
+              venue_name: extractVariable(lead.message, 'Venue'),
+              auction_date: extractVariable(lead.message, 'Date'),
+              auction_time: extractVariable(lead.message, 'Time'),
+              admin_url: `${process.env.CLIENT_URL}/admin/leads`,
+            },
+          }).catch(() => {});
+        }
+      } catch (e) {
+        console.error('[Lead] Live registration admin alert failed:', e.message);
+      }
+    })();
+  }
 
   // Auto-create conversation thread from this lead
   import('../message/message.service.js').then(async ({ createConversationFromLead }) => {

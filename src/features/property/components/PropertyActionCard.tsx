@@ -1,0 +1,307 @@
+import { MapPin, CheckCircle, Clock, Tag, Gavel, Phone, Mail } from "lucide-react";
+
+interface PropertyActionCardProps {
+  property: any;
+  matchingAuction: any;
+  isLiveNow: boolean;
+  isCompleted: boolean;
+  isLiveRoomProperty: boolean;
+  isAuctionType: boolean;
+  isInLiveAuction: boolean;
+  isDirectSale: boolean;
+  currentBid: number;
+  startingPrice: number;
+  buyNowPrice: number;
+  formatPrice: (val: number) => string;
+  onPlaceBid: () => void;
+  onNavigate: (path: string) => void;
+}
+
+export default function PropertyActionCard({
+  property,
+  matchingAuction,
+  isLiveNow,
+  isCompleted,
+  isLiveRoomProperty,
+  isAuctionType,
+  isInLiveAuction,
+  isDirectSale,
+  currentBid,
+  startingPrice,
+  buyNowPrice,
+  formatPrice,
+  onPlaceBid,
+  onNavigate,
+}: PropertyActionCardProps) {
+  return (
+    <div className="lg:col-span-1 space-y-6">
+      {/* Gradient Action Card */}
+      <div
+        className={`rounded-3xl p-8 shadow-2xl sticky top-24 z-10 ${
+          isLiveNow
+            ? "bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600"
+            : isCompleted
+              ? "bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600"
+              : isAuctionType
+                ? "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500"
+                : "bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900"
+        }`}
+      >
+        <div className="text-center mb-6">
+          {isLiveNow ? (
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-lg rounded-full mb-4">
+              <span className="size-2 bg-white rounded-full animate-pulse" />
+              <span className="text-sm font-bold text-white">Live Auction</span>
+            </div>
+          ) : isCompleted ? (
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-lg rounded-full mb-4">
+              <CheckCircle className="size-5 text-white" />
+              <span className="text-sm font-bold text-white">
+                Auction Completed
+              </span>
+            </div>
+          ) : isAuctionType ? (
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-lg rounded-full mb-4">
+              <Clock className="size-5 text-yellow-300" />
+              <span className="text-sm font-bold text-white">
+                Upcoming Auction
+              </span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-lg rounded-full mb-4">
+              <Tag className="size-5 text-white" />
+              <span className="text-sm font-bold text-white">For Sale</span>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="bg-white/20 rounded-xl p-3 text-center border-2 border-white/30">
+            <div className="text-2xl font-black text-white">0</div>
+            <div className="text-xs font-semibold text-white/80">Views</div>
+          </div>
+          <div className="bg-white/20 rounded-xl p-3 text-center border-2 border-white/30">
+            <div className="text-2xl font-black text-white">0</div>
+            <div className="text-xs font-semibold text-white/80">Saved</div>
+          </div>
+          <div className="bg-white/20 rounded-xl p-3 text-center border-2 border-white/30">
+            <div className="text-2xl font-black text-white">
+              {property.totalBids || 0}
+            </div>
+            <div className="text-xs font-semibold text-white/80">Bids</div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {isLiveNow ? (
+            isLiveRoomProperty ? (
+              <div className="bg-white/20 border-2 border-white/40 rounded-2xl p-5 text-center">
+                <MapPin className="size-8 text-white mx-auto mb-2" />
+                <p className="text-white font-bold text-sm mb-1">
+                  Live Room Auction
+                </p>
+                <p className="text-white/80 text-xs mb-3">
+                  Attend in person at the venue to bid on this property.
+                </p>
+                {matchingAuction?.venue?.name && (
+                  <p className="text-white/90 text-xs font-bold mb-3">
+                    📍 {matchingAuction.venue.name}
+                  </p>
+                )}
+                <a
+                  href="/view-live-locations"
+                  className="inline-block px-4 py-2 bg-white text-purple-700 rounded-xl font-bold text-sm hover:bg-purple-50 transition-colors"
+                >
+                  Register to Attend
+                </a>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={onPlaceBid}
+                  className="w-full py-4 bg-white text-blue-600 rounded-xl font-black shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-2 text-lg"
+                >
+                  <Gavel className="size-6" />
+                  Place Bid
+                </button>
+              </>
+            )
+          ) : isCompleted ? (
+            <>
+              {property.propertyStatus === "sold" ? (
+                <div className="bg-white/20 rounded-2xl p-4 text-center text-white border-2 border-white/30">
+                  <p className="text-sm text-white/80 mb-1">🎉 SOLD</p>
+                  <p className="text-4xl font-black">
+                    £
+                    {(
+                      property.soldPrice ||
+                      property.currentBid ||
+                      0
+                    ).toLocaleString()}
+                  </p>
+                  {property.soldTo && (
+                    <p className="text-xs text-white/70 mt-2">
+                      Winner ID:{" "}
+                      {typeof property.soldTo === "object"
+                        ? property.soldTo.name
+                        : property.soldTo.toString().slice(-6)}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-white/20 rounded-2xl p-4 text-center text-white border-2 border-white/30">
+                  <p className="text-sm text-white/80 mb-1">❌ UNSOLD</p>
+                  <p className="text-lg font-bold">Reserve Not Met</p>
+                  <p className="text-xs text-white/70 mt-2">
+                    Highest Bid: £{(property.currentBid || 0).toLocaleString()}{" "}
+                    | Reserve: £
+                    {(property.pricing?.reservePrice || 0).toLocaleString()}
+                  </p>
+                </div>
+              )}
+              <button
+                onClick={() =>
+                  onNavigate(`/auctions/${matchingAuction.slug}`)
+                }
+                className="w-full py-4 bg-white/20 text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all"
+              >
+                View Auction Results
+              </button>
+            </>
+          ) : isAuctionType ? (
+            <>
+              <p className="text-white/80 text-sm text-center py-2">
+                This property is not currently in a live auction.
+              </p>
+              <button
+                onClick={() => onNavigate("/auctions")}
+                className="w-full py-4 bg-white/20 text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all"
+              >
+                View Live Auctions
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="bg-white/20 rounded-2xl p-4 text-center text-white">
+                <p className="text-3xl font-black">{formatPrice(startingPrice)}</p>
+                <p className="text-sm text-white/80">Asking Price</p>
+              </div>
+              {buyNowPrice > 0 && (
+                <div className="bg-white/20 rounded-2xl p-4 text-center text-white">
+                  <p className="text-3xl font-black">
+                    {formatPrice(buyNowPrice)}
+                  </p>
+                  <p className="text-sm text-white/80">Buy Now Price</p>
+                </div>
+              )}
+            </>
+          )}
+          <button className="w-full py-4 bg-white/20 text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all flex items-center justify-center gap-2">
+            Download Brochure
+          </button>
+        </div>
+      </div>
+
+      {/* Agent Contact Card */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border-2 border-white/60">
+        <h3 className="text-xl font-black text-slate-900 mb-4">
+          Contact Agent
+        </h3>
+        <div className="flex items-center gap-4 mb-6">
+          <div className="size-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-black text-xl">
+            {(
+              property.sellerInfo?.agentName ||
+              property.sellerInfo?.sellerName ||
+              "A"
+            )?.charAt(0)}
+          </div>
+          <div>
+            <div className="font-black text-slate-900 text-lg">
+              {property.sellerInfo?.agentName ||
+                property.sellerInfo?.sellerName ||
+                "Agent"}
+            </div>
+            <div className="text-sm text-slate-600 font-semibold">
+              Property Agent
+            </div>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {property.sellerInfo?.sellerContact && (
+            <a
+              href={`tel:${property.sellerInfo.sellerContact}`}
+              className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:scale-105 transition-all"
+            >
+              <div className="size-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Phone className="size-5 text-white" />
+              </div>
+              <span className="font-bold text-slate-900">
+                {property.sellerInfo.sellerContact}
+              </span>
+            </a>
+          )}
+          {property.sellerInfo?.sellerEmail && (
+            <a
+              href={`mailto:${property.sellerInfo.sellerEmail}`}
+              className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl hover:scale-105 transition-all"
+            >
+              <div className="size-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                <Mail className="size-5 text-white" />
+              </div>
+              <span className="font-bold text-slate-900 text-sm">
+                {property.sellerInfo.sellerEmail}
+              </span>
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* Property Information Card */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border-2 border-white/60">
+        <h3 className="text-xl font-black text-slate-900 mb-4">
+          Property Information
+        </h3>
+        <div className="space-y-3">
+          {[
+            {
+              label: "Tenure",
+              value: property.legalInfo?.ownershipType || "N/A",
+            },
+            {
+              label: "Property Type",
+              value:
+                property.propertyType?.charAt(0).toUpperCase() +
+                  property.propertyType?.slice(1) || "N/A",
+            },
+            {
+              label: "Category",
+              value:
+                property.propertyCategory?.charAt(0).toUpperCase() +
+                  property.propertyCategory?.slice(1) || "N/A",
+            },
+            {
+              label: "Year Built",
+              value: property.specifications?.yearBuilt || "N/A",
+            },
+            {
+              label: "Floors",
+              value: property.specifications?.floors || "N/A",
+            },
+            {
+              label: "Furnished",
+              value: property.specifications?.furnishedStatus || "N/A",
+            },
+          ].map((item, idx) => (
+            <div
+              key={idx}
+              className="flex items-center justify-between py-2 border-b border-slate-200 last:border-0"
+            >
+              <span className="text-slate-600 font-semibold">{item.label}</span>
+              <span className="font-bold text-slate-900">{item.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

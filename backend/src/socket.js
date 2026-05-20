@@ -1,7 +1,9 @@
 import { Server } from "socket.io";
+import { createAdapter } from '@socket.io/redis-adapter';
 import jwt from "jsonwebtoken";
 import User from "./modules/user/user.model.js";
 import * as messageService from "./modules/message/message.service.js";
+import { createRedisClient, redisConnection } from './config/redis.js';
 
 let io;
 
@@ -15,30 +17,50 @@ export const initSocket = (httpServer) => {
     transports: ["websocket", "polling"],
   });
 
-  // ─── JWT Auth Middleware ───
+  // ─── Redis adapter for Socket.io scaling ───
+  // IORedis connects automatically — no .connect() call needed
+  try {
+    const pubClient = createRedisClient();
+    const subClient = pubClient.duplicate();
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log('✅ Socket.io Redis adapter initialized');
+  } catch (err) {
+    console.error('⚠️ Socket.io Redis adapter failed, using memory adapter:', err.message);
+    // Falls back to in-memory adapter — still works on a single server
+  }
+
+  // ─── JWT Auth Middleware (optional — guests can connect for public broadcasts) ───
   io.use(async (socket, next) => {
     try {
       const token =
         socket.handshake.auth?.token ||
         socket.handshake.headers?.authorization?.split(" ")[1];
-      if (!token) return next(new Error("Authentication required"));
+      if (!token) {
+        socket.user = null;
+        return next();
+      }
 
       const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
       const user = await User.findById(decoded.id).select(
         "name email role isActive",
       );
-      if (!user || !user.isActive)
-        return next(new Error("User not found or inactive"));
+      if (!user || !user.isActive) {
+        socket.user = null;
+        return next();
+      }
 
       socket.user = user;
       next();
     } catch (err) {
-      next(new Error("Invalid token"));
+      socket.user = null;
+      next();
     }
   });
 
   io.on("connection", (socket) => {
     const user = socket.user;
+    if (!user) return; // guest connection — receives broadcasts only
+
     console.log(
       `[Socket] Connected: ${user.name} (${user.role}) — ${socket.id}`,
     );
@@ -59,24 +81,22 @@ export const initSocket = (httpServer) => {
     });
 
     // ─── Send message ───
-    // Rate limiting – max 10 messages per 10 seconds
-    if (!socket.messageTimestamps) socket.messageTimestamps = [];
-
     socket.on(
       "send_message",
       async ({ conversationId, text, attachments = [] }, callback) => {
         try {
-          const now = Date.now();
-          socket.messageTimestamps = socket.messageTimestamps.filter(
-            (t) => now - t < 10000,
-          );
-          if (socket.messageTimestamps.length >= 10) {
+          // Rate limiting – max 10 messages per 10 seconds via Redis
+          const rateLimitKey = `msg_rate:${socket.id}`;
+          const msgCount = await redisConnection.incr(rateLimitKey);
+          if (msgCount === 1) {
+            await redisConnection.expire(rateLimitKey, 10);
+          }
+          if (msgCount > 10) {
             return callback?.({
               success: false,
               error: "Too many messages. Please wait a moment.",
             });
           }
-          socket.messageTimestamps.push(now);
 
           if (!text?.trim()) throw new Error("Message cannot be empty");
 
@@ -170,6 +190,21 @@ export const emitToUser = (userId, event, data) => {
 export const emitToAdmins = (event, data) => {
   if (io) {
     io.to("admins").emit(event, data);
+  }
+};
+
+// ─── Broadcast auction status change to all clients ───
+export const emitAuctionUpdate = (auctionId, data) => {
+  if (io) {
+    io.emit('auction_status_update', { auctionId, ...data });
+  }
+};
+
+// ─── Broadcast bid placed to all clients ───
+export const emitBidUpdate = (auctionId, data) => {
+  if (io) {
+    // Emit globally to all connected clients
+    io.emit('bid_update', { auctionId, ...data });
   }
 };
 

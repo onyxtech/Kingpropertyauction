@@ -5,6 +5,7 @@ import Lead from "../lead/lead.model.js";
 import { getIO } from "../../socket.js";
 import { getRAGContext } from "./rag.service.js";
 import { getKnowledgeContext } from "../knowledge/knowledge.service.js";
+import { getApiIntegrations } from "../settings/settings.service.js";
 
 const router = express.Router();
 
@@ -45,6 +46,9 @@ RULES:
 - For how-to questions, give step by step instructions with URLs
 - If asked about specific current prices or availability, use only the LIVE DATA provided
 - CRITICAL: Always use relative URLs like /register, /free-valuation, /properties, /auctions, /contact-us, /auctions/:slug - NEVER use www.kingauction.com or any absolute URL in responses`;
+
+// ─── XSS sanitization ───
+const sanitizeText = (text) => String(text).replace(/<[^>]*>/g, '');
 
 // ─── Agent request detection ───
 const isAgentRequest = (text) => {
@@ -89,8 +93,10 @@ const callAI = async (
   conversationHistory = [],
   systemPrompt = SYSTEM_CONTEXT,
 ) => {
+  const integrations = await getApiIntegrations();
+  const apiKey = integrations.groqApiKey || process.env.GROQ_API_KEY;
   const Groq = (await import("groq-sdk")).default;
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const groq = new Groq({ apiKey });
 
   const messages = [
     { role: "system", content: systemPrompt },
@@ -120,7 +126,7 @@ router.post("/ai", async (req, res) => {
         .json({ success: false, message: "Message is required" });
     }
 
-    const userText = message.trim();
+    const userText = sanitizeText(message.trim());
 
     // ─── Find or create conversation + lead ───
     let conversation = null;
@@ -285,7 +291,9 @@ router.post("/ai", async (req, res) => {
 
     let fullText = "";
 
-    if (!process.env.GROQ_API_KEY) {
+    const integrations2 = await getApiIntegrations();
+    const activeApiKey = integrations2.groqApiKey || process.env.GROQ_API_KEY;
+    if (!activeApiKey) {
       // Rule-based fallback
       const fallback = getRuleBasedResponse(userText);
 

@@ -11,8 +11,8 @@ import {
   CheckCircle,
   Sparkles,
 } from "lucide-react";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
+import { apiClient } from "@/lib/apiClient";
 import AIChatWidget from "@/features/shared/components/AIChatWidget";
 
 export default function ContactUs() {
@@ -25,9 +25,8 @@ export default function ContactUs() {
     const form = e.target as HTMLFormElement;
     const fd = new FormData(form);
     try {
-      const res = await fetch("/api/leads", {
+      await apiClient.fetch("/leads", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name:
             `${fd.get("firstName") || ""} ${fd.get("lastName") || ""}`.trim() ||
@@ -39,13 +38,15 @@ export default function ContactUs() {
           leadType: "contact",
         }),
       });
-      if (res.ok) setSubmitted(true);
-    } catch {}
+      setSubmitted(true);
+    } catch (e: any) {
+      console.error("Contact submit error:", e);
+    }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" />
         <div
@@ -53,8 +54,6 @@ export default function ContactUs() {
           style={{ animationDelay: "2s" }}
         />
       </div>
-
-      <Header />
 
       {/* Hero */}
       <div className="relative overflow-hidden">
@@ -349,10 +348,8 @@ export default function ContactUs() {
         </div>
       </div>
 
-      <Footer />
-
       {/* AI Chat Widget */}
       <AIChatWidget />
-    </div>
+    </PublicLayout>
   );
 }

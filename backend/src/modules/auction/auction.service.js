@@ -4,8 +4,17 @@ import notificationService, {
 } from "../notifications/trigger.service.js";
 import Bid from "../bid/bid.model.js";
 import Property from "../property/property.model.js";
+import { emitAuctionUpdate } from '../../socket.js';
+import cache from '../../utils/cache.js';
 
 export const createAuction = async (data, userId) => {
+  // Require venue for live and hybrid auctions
+  if (data.auctionType === 'live') {
+    if (!data.venue?.name || !data.venue?.city || !data.venue?.address) {
+      throw new Error('Venue name, city and address are required for live auctions');
+    }
+  }
+
   // Validate properties before creating
   if (data.properties && data.properties.length > 0) {
     // Check for sold properties
@@ -32,16 +41,33 @@ export const createAuction = async (data, userId) => {
   }
 
   const auction = await Auction.create({ ...data, createdBy: userId });
+  emitAuctionUpdate(auction._id.toString(), { status: auction.status, type: 'auction_created' });
   // If created as live, notify users
   if (auction.status === "live") {
     notificationService
       .emit(NotificationEvents.AUCTION_STARTED, { auctionId: auction._id })
       .catch((e) => console.error("Auction started event failed:", e.message));
   }
+
+  // Schedule BullMQ jobs based on initial status
+  const { scheduleAuctionStart, scheduleAuctionEnd } = await import('./auction.queue.js');
+  if (auction.status === 'scheduled') {
+    await scheduleAuctionStart(auction._id, auction.startDateTime, auction.auctionTitle);
+  } else if (auction.status === 'live') {
+    await scheduleAuctionEnd(auction._id, auction.endDateTime, auction.auctionTitle);
+  }
+
+  // Invalidate auction list caches
+  await cache.delPattern('auctions:*');
+
   return auction.populate(["properties", "createdBy", "winningBidder"]);
 };
 
 export const getAuctions = async (query = {}) => {
+  const cacheKey = `auctions:${JSON.stringify(query)}`;
+  const cached = await cache.get(cacheKey);
+  if (cached) return cached;
+
   const {
     page = 1,
     limit = 10,
@@ -49,10 +75,15 @@ export const getAuctions = async (query = {}) => {
     type,
     search,
     sortBy = "-createdAt",
+    excludeType,
   } = query;
   const filter = {};
   if (status) filter.status = status;
   if (type) filter.auctionType = type;
+  if (excludeType) {
+    const types = String(excludeType).split(',');
+    filter.auctionType = { $nin: types };
+  }
   const skip = (page - 1) * limit;
   const [auctions, total] = await Promise.all([
     Auction.find(filter)
@@ -67,18 +98,29 @@ export const getAuctions = async (query = {}) => {
       .limit(limit),
     Auction.countDocuments(filter),
   ]);
-  return {
+  const result = {
     auctions,
     pagination: { page, limit, total, pages: Math.ceil(total / limit) },
   };
+
+  // Cache for 10 seconds (short TTL — live auction data changes frequently)
+  await cache.set(cacheKey, result, 10);
+
+  return result;
 };
 
 export const getAuctionById = async (id) => {
+  const cacheKey = `auction:${id}`;
+  const cached = await cache.get(cacheKey);
+  if (cached) return cached;
+
   const auction = await Auction.findById(id)
     .populate("properties")
     .populate("createdBy", "name email")
     .populate("winningBidder", "name email");
   if (!auction) throw new Error("Auction not found");
+
+  await cache.set(cacheKey, auction, 30);
   return auction;
 };
 
@@ -115,6 +157,21 @@ export const updateAuction = async (id, data) => {
   }).populate(["properties", "createdBy"]);
 
   if (!auction) throw new Error("Auction not found");
+
+  // Reschedule BullMQ jobs whenever an auction is updated
+  const { scheduleAuctionStart, scheduleAuctionEnd, removeAuctionJobs } = await import('./auction.queue.js');
+  if (auction.status === 'scheduled') {
+    await scheduleAuctionStart(auction._id, auction.startDateTime, auction.auctionTitle);
+  } else if (auction.status === 'live') {
+    await scheduleAuctionEnd(auction._id, auction.endDateTime, auction.auctionTitle);
+  } else if (auction.status === 'cancelled' || auction.status === 'completed') {
+    await removeAuctionJobs(auction._id);
+  }
+
+  // Invalidate caches
+  await cache.delPattern('auctions:*');
+  await cache.del(`auction:${id}`);
+
   return auction;
 };
 
@@ -133,6 +190,9 @@ export const deleteAuction = async (id) => {
     );
   }
 
+  await cache.delPattern('auctions:*');
+  await cache.del(`auction:${id}`);
+
   return auction;
 };
 
@@ -143,9 +203,12 @@ export const startAuction = async (id) => {
     { new: true },
   );
   if (!auction) throw new Error("Auction not found");
+  emitAuctionUpdate(id, { status: 'live' });
   notificationService
     .emit(NotificationEvents.AUCTION_STARTED, { auctionId: id })
     .catch((e) => console.error("Auction started event failed:", e.message));
+  await cache.delPattern('auctions:*');
+  await cache.del(`auction:${id}`);
   return auction;
 };
 
@@ -156,6 +219,9 @@ export const endAuction = async (id) => {
     { new: true },
   );
   if (!auction) throw new Error("Auction not found");
+  emitAuctionUpdate(id, { status: 'completed' });
+  await cache.delPattern('auctions:*');
+  await cache.del(`auction:${id}`);
   return auction;
 };
 
@@ -177,6 +243,13 @@ export const cancelAuction = async (id) => {
       },
     );
   }
+
+  // Remove any pending BullMQ jobs for this auction
+  const { removeAuctionJobs } = await import('./auction.queue.js');
+  await removeAuctionJobs(id);
+
+  await cache.delPattern('auctions:*');
+  await cache.del(`auction:${id}`);
 
   return auction;
 };
@@ -259,6 +332,11 @@ export const completeAuction = async (auctionId) => {
       await Property.findByIdAndUpdate(property._id, {
         propertyStatus: "available",
         "auctionDetails.auctionStatus": "closed",
+        currentBid: 0,
+        totalBids: 0,
+        winningBidder: null,
+        soldPrice: null,
+        winner: null,
       });
       if (winningBid) {
         await Bid.updateMany(
@@ -284,6 +362,11 @@ export const completeAuction = async (auctionId) => {
       await Property.findByIdAndUpdate(property._id, {
         propertyStatus: "available",
         "auctionDetails.auctionStatus": "closed",
+        currentBid: 0,
+        totalBids: 0,
+        winningBidder: null,
+        soldPrice: null,
+        winner: null,
       });
       results.push({
         property: property.propertyTitle,
@@ -322,6 +405,9 @@ export const completeAuction = async (auctionId) => {
   }
 
   await Auction.findByIdAndUpdate(auctionId, { status: "completed" });
+  emitAuctionUpdate(auctionId, { status: 'completed' });
+  await cache.delPattern('auctions:*');
+  await cache.del(`auction:${auctionId}`);
 
   return {
     auction: auction.auctionTitle,

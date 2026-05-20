@@ -15,7 +15,7 @@ const auctionSchema = new mongoose.Schema(
     },
     auctionType: {
       type: String,
-      enum: ["live", "online", "hybrid", "reserve", "absolute"],
+      enum: ["live", "online", "reserve", "absolute"],
       required: true,
     },
     description: {

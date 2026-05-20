@@ -412,8 +412,33 @@ notificationService.on(
     const auction = await Auction.findById(auctionId);
     if (!auction) return;
 
-    // Get ALL active users buyers/investors (not just bidders, since auction just started)
-    // const users = await User.find({ isActive: true, role: 'user' });
+    // For live room auctions, skip mass email — only notify registered attendees
+    if (auction.auctionType === 'live') {
+      console.log('[Email] Live room auction started - notifying registered attendees only');
+      const Lead = (await import('../lead/lead.model.js')).default;
+      const registeredLeads = await Lead.find({
+        leadType: 'live-registration',
+        message: { $regex: auction.auctionTitle, $options: 'i' },
+      });
+      for (const lead of registeredLeads) {
+        await sendEmail({
+          to: lead.email,
+          subject: `🔴 ${auction.auctionTitle} is Now Live!`,
+          templateKey: 'liveAuctionStarted',
+          variables: {
+            user_name: lead.name,
+            auction_name: auction.auctionTitle,
+            venue_name: auction.venue?.name || '',
+            venue_address: [auction.venue?.address, auction.venue?.city, auction.venue?.postcode]
+              .filter(Boolean).join(', '),
+            site_url: process.env.CLIENT_URL || 'http://localhost:5173',
+          },
+        }).catch(e => console.error('[Email] Live attendee notify failed:', e.message));
+      }
+      return;
+    }
+
+    // Online / hybrid auctions — notify all active users
     const users = await User.find({ isActive: true, role: { $in: ['user', 'investor'] } });
 
     for (const user of users) {

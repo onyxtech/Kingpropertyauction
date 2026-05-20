@@ -1,53 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
+import type { Property, Auction, Bid } from "@/types";
+import { useAuctionSocket } from "@/hooks/useAuctionSocket";
 import {
-  MapPin,
-  Bed,
-  Bath,
-  Maximize,
-  Calendar,
-  Clock,
-  Heart,
-  Share2,
-  Phone,
-  Mail,
   ArrowLeft,
   CheckCircle,
-  Home,
-  Car,
   AlertCircle,
-  TrendingUp,
-  Users,
-  Gavel,
-  ChevronRight,
-  ChevronLeft,
   X,
-  FileText,
-  Building2,
-  Sparkles,
-  Map,
-  Navigation,
-  Locate,
-  Eye,
-  EyeOff,
-  User,
-  Lock,
-  Info,
-  Tag,
+  MapPin,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
 import { useAuctionApi } from "@/features/auction/api/useAuctionApi";
 import { useBiddingApi } from "@/features/bid/api/useBiddingApi";
 import { useAuthStore } from "@/stores/authStore";
 import { useAuthApi } from "@/features/auth/api/useAuthApi";
 import { useQueryClient } from "@tanstack/react-query";
-import CountdownTimer from "../../shared/ui/CountdownTimer";
 import AuthModal from "@/features/shared/components/AuthModal";
 import BidModal from "@/features/shared/components/BidModal";
+import PropertyImageGallery from "@/features/property/components/PropertyImageGallery";
+import PropertyInfo from "@/features/property/components/PropertyInfo";
+import PropertyActionCard from "@/features/property/components/PropertyActionCard";
 
 export default function PropertyDetails() {
   const navigate = useNavigate();
@@ -100,16 +75,16 @@ export default function PropertyDetails() {
     useGetPropertyById(propertyId);
   const { useGetAuctions } = useAuctionApi();
   const { data: auctionsData } = useGetAuctions({});
-  const allAuctions = auctionsData?.data || [];
+  const allAuctions = (auctionsData?.data || []) as Auction[];
   const { usePlaceBid } = useBiddingApi();
   const placeBidMutation = usePlaceBid();
 
-  const property = apiProperty || null;
+  const property = (apiProperty || null) as Property | null;
 
   const matchingAuction =
-    allAuctions.find((a: any) =>
-      a.properties?.some(
-        (p: any) => (typeof p === "string" ? p : p._id) === property?._id,
+    allAuctions.find((a) =>
+      (a.properties as any[])?.some(
+        (p) => (typeof p === "string" ? p : p._id) === property?._id,
       ),
     ) || null;
 
@@ -117,6 +92,7 @@ export default function PropertyDetails() {
   const isInLiveAuction = matchingAuction !== null;
   const isLiveNow = matchingAuction?.status === "live";
   const isCompleted = matchingAuction?.status === "completed";
+  const isLiveRoomProperty = matchingAuction?.auctionType === 'live';
   const isDirectSale = property?.listingType === "direct_sale";
 
   const currentBid =
@@ -233,6 +209,14 @@ export default function PropertyDetails() {
       showNotification(`Minimum bid is ${formatPrice(nextMinBid)}`, "error");
       return;
     }
+
+    // Optimistic update
+    const propertyKey = ['properties', propertyId];
+    const previousProperty = queryClient.getQueryData(propertyKey);
+    queryClient.setQueryData(propertyKey, (old: any) =>
+      old ? { ...old, currentBid: amount } : old,
+    );
+
     try {
       await placeBidMutation.mutateAsync({
         auction: matchingAuction._id,
@@ -254,6 +238,7 @@ export default function PropertyDetails() {
         setMaxBidAmount("");
       }, 2000);
     } catch (err: any) {
+      queryClient.setQueryData(propertyKey, previousProperty);
       showNotification(err.message, "error");
     }
   };
@@ -284,6 +269,14 @@ export default function PropertyDetails() {
     }
   };
 
+  useAuctionSocket({
+    propertyId: property?._id?.toString(),
+    onBidUpdate: () => {
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+      queryClient.invalidateQueries({ queryKey: ["properties", property?.slug] });
+    },
+  });
+
   const nextImage = () =>
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   const prevImage = () =>
@@ -291,8 +284,7 @@ export default function PropertyDetails() {
 
   if (loading || !property) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
-        <Header />
+      <PublicLayout>
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="size-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
@@ -301,13 +293,12 @@ export default function PropertyDetails() {
             </p>
           </div>
         </div>
-        <Footer />
-      </div>
+      </PublicLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30">
+    <PublicLayout>
       <AnimatePresence>
         {notification && (
           <motion.div
@@ -349,7 +340,6 @@ export default function PropertyDetails() {
         onSubmit={handleAuthSubmit}
       />
 
-      <Header />
       <div className="container mx-auto px-6 py-6">
         <button
           onClick={() => navigate(-1)}
@@ -359,714 +349,62 @@ export default function PropertyDetails() {
         </button>
       </div>
 
-      {/* Image Gallery */}
-      <div className="container mx-auto px-6 pb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <div className="lg:col-span-3 relative">
-            <div className="relative h-[500px] rounded-3xl overflow-hidden shadow-2xl group">
-              <ImageWithFallback
-                src={images[currentImageIndex]}
-                alt={property.propertyTitle}
-                className="w-full h-full object-cover"
-              />
-              <button
-                onClick={prevImage}
-                className="absolute left-4 top-1/2 -translate-y-1/2 size-12 bg-white/90 rounded-full flex items-center justify-center shadow-xl hover:scale-110"
-              >
-                <ChevronLeft className="size-6 text-slate-900" />
-              </button>
-              <button
-                onClick={nextImage}
-                className="absolute right-4 top-1/2 -translate-y-1/2 size-12 bg-white/90 rounded-full flex items-center justify-center shadow-xl hover:scale-110"
-              >
-                <ChevronRight className="size-6 text-slate-900" />
-              </button>
-              <button
-                onClick={() => setShowImageModal(true)}
-                className="absolute bottom-4 right-4 px-5 py-3 bg-white/90 rounded-xl font-bold text-slate-900 flex items-center gap-2 shadow-xl"
-              >
-                View All {images.length} Photos
-              </button>
-              <div className="absolute top-4 left-4 px-4 py-2 bg-black/60 rounded-full text-white font-bold text-sm">
-                {currentImageIndex + 1} / {images.length}
-              </div>
-              <div className="absolute top-4 right-4 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-black shadow-xl">
-                {property.propertyID || `LOT-${(property._id || "").slice(-3)}`}
-              </div>
-            </div>
-          </div>
-          <div className="lg:col-span-1 space-y-4">
-            {images.slice(0, 4).map((img: string, idx: number) => (
-              <div
-                key={idx}
-                onClick={() => setCurrentImageIndex(idx)}
-                className={`relative h-28 rounded-2xl overflow-hidden cursor-pointer transition-all ${currentImageIndex === idx ? "ring-4 ring-blue-600 scale-105" : "hover:scale-105 opacity-70 hover:opacity-100"}`}
-              >
-                <ImageWithFallback
-                  src={img}
-                  alt={`View ${idx + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <PropertyImageGallery
+        images={images}
+        currentIndex={currentImageIndex}
+        onPrev={prevImage}
+        onNext={nextImage}
+        onOpenModal={() => setShowImageModal(true)}
+        onSetIndex={setCurrentImageIndex}
+        propertyTitle={property.propertyTitle}
+        propertyId={
+          property.propertyID || `LOT-${(property._id || "").slice(-3)}`
+        }
+      />
 
-      {/* Main Content */}
       <div className="container mx-auto px-6 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    {isLiveNow ? (
-                      <span className="px-4 py-1.5 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full font-bold text-sm flex items-center gap-1.5">
-                        <span className="size-2 bg-white rounded-full animate-pulse" />{" "}
-                        Live Auction
-                      </span>
-                    ) : isCompleted ? (
-                      <span className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-full font-bold text-sm">
-                        Completed
-                      </span>
-                    ) : isAuctionType ? (
-                      <span className="px-4 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-full font-bold text-sm">
-                        Upcoming Auction
-                      </span>
-                    ) : (
-                      <span className="px-4 py-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full font-bold text-sm">
-                        For Sale
-                      </span>
-                    )}
-                    <span className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-full font-bold text-sm">
-                      {property.legalInfo?.ownershipType || "Freehold"}
-                    </span>
-                  </div>
-                  <h1 className="text-4xl font-black text-slate-900 mb-3">
-                    {property.propertyTitle}
-                  </h1>
-                  <div className="flex items-center gap-2 text-lg text-slate-600 font-medium">
-                    <MapPin className="size-5 text-blue-600" />
-                    {property.location?.streetAddress ||
-                      property.location?.city}
-                    , {property.location?.area}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setIsFavorite(!isFavorite)}
-                    className={`size-12 rounded-full flex items-center justify-center transition-all shadow-lg ${isFavorite ? "bg-gradient-to-br from-red-500 to-pink-500" : "bg-white/90"}`}
-                  >
-                    <Heart
-                      className={`size-5 ${isFavorite ? "text-white fill-white" : "text-slate-600"}`}
-                    />
-                  </button>
-                  <button className="size-12 bg-white/90 rounded-full flex items-center justify-center transition-all shadow-lg">
-                    <Share2 className="size-5 text-slate-600" />
-                  </button>
-                </div>
-              </div>
+          <PropertyInfo
+            property={property}
+            matchingAuction={matchingAuction}
+            isLiveNow={isLiveNow}
+            isCompleted={isCompleted}
+            isAuctionType={isAuctionType}
+            isInLiveAuction={isInLiveAuction}
+            isDirectSale={isDirectSale}
+            currentBid={currentBid}
+            startingPrice={startingPrice}
+            reservePrice={reservePrice}
+            bidIncrement={bidIncrement}
+            nextMinBid={nextMinBid}
+            reserveMet={reserveMet}
+            buyNowPrice={buyNowPrice}
+            features={features}
+            isFavorite={isFavorite}
+            onToggleFavorite={() => setIsFavorite(!isFavorite)}
+            formatPrice={formatPrice}
+            showBidHistory={showBidHistory}
+            bidHistory={bidHistory}
+            loadingHistory={loadingHistory}
+            onToggleBidHistory={loadBidHistory}
+          />
 
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 pb-6 border-b-2 border-slate-100">
-                {[
-                  {
-                    icon: Bed,
-                    gradient: "from-blue-500 to-indigo-600",
-                    value: property.specifications?.bedrooms || 0,
-                    label: "Bedrooms",
-                  },
-                  {
-                    icon: Bath,
-                    gradient: "from-purple-500 to-pink-600",
-                    value: property.specifications?.bathrooms || 0,
-                    label: "Bathrooms",
-                  },
-                  {
-                    icon: Maximize,
-                    gradient: "from-emerald-500 to-teal-600",
-                    value:
-                      property.specifications?.totalArea?.toLocaleString() ||
-                      "N/A",
-                    label: "Sq Ft",
-                  },
-                  {
-                    icon: Car,
-                    gradient: "from-orange-500 to-amber-600",
-                    value: property.specifications?.parkingSpaces || 0,
-                    label: "Parking",
-                  },
-                  {
-                    icon: Home,
-                    gradient: "from-rose-500 to-red-600",
-                    value: property.specifications?.yearBuilt || "N/A",
-                    label: "Built",
-                  },
-                ].map((stat, idx) => (
-                  <div key={idx} className="flex items-center gap-3">
-                    <div
-                      className={`size-12 bg-gradient-to-br ${stat.gradient} rounded-xl flex items-center justify-center`}
-                    >
-                      <stat.icon className="size-6 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-black text-slate-900">
-                        {stat.value}
-                      </div>
-                      <div className="text-xs font-semibold text-slate-500">
-                        {stat.label}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200">
-                  <div className="text-sm font-bold text-blue-900 mb-2">
-                    {isDirectSale ? "Asking Price" : "Starting Price"}
-                  </div>
-                  <div className="text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    {formatPrice(startingPrice)}
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-emerald-200">
-                  <div className="text-sm font-bold text-emerald-900 mb-2">
-                    {isDirectSale
-                      ? "Buy Now Price"
-                      : isAuctionType && !isInLiveAuction
-                        ? "Starting Bid"
-                        : "Current Bid"}
-                  </div>
-                  <div className="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                    {isDirectSale
-                      ? formatPrice(buyNowPrice || startingPrice)
-                      : formatPrice(currentBid)}
-                  </div>
-                </div>
-              </div>
-
-              {isAuctionType && (
-                <div className="mt-6 space-y-4">
-                  {isLiveNow && matchingAuction?.endDateTime && (
-                    <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-4 border-2 border-red-200 flex items-center justify-between">
-                      <span className="text-sm font-bold text-red-700">
-                        ⏰ Auction Ends In:
-                      </span>
-                      <CountdownTimer
-                        endDate={new Date(matchingAuction.endDateTime)}
-                        compact={false}
-                        gradient="from-red-500 to-orange-500"
-                        onEnded={async () => {
-                          try {
-                            await fetch(`/api/auctions/check-ended-public`, {
-                              method: "POST",
-                            });
-                          } catch (e) {}
-                          queryClient.invalidateQueries({
-                            queryKey: ["properties"],
-                          });
-                          queryClient.invalidateQueries({
-                            queryKey: ["auctions"],
-                          });
-                        }}
-                      />
-                    </div>
-                  )}
-                  {isAuctionType &&
-                    !isInLiveAuction &&
-                    property.auctionDetails?.auctionEndDate && (
-                      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-4 border-2 border-amber-200 flex items-center justify-between">
-                        <span className="text-sm font-bold text-amber-700">
-                          📅 Auction Date:
-                        </span>
-                        <span className="font-bold text-amber-900">
-                          {new Date(
-                            property.auctionDetails.auctionEndDate,
-                          ).toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </span>
-                      </div>
-                    )}
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200 space-y-2">
-                    <div className="flex justify-between text-sm font-semibold">
-                      <span className="text-slate-600">Next Min Bid</span>
-                      <span className="text-slate-900 font-bold">
-                        {formatPrice(nextMinBid)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm font-semibold">
-                      <span className="text-slate-600">Bid Increment</span>
-                      <span className="text-slate-900 font-bold">
-                        {formatPrice(bidIncrement)}
-                      </span>
-                    </div>
-                    {reservePrice > 0 && (
-                      <div
-                        className={`flex items-center gap-1.5 text-sm font-bold ${reserveMet ? "text-green-600" : "text-amber-600"}`}
-                      >
-                        {reserveMet ? (
-                          <CheckCircle className="size-4" />
-                        ) : (
-                          <AlertCircle className="size-4" />
-                        )}
-                        {reserveMet
-                          ? `Reserve Met (${formatPrice(reservePrice)})`
-                          : `Reserve Not Met (${formatPrice(reservePrice)})`}
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm font-semibold">
-                      <span className="text-slate-600">Total Bids</span>
-                      <span className="text-slate-900 font-bold">
-                        {property.totalBids || 0}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm font-semibold">
-                      <span className="text-slate-600">Status</span>
-                      <span
-                        className={`font-bold ${isLiveNow ? "text-green-600" : isCompleted ? "text-slate-600" : "text-amber-600"}`}
-                      >
-                        {isLiveNow
-                          ? "🟢 Live"
-                          : isCompleted
-                            ? "✅ Completed"
-                            : "🟡 Not in live auction"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
-              <h2 className="text-2xl font-black text-slate-900 mb-4 flex items-center gap-3">
-                <FileText className="size-6 text-blue-600" />
-                Property Description
-              </h2>
-              <p className="text-slate-700 leading-relaxed text-lg">
-                {property.propertyDescription || "No description available."}
-              </p>
-            </div>
-
-            {features.length > 0 && (
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
-                <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                  <Sparkles className="size-6 text-purple-600" />
-                  Key Features
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {features.map((feature: string, idx: number) => (
-                    <div
-                      key={idx}
-                      className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl"
-                    >
-                      <CheckCircle className="size-5 text-blue-600 flex-shrink-0" />
-                      <span className="font-semibold text-slate-700">
-                        {feature}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {property?.media?.propertyVideo && (
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
-                <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                  <FileText className="size-6 text-blue-600" />
-                  Property Video
-                </h2>
-                <video
-                  src={property.media.propertyVideo.startsWith("http") ? property.media.propertyVideo : `http://localhost:5000${property.media.propertyVideo}`}
-                  controls
-                  className="w-full rounded-2xl border-2 border-slate-200"
-                />
-              </div>
-            )}
-
-            {property?.media?.floorPlan && (
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
-                <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                  <FileText className="size-6 text-green-600" />
-                  Floor Plan
-                </h2>
-                {property.media.floorPlan.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                  <img
-                    src={property.media.floorPlan.startsWith("http") ? property.media.floorPlan : `http://localhost:5000${property.media.floorPlan}`}
-                    alt="Floor Plan"
-                    className="w-full rounded-2xl border-2 border-slate-200"
-                  />
-                ) : (
-                  <a
-                    href={property.media.floorPlan.startsWith("http") ? property.media.floorPlan : `http://localhost:5000${property.media.floorPlan}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 px-6 py-4 bg-green-50 border-2 border-green-200 rounded-2xl text-green-700 font-bold hover:bg-green-100 transition-colors w-fit"
-                  >
-                    <FileText className="size-5" /> Download Floor Plan PDF
-                  </a>
-                )}
-              </div>
-            )}
-
-            {property?.media?.legalDocuments?.length > 0 && (
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
-                <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                  <FileText className="size-6 text-purple-600" />
-                  Legal Documents
-                </h2>
-                <p className="text-slate-600 font-medium mb-4">Review the legal documents before bidding.</p>
-                <div className="space-y-3">
-                  {property.media.legalDocuments.map((doc: string, i: number) => (
-                    <a
-                      key={i}
-                      href={doc.startsWith("http") ? doc : `http://localhost:5000${doc}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 px-6 py-4 bg-purple-50 border-2 border-purple-200 rounded-2xl text-purple-700 font-bold hover:bg-purple-100 transition-colors"
-                    >
-                      <FileText className="size-5 flex-shrink-0" />
-                      <span className="truncate">Document {i + 1} — {doc.split('/').pop()}</span>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {isInLiveAuction && (
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-                    <Gavel className="size-6 text-red-600" />
-                    Bid History
-                  </h2>
-                  <button
-                    onClick={loadBidHistory}
-                    className={`px-4 py-2 rounded-xl font-bold transition-all ${showBidHistory ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
-                  >
-                    {showBidHistory ? "Hide" : "View"} History
-                  </button>
-                </div>
-                <AnimatePresence>
-                  {showBidHistory && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden"
-                    >
-                      {loadingHistory ? (
-                        <div className="text-center py-4">
-                          <div className="animate-spin size-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto" />
-                        </div>
-                      ) : bidHistory?.bids?.length > 0 ? (
-                        <div className="space-y-2 max-h-64 overflow-y-auto">
-                          {bidHistory.bids.map((bid: any, i: number) => (
-                            <div
-                              key={i}
-                              className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="size-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                                  {bid.bidder?.name?.charAt(0) || "?"}
-                                </div>
-                                <div>
-                                  <p className="text-sm font-bold text-slate-900">
-                                    {bid.bidder?.name || "Anonymous"}
-                                  </p>
-                                  <p className="text-xs text-slate-500">
-                                    {new Date(bid.createdAt).toLocaleString()}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-lg font-black text-green-600">
-                                  £{bid.amount?.toLocaleString()}
-                                </p>
-                                <span
-                                  className={`text-xs font-bold ${bid.status === "winning" ? "text-green-600" : "text-slate-500"}`}
-                                >
-                                  {bid.status === "winning"
-                                    ? "🏆 Winning"
-                                    : bid.status}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-center text-sm text-slate-500 py-4">
-                          No bids yet.
-                        </p>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-          </div>
-
-          {/* ─── RIGHT SIDEBAR ─── */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Gradient Action Card */}
-            <div
-              className={`rounded-3xl p-8 shadow-2xl sticky top-24 z-10 ${isLiveNow ? "bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600" : isCompleted ? "bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600" : isAuctionType ? "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500" : "bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900"}`}
-            >
-              <div className="text-center mb-6">
-                {isLiveNow ? (
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-lg rounded-full mb-4">
-                    <span className="size-2 bg-white rounded-full animate-pulse" />
-                    <span className="text-sm font-bold text-white">
-                      Live Auction
-                    </span>
-                  </div>
-                ) : isCompleted ? (
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-lg rounded-full mb-4">
-                    <CheckCircle className="size-5 text-white" />
-                    <span className="text-sm font-bold text-white">
-                      Auction Completed
-                    </span>
-                  </div>
-                ) : isAuctionType ? (
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-lg rounded-full mb-4">
-                    <Clock className="size-5 text-yellow-300" />
-                    <span className="text-sm font-bold text-white">
-                      Upcoming Auction
-                    </span>
-                  </div>
-                ) : (
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-lg rounded-full mb-4">
-                    <Tag className="size-5 text-white" />
-                    <span className="text-sm font-bold text-white">
-                      For Sale
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                <div className="bg-white/20 rounded-xl p-3 text-center border-2 border-white/30">
-                  <div className="text-2xl font-black text-white">0</div>
-                  <div className="text-xs font-semibold text-white/80">
-                    Views
-                  </div>
-                </div>
-                <div className="bg-white/20 rounded-xl p-3 text-center border-2 border-white/30">
-                  <div className="text-2xl font-black text-white">0</div>
-                  <div className="text-xs font-semibold text-white/80">
-                    Saved
-                  </div>
-                </div>
-                <div className="bg-white/20 rounded-xl p-3 text-center border-2 border-white/30">
-                  <div className="text-2xl font-black text-white">
-                    {property.totalBids || 0}
-                  </div>
-                  <div className="text-xs font-semibold text-white/80">
-                    Bids
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {isLiveNow ? (
-                  <>
-                    <button
-                      onClick={handlePlaceBidClick}
-                      className="w-full py-4 bg-white text-blue-600 rounded-xl font-black shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-2 text-lg"
-                    >
-                      <Gavel className="size-6" />
-                      Place Bid
-                    </button>
-                  </>
-                ) : isCompleted ? (
-                  <>
-                    {property.propertyStatus === "sold" ? (
-                      <div className="bg-white/20 rounded-2xl p-4 text-center text-white border-2 border-white/30">
-                        <p className="text-sm text-white/80 mb-1">🎉 SOLD</p>
-                        <p className="text-4xl font-black">
-                          £
-                          {(
-                            property.soldPrice ||
-                            property.currentBid ||
-                            0
-                          ).toLocaleString()}
-                        </p>
-                        {property.soldTo && (
-                          <p className="text-xs text-white/70 mt-2">
-                            Winner ID:{" "}
-                            {typeof property.soldTo === "object"
-                              ? property.soldTo.name
-                              : property.soldTo.toString().slice(-6)}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="bg-white/20 rounded-2xl p-4 text-center text-white border-2 border-white/30">
-                        <p className="text-sm text-white/80 mb-1">❌ UNSOLD</p>
-                        <p className="text-lg font-bold">Reserve Not Met</p>
-                        <p className="text-xs text-white/70 mt-2">
-                          Highest Bid: £
-                          {(property.currentBid || 0).toLocaleString()} |
-                          Reserve: £
-                          {(
-                            property.pricing?.reservePrice || 0
-                          ).toLocaleString()}
-                        </p>
-                      </div>
-                    )}
-                    <button
-                      onClick={() =>
-                        navigate(`/auctions/${matchingAuction.slug}`)
-                      }
-                      className="w-full py-4 bg-white/20 text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all"
-                    >
-                      View Auction Results
-                    </button>
-                  </>
-                ) : isAuctionType ? (
-                  <>
-                    <p className="text-white/80 text-sm text-center py-2">
-                      This property is not currently in a live auction.
-                    </p>
-                    <button
-                      onClick={() => navigate("/auctions")}
-                      className="w-full py-4 bg-white/20 text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all"
-                    >
-                      View Live Auctions
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div className="bg-white/20 rounded-2xl p-4 text-center text-white">
-                      <p className="text-3xl font-black">
-                        {formatPrice(startingPrice)}
-                      </p>
-                      <p className="text-sm text-white/80">Asking Price</p>
-                    </div>
-                    {buyNowPrice > 0 && (
-                      <div className="bg-white/20 rounded-2xl p-4 text-center text-white">
-                        <p className="text-3xl font-black">
-                          {formatPrice(buyNowPrice)}
-                        </p>
-                        <p className="text-sm text-white/80">Buy Now Price</p>
-                      </div>
-                    )}
-                  </>
-                )}
-                <button className="w-full py-4 bg-white/20 text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all flex items-center justify-center gap-2">
-                  Download Brochure
-                </button>
-              </div>
-            </div>
-
-            {/* Agent Contact Card */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border-2 border-white/60">
-              <h3 className="text-xl font-black text-slate-900 mb-4">
-                Contact Agent
-              </h3>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="size-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-black text-xl">
-                  {(
-                    property.sellerInfo?.agentName ||
-                    property.sellerInfo?.sellerName ||
-                    "A"
-                  )?.charAt(0)}
-                </div>
-                <div>
-                  <div className="font-black text-slate-900 text-lg">
-                    {property.sellerInfo?.agentName ||
-                      property.sellerInfo?.sellerName ||
-                      "Agent"}
-                  </div>
-                  <div className="text-sm text-slate-600 font-semibold">
-                    Property Agent
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-3">
-                {property.sellerInfo?.sellerContact && (
-                  <a
-                    href={`tel:${property.sellerInfo.sellerContact}`}
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:scale-105 transition-all"
-                  >
-                    <div className="size-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                      <Phone className="size-5 text-white" />
-                    </div>
-                    <span className="font-bold text-slate-900">
-                      {property.sellerInfo.sellerContact}
-                    </span>
-                  </a>
-                )}
-                {property.sellerInfo?.sellerEmail && (
-                  <a
-                    href={`mailto:${property.sellerInfo.sellerEmail}`}
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl hover:scale-105 transition-all"
-                  >
-                    <div className="size-10 bg-purple-600 rounded-lg flex items-center justify-center">
-                      <Mail className="size-5 text-white" />
-                    </div>
-                    <span className="font-bold text-slate-900 text-sm">
-                      {property.sellerInfo.sellerEmail}
-                    </span>
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {/* Property Information Card */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border-2 border-white/60">
-              <h3 className="text-xl font-black text-slate-900 mb-4">
-                Property Information
-              </h3>
-              <div className="space-y-3">
-                {[
-                  {
-                    label: "Tenure",
-                    value: property.legalInfo?.ownershipType || "N/A",
-                  },
-                  {
-                    label: "Property Type",
-                    value:
-                      property.propertyType?.charAt(0).toUpperCase() +
-                        property.propertyType?.slice(1) || "N/A",
-                  },
-                  {
-                    label: "Category",
-                    value:
-                      property.propertyCategory?.charAt(0).toUpperCase() +
-                        property.propertyCategory?.slice(1) || "N/A",
-                  },
-                  {
-                    label: "Year Built",
-                    value: property.specifications?.yearBuilt || "N/A",
-                  },
-                  {
-                    label: "Floors",
-                    value: property.specifications?.floors || "N/A",
-                  },
-                  {
-                    label: "Furnished",
-                    value: property.specifications?.furnishedStatus || "N/A",
-                  },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between py-2 border-b border-slate-200 last:border-0"
-                  >
-                    <span className="text-slate-600 font-semibold">
-                      {item.label}
-                    </span>
-                    <span className="font-bold text-slate-900">
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <PropertyActionCard
+            property={property}
+            matchingAuction={matchingAuction}
+            isLiveNow={isLiveNow}
+            isCompleted={isCompleted}
+            isLiveRoomProperty={isLiveRoomProperty}
+            isAuctionType={isAuctionType}
+            isInLiveAuction={isInLiveAuction}
+            isDirectSale={isDirectSale}
+            currentBid={currentBid}
+            startingPrice={startingPrice}
+            buyNowPrice={buyNowPrice}
+            formatPrice={formatPrice}
+            onPlaceBid={handlePlaceBidClick}
+            onNavigate={navigate}
+          />
         </div>
       </div>
 
@@ -1173,7 +511,6 @@ export default function PropertyDetails() {
         </div>
       )}
 
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }

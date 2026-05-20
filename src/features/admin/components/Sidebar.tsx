@@ -17,6 +17,7 @@ import {
   Menu,
   Mail,
   InboxIcon,
+  MapPin,
 } from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 import { useAuthStore } from "@/stores/authStore";
@@ -24,12 +25,13 @@ import { useAuthStore } from "@/stores/authStore";
 const menuItems = [
   { id: "overview", icon: LayoutDashboard, label: "Overview" },
   { id: "pageBuilder", icon: FileText, label: "Page Builder" },
-  { id: "menuManager", icon: Menu, label: "Menu Manager" },
+    { id: "menuManager", icon: Menu, label: "Menu Manager", path: "/admin/menus" },
   { id: "properties", icon: Building2, label: "Properties" },
   { id: "auctions", icon: Gavel, label: "Auctions" },
   { id: "bids", icon: TrendingUp, label: "Bids" },
-  { id: "marketing", icon: Send, label: "Marketing" },
+    { id: "marketing", icon: Send, label: "Marketing", path: "/admin/campaigns" },
   { id: "leads", icon: Mail, label: "Leads", path: "/admin/leads" },
+  { id: "live-registrations", icon: MapPin, label: "Live Registrations", path: "/admin/live-registrations" },
   { id: "inbox", icon: InboxIcon, label: "Inbox", path: "/admin/inbox" },
   { id: "social", icon: Share2, label: "Social & Sync" },
   { id: "investors", icon: TrendingUp, label: "Investors" },
@@ -37,7 +39,7 @@ const menuItems = [
   { id: "compliance", icon: Shield, label: "Compliance" },
   { id: "financial", icon: CreditCard, label: "Financial" },
   { id: "users", icon: Users, label: "Users" },
-  { id: "analytics", icon: BarChart3, label: "Analytics" },
+  { id: "analytics", icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
   {
     id: "settings",
     icon: Settings,

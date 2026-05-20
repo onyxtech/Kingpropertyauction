@@ -11,8 +11,8 @@ import {
   MapPin,
   Phone,
 } from "lucide-react";
-import Header from "@/features/shared/layout/Header";
-import Footer from "@/features/shared/layout/Footer";
+import PublicLayout from "@/features/shared/layout/PublicLayout";
+import { apiClient } from "@/lib/apiClient";
 
 export default function FreeValuation() {
   const [submitted, setSubmitted] = useState(false);
@@ -24,9 +24,8 @@ export default function FreeValuation() {
     try {
       const form = e.target as HTMLFormElement;
       const fd = new FormData(form);
-      await fetch("/api/leads", {
+      await apiClient.fetch("/leads", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: fd.get("fullName") || "User",
           email: fd.get("email") || "",
@@ -46,7 +45,9 @@ export default function FreeValuation() {
       });
       form.reset();
       setSubmitted(true);
-    } catch (e) {}
+    } catch (e: any) {
+      console.error("Valuation submit error:", e);
+    }
     setLoading(false);
   };
 
@@ -74,7 +75,7 @@ export default function FreeValuation() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/30 relative overflow-hidden">
+    <PublicLayout>
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-orange-400/20 to-amber-400/20 rounded-full blur-3xl animate-pulse" />
@@ -83,8 +84,6 @@ export default function FreeValuation() {
           style={{ animationDelay: "2s" }}
         />
       </div>
-
-      <Header />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
@@ -442,7 +441,6 @@ export default function FreeValuation() {
         </div>
       </div>
 
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 }

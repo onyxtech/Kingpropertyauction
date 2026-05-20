@@ -3,6 +3,7 @@ import notificationService, {
   NotificationEvents,
 } from "../notifications/trigger.service.js";
 import Auction from '../auction/auction.model.js';
+import cache from '../../utils/cache.js';
 
 export const createProperty = async (propertyData, userId) => {
   const property = await Property.create({
@@ -17,10 +18,18 @@ export const createProperty = async (propertyData, userId) => {
       userId,
     })
     .catch((e) => console.error("Property submitted event failed:", e.message));
+
+  await cache.delPattern('properties:*');
   return property;
 };
 
 export const getProperties = async (query = {}) => {
+  const cacheKey = `properties:${JSON.stringify(query)}`;
+  if (!query.noCache) {
+    const cached = await cache.get(cacheKey);
+    if (cached) return cached;
+  }
+
   const {
     page = 1,
     limit = 10,
@@ -62,6 +71,7 @@ export const getProperties = async (query = {}) => {
 
   const [properties, total] = await Promise.all([
     Property.find(filter)
+      .select('propertyTitle slug propertyType listingType propertyStatus approvalStatus location pricing media auctionDetails currentBid totalBids featured createdBy winningBidder createdAt updatedAt')
       .sort(sortBy)
       .skip(skip)
       .limit(limit)
@@ -70,7 +80,7 @@ export const getProperties = async (query = {}) => {
     Property.countDocuments(filter),
   ]);
 
-  return {
+  const result = {
     properties,
     pagination: {
       page,
@@ -79,14 +89,25 @@ export const getProperties = async (query = {}) => {
       pages: Math.ceil(total / limit),
     },
   };
+
+  // Cache for 10 seconds (short TTL — bids and status change frequently)
+  await cache.set(cacheKey, result, 10);
+
+  return result;
 };
 
 export const getPropertyById = async (id) => {
+  const cacheKey = `property:${id}`;
+  const cached = await cache.get(cacheKey);
+  if (cached) return cached;
+
   const property = await Property.findById(id).populate(
     "createdBy",
     "name email",
   );
   if (!property) throw new Error("Property not found");
+
+  await cache.set(cacheKey, property, 10);
   return property;
 };
 
@@ -96,6 +117,10 @@ export const updateProperty = async (id, updateData) => {
     runValidators: true,
   });
   if (!property) throw new Error("Property not found");
+
+  await cache.delPattern('properties:*');
+  await cache.del(`property:${id}`);
+
   return property;
 };
 
@@ -105,6 +130,9 @@ export const deleteProperty = async (id) => {
 
   // Remove this property from all auctions that reference it
   await Auction.updateMany({ properties: id }, { $pull: { properties: id } });
+
+  await cache.delPattern('properties:*');
+  await cache.del(`property:${id}`);
 
   return property;
 };
