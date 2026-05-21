@@ -176,7 +176,7 @@ export default function ViewAllLots() {
                         src={
                           lot.media.propertyImages[0].startsWith("http")
                             ? lot.media.propertyImages[0]
-                            : `http://localhost:5000${lot.media.propertyImages[0]}`
+                            : lot.media.propertyImages[0]
                         }
                         alt={lot.propertyTitle}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"

@@ -59,7 +59,7 @@ export default function Auctions() {
       image: a.properties?.[0]?.media?.propertyImages?.[0]
         ? a.properties[0].media.propertyImages[0].startsWith("http")
           ? a.properties[0].media.propertyImages[0]
-          : `http://localhost:5000${a.properties[0].media.propertyImages[0]}`
+          : a.properties[0].media.propertyImages[0]
         : a.auctionImage ||
           "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1080",
       status:

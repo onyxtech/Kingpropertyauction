@@ -24,7 +24,7 @@ export default function StepMedia({
   handleLegalDocUpload,
 }: any) {
   const mediaBase = (url: string) =>
-    url?.startsWith("http") ? url : `http://localhost:5000${url}`;
+    url?.startsWith("http") ? url : url;
 
   return (
     <div className="space-y-6">

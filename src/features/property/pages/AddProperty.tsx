@@ -56,6 +56,7 @@ export default function AddProperty() {
     text: string;
     type: "success" | "error";
   } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState<LocalPropertyFormData>({
     propertyTitle: "",
@@ -187,11 +188,15 @@ export default function AddProperty() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    setIsSubmitting(true); // Disable button immediately
+    
     const errors = validateForm();
     if (errors.length > 0) {
       setToastMessage({ text: errors.join("\n"), type: "error" });
       setTimeout(() => setToastMessage(null), 8000);
       window.scrollTo({ top: 0, behavior: "smooth" });
+      setIsSubmitting(false); // Re-enable on validation error
       return;
     }
     try {
@@ -321,6 +326,8 @@ export default function AddProperty() {
         .replace(/\s+/g, " ");
       setToastMessage({ text: cleanMsg, type: "error" });
       setTimeout(() => setToastMessage(null), 6000);
+    } finally {
+      setIsSubmitting(false); // Re-enable after everything is done
     }
   };
 
@@ -539,10 +546,10 @@ export default function AddProperty() {
               ) : (
                 <button
                   type="submit"
-                  disabled={apiLoading}
-                  className={`px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold transition-all shadow-lg flex items-center gap-2 ${apiLoading ? "opacity-50 cursor-not-allowed" : "hover:scale-105"}`}
+                  disabled={apiLoading || isSubmitting}
+                  className={`px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold transition-all shadow-lg flex items-center gap-2 ${(apiLoading || isSubmitting) ? "opacity-50 cursor-not-allowed" : "hover:scale-105"}`}
                 >
-                  {apiLoading ? (
+                  {apiLoading || isSubmitting ? (
                     <>
                       <svg
                         className="animate-spin size-5"

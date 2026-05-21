@@ -356,7 +356,7 @@ export default function PropertyInfo({
             src={
               property.media.propertyVideo.startsWith("http")
                 ? property.media.propertyVideo
-                : `http://localhost:5000${property.media.propertyVideo}`
+                : property.media.propertyVideo
             }
             controls
             className="w-full rounded-2xl border-2 border-slate-200"
@@ -376,7 +376,7 @@ export default function PropertyInfo({
               src={
                 property.media.floorPlan.startsWith("http")
                   ? property.media.floorPlan
-                  : `http://localhost:5000${property.media.floorPlan}`
+                  : property.media.floorPlan
               }
               alt="Floor Plan"
               className="w-full rounded-2xl border-2 border-slate-200"
@@ -386,7 +386,7 @@ export default function PropertyInfo({
               href={
                 property.media.floorPlan.startsWith("http")
                   ? property.media.floorPlan
-                  : `http://localhost:5000${property.media.floorPlan}`
+                  : property.media.floorPlan
               }
               target="_blank"
               rel="noopener noreferrer"
@@ -418,7 +418,7 @@ export default function PropertyInfo({
               <a
                 key={i}
                 href={
-                  doc.startsWith("http") ? doc : `http://localhost:5000${doc}`
+                  doc
                 }
                 target="_blank"
                 rel="noopener noreferrer"

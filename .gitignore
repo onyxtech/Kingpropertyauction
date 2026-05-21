@@ -3,4 +3,4 @@ dist/
 *.zip
 .env
 .DS_Store
-.vscode
+.vscodebackend/uploads/
