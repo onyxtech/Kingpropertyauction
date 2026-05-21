@@ -138,7 +138,6 @@ export default function Leads() {
     faq: "bg-cyan-100 text-cyan-700",
     legal: "bg-indigo-100 text-indigo-700",
     newsletter: "bg-teal-100 text-teal-700",
-    "live-registration": "bg-red-100 text-red-700",
     chat: "bg-violet-100 text-violet-700",
     alert: "bg-yellow-100 text-yellow-700",
     solicitor: "bg-rose-100 text-rose-700",
@@ -234,7 +233,6 @@ export default function Leads() {
             <option value="legal">Legal Enquiry</option>
             <option value="faq">FAQ Support</option>
             <option value="newsletter">Newsletter</option>
-            <option value="live-registration">Live Auction Registration</option>
           </select>
         </div>
 

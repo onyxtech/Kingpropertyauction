@@ -8,13 +8,6 @@ import { emitAuctionUpdate } from '../../socket.js';
 import cache from '../../utils/cache.js';
 
 export const createAuction = async (data, userId) => {
-  // Require venue for live and hybrid auctions
-  if (data.auctionType === 'live') {
-    if (!data.venue?.name || !data.venue?.city || !data.venue?.address) {
-      throw new Error('Venue name, city and address are required for live auctions');
-    }
-  }
-
   // Validate properties before creating
   if (data.properties && data.properties.length > 0) {
     // Check for sold properties

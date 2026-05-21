@@ -48,7 +48,7 @@ export default function PropertyGrid({
     if (activeTab === "auction") {
       if (property.listingType !== "auction") return false;
       const info = getAuctionInfo(property, allAuctions);
-      if (info?.status !== "live" || info?.auctionType === "live") return false;
+      if (info?.status !== "live") return false;
     }
     if (activeTab === "sale" && property.listingType !== "direct_sale") return false;
     if (activeTab === "featured" && !property.featured) return false;
@@ -89,7 +89,7 @@ export default function PropertyGrid({
   const auctionCount = properties.filter((p: any) => {
     if (p.listingType !== "auction") return false;
     const info = getAuctionInfo(p, allAuctions);
-    return info?.status === "live" && info?.auctionType !== "live";
+    return info?.status === "live";
   }).length;
   const saleCount = properties.filter((p: any) => p.listingType === "direct_sale").length;
   const featuredCount = properties.filter((p: any) => p.featured).length;

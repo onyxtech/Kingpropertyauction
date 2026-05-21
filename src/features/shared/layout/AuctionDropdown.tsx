@@ -4,7 +4,6 @@ import {
   Zap,
   Package,
   FileText,
-  DollarSign,
 } from "lucide-react";
 
 interface AuctionDropdownProps {
@@ -120,7 +119,7 @@ export default function AuctionDropdown({
               </div>
               <div>
                 <div className="font-bold group-hover:text-orange-600 transition-colors">
-                  Free Valuation
+                  Property Valuation
                 </div>
                 <div className="text-xs text-slate-500 font-medium mt-0.5">
                   Get instant estimate
@@ -130,26 +129,6 @@ export default function AuctionDropdown({
             <div className="px-2.5 py-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-black rounded-full">
               FREE
             </div>
-          </button>
-
-          <button
-            onClick={() => onNavigate("/auction-finance")}
-            className="w-full px-5 py-4 text-left text-sm font-bold text-slate-700 hover:text-indigo-600 bg-gradient-to-r from-transparent to-transparent hover:from-indigo-50/80 hover:to-blue-50/80 rounded-2xl transition-all flex items-center justify-between gap-4 group relative overflow-hidden"
-          >
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="size-11 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-blue-600 flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:shadow-indigo-500/40 transition-all group-hover:scale-110 group-hover:rotate-3">
-                <DollarSign className="size-5 text-white" />
-              </div>
-              <div>
-                <div className="font-bold group-hover:text-indigo-600 transition-colors">
-                  Auction Finance
-                </div>
-                <div className="text-xs text-slate-500 font-medium mt-0.5">
-                  Quick approval
-                </div>
-              </div>
-            </div>
-            <ChevronRight className="size-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
           </button>
 
           <button

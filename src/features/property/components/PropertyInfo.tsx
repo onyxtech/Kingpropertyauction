@@ -2,7 +2,6 @@ import {
   MapPin,
   Bed,
   Bath,
-  Maximize,
   Calendar,
   Heart,
   Share2,
@@ -100,8 +99,8 @@ export default function PropertyInfo({
             </h1>
             <div className="flex items-center gap-2 text-lg text-slate-600 font-medium">
               <MapPin className="size-5 text-blue-600" />
-              {property.location?.streetAddress || property.location?.city},{" "}
-              {property.location?.area}
+              {property.location?.streetAddress ||
+                property.location?.city}, {property.location?.area}
             </div>
           </div>
           <div className="flex gap-2">
@@ -138,13 +137,6 @@ export default function PropertyInfo({
               gradient: "from-purple-500 to-pink-600",
               value: property.specifications?.bathrooms || 0,
               label: "Bathrooms",
-            },
-            {
-              icon: Maximize,
-              gradient: "from-emerald-500 to-teal-600",
-              value:
-                property.specifications?.totalArea?.toLocaleString() || "N/A",
-              label: "Sq Ft",
             },
             {
               icon: Car,
@@ -417,7 +409,12 @@ export default function PropertyInfo({
             Review the legal documents before bidding.
           </p>
           <div className="space-y-3">
-            {property.media.legalDocuments.map((doc: string, i: number) => (
+            {(Array.isArray(property.media.legalDocuments)
+              ? property.media.legalDocuments
+              : property.media.legalDocuments
+                ? [property.media.legalDocuments]
+                : []
+            ).map((doc: string, i: number) => (
               <a
                 key={i}
                 href={

@@ -86,7 +86,7 @@ export default function Header() {
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between py-4">
           <div className="flex items-center gap-8">
-            <button onClick={() => navigate("/")} className="flex items-center gap-3 group">
+            <button onClick={() => { window.location.href = "/"; }} className="flex items-center gap-3 group">
               <div className="relative">
                 <div className="size-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all group-hover:scale-105">
                   <Crown className="size-6 text-white" strokeWidth={2.5} />
@@ -115,7 +115,7 @@ export default function Header() {
                   show={showAuctionMenu}
                   onMouseEnter={() => setShowAuctionMenu(true)}
                   onMouseLeave={() => setShowAuctionMenu(false)}
-                  onNavigate={(path) => navigate(path)}
+                  onNavigate={(path) => { window.location.href = path; }}
                 />
               </div>
 
@@ -132,7 +132,7 @@ export default function Header() {
                   show={showBuyingMenu}
                   onMouseEnter={() => setShowBuyingMenu(true)}
                   onMouseLeave={() => setShowBuyingMenu(false)}
-                  onNavigate={(path) => navigate(path)}
+                  onNavigate={(path) => { window.location.href = path; }}
                 />
               </div>
 
@@ -149,12 +149,12 @@ export default function Header() {
                   show={showSellingMenu}
                   onMouseEnter={() => setShowSellingMenu(true)}
                   onMouseLeave={() => setShowSellingMenu(false)}
-                  onNavigate={(path) => navigate(path)}
+                  onNavigate={(path) => { window.location.href = path; }}
                 />
               </div>
 
               <button
-                onClick={() => navigate("/live-auctions")}
+                onClick={() => { window.location.href = "/live-auctions"; }}
                 className="text-sm font-medium text-slate-600 hover:text-slate-900 flex items-center gap-2 transition-colors"
               >
                 Live Now
@@ -162,10 +162,10 @@ export default function Header() {
                   {stats?.liveAuctions || 0} 🔥
                 </span>
               </button>
-              <button onClick={() => navigate("/view-live-locations")} className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+              {/* <button onClick={() => navigate("/view-live-locations")} className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
                 Locations
-              </button>
-              <button onClick={() => navigate("/contact-us")} className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+              </button> */}
+              <button onClick={() => { window.location.href = "/contact-us"; }} className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
                 Contact Us
               </button>
             </nav>

@@ -1,4 +1,13 @@
-import { Search, SlidersHorizontal, ChevronRight, X, Home, MapPin, Bed, Bath } from "lucide-react";
+import {
+  Search,
+  SlidersHorizontal,
+  ChevronRight,
+  X,
+  Home,
+  MapPin,
+  Bed,
+  Bath,
+} from "lucide-react";
 
 interface Filters {
   propertyType: string;
@@ -23,12 +32,14 @@ export default function PropertyFilters({
   showFilters,
   setShowFilters,
 }: PropertyFiltersProps) {
-  const activeFilterCount = Object.values(filters).filter((val) => val !== "").length;
+  const activeFilterCount = Object.values(filters).filter(
+    (val) => val !== "",
+  ).length;
 
   return (
     <div className="bg-white/60 backdrop-blur-sm border-b border-slate-200 relative z-10 py-8">
-      <div className="container mx-auto px-6">
-        <div className="max-w-5xl mx-auto">
+      <div className="container mx-auto px-3">
+        <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 size-6 text-slate-400" />
@@ -60,7 +71,14 @@ export default function PropertyFilters({
                 </span>
               )}
             </button>
-            <button className="px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-blue-500/50 transition-all hover:scale-105 flex items-center gap-2">
+            <button
+              onClick={() => {
+                const grid = document.getElementById("property-grid");
+                if (grid)
+                  grid.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-blue-500/50 transition-all hover:scale-105 flex items-center gap-2"
+            >
               Search
               <ChevronRight className="size-5" />
             </button>

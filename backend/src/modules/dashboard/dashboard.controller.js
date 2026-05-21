@@ -157,7 +157,6 @@ export const globalSearch = async (req, res) => {
         $or: [
           { auctionTitle: searchRegex },
           { auctionType: searchRegex },
-          { "venue.city": searchRegex },
         ],
       })
         .select("auctionTitle slug auctionType status")

@@ -114,7 +114,7 @@ const searchAuctions = async (statusFilter = null) => {
     return await Auction.find(query)
       .limit(5)
       .sort('startDateTime')
-      .select('auctionTitle auctionType status startDateTime endDateTime totalLots currentBid totalBids slug venue')
+      .select('auctionTitle auctionType status startDateTime endDateTime totalLots currentBid totalBids slug')
       .lean();
   } catch (e) {
     console.error('[RAG] Auction search error:', e.message);
@@ -159,7 +159,7 @@ const formatAuction = (a) => {
   const start = a.startDateTime
     ? new Date(a.startDateTime).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
     : '';
-  const venue = a.venue?.city ? ` | Venue: ${a.venue.city}` : '';
+
   const url = `/auctions/${a.slug || a._id}`;
 
   let timeInfo = '';
@@ -170,7 +170,7 @@ const formatAuction = (a) => {
     timeInfo = start ? ` | Starts: ${start}` : '';
   }
 
-  return `• ${a.auctionTitle} | ${a.auctionType} | ${a.totalLots || 0} lots | ${a.status.toUpperCase()}${timeInfo}${venue} | URL: ${url}`;
+  return `• ${a.auctionTitle} | ${a.auctionType} | ${a.totalLots || 0} lots | ${a.status.toUpperCase()}${timeInfo} | URL: ${url}`;
 };
 
 // ─── MAIN: Get RAG context for a user message ───

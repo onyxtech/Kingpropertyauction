@@ -28,36 +28,6 @@ export default function StepAuction({ formData, handleInputChange, theme }: Step
       <div className="grid md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-2">
-            Auction Start Date & Time *
-          </label>
-          <input
-            type="datetime-local"
-            value={formData.auctionStartDate}
-            onChange={(e) =>
-              handleInputChange("auctionStartDate", e.target.value)
-            }
-            className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">
-            Auction End Date & Time *
-          </label>
-          <input
-            type="datetime-local"
-            value={formData.auctionEndDate}
-            onChange={(e) =>
-              handleInputChange("auctionEndDate", e.target.value)
-            }
-            className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">
             Auction Status *
           </label>
           <select

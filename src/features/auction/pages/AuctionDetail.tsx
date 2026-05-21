@@ -156,8 +156,6 @@ export default function AuctionDetail() {
   };
 
   // ─── Derived Data ───
-  const isLiveRoomAuction = auction?.auctionType === 'live';
-
   const propertyDetails =
     auction?.properties
       ?.map((p: any) => {
@@ -462,7 +460,6 @@ export default function AuctionDetail() {
           <div className="lg:col-span-2 space-y-8">
             <AuctionHeader
               auction={auction}
-              isLiveRoomAuction={isLiveRoomAuction}
               propertyCount={propertyDetails.length}
             />
 
@@ -480,7 +477,6 @@ export default function AuctionDetail() {
                   key={property._id}
                   property={property}
                   auction={auction}
-                  isLiveRoomAuction={isLiveRoomAuction}
                   lotIndex={idx}
                   onPlaceBid={handlePlaceBid}
                   bidHistory={lotHistories[property._id]}
@@ -495,7 +491,6 @@ export default function AuctionDetail() {
           {/* ─── RIGHT SIDEBAR: Auction Info ─── */}
           <AuctionSidebar
             auction={auction}
-            isLiveRoomAuction={isLiveRoomAuction}
             propertyCount={propertyDetails.length}
           />
         </div>
@@ -503,7 +498,7 @@ export default function AuctionDetail() {
 
       {/* ─── BID MODAL ─── */}
       <BidModal
-        show={!!selectedLot && !isLiveRoomAuction}
+        show={!!selectedLot}
         onClose={() => setSelectedLot(null)}
         property={selectedLot}
         currentBid={

@@ -1,4 +1,4 @@
-import { Home, Square, Bed, Bath, Calendar, Car } from "lucide-react";
+import { Home, Bed, Bath, Calendar, Car } from "lucide-react";
 
 interface StepSpecificationsProps {
   formData: any;
@@ -26,53 +26,6 @@ export default function StepSpecifications({ formData, handleInputChange, theme 
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">
-            <Square className="inline size-4 mr-1" />
-            Total Area (sq ft) *
-          </label>
-          <input
-            type="number"
-            placeholder="e.g., 2500"
-            value={formData.totalArea}
-            onChange={(e) =>
-              handleInputChange("totalArea", e.target.value)
-            }
-            className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">
-            Land Area (sq ft)
-          </label>
-          <input
-            type="number"
-            placeholder="e.g., 3000"
-            value={formData.landArea}
-            onChange={(e) =>
-              handleInputChange("landArea", e.target.value)
-            }
-            className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">
-            Covered Area (sq ft)
-          </label>
-          <input
-            type="number"
-            placeholder="e.g., 2500"
-            value={formData.coveredArea}
-            onChange={(e) =>
-              handleInputChange("coveredArea", e.target.value)
-            }
-            className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-2">
             <Bed className="inline size-4 mr-1" />

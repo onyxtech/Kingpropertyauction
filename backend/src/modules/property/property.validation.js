@@ -26,14 +26,9 @@ export const createPropertySchema = Joi.object({
     area: Joi.string().required(),
     streetAddress: Joi.string().required(),
     postalCode: Joi.string().required(),
-    latitude: optionalString(),
-    longitude: optionalString(),
   }).required(),
 
   specifications: Joi.object({
-    totalArea: Joi.number().required(),
-    landArea: optionalNumber(),
-    coveredArea: optionalNumber(),
     bedrooms: Joi.number().required(),
     bathrooms: Joi.number().required(),
     floors: optionalNumber(),
@@ -46,10 +41,13 @@ export const createPropertySchema = Joi.object({
 
   media: Joi.object({
     propertyImages: Joi.array().items(Joi.string()).optional(),
+    virtualTour: Joi.string().optional(),
     propertyVideo: Joi.string().optional(),
     virtualTour: Joi.string().optional(),
     floorPlan: Joi.string().optional(),
-    legalDocuments: Joi.array().items(Joi.string()).optional(),
+    legalDocuments: Joi.alternatives()
+      .try(Joi.string(), Joi.array().items(Joi.string()))
+      .optional(),
   }).optional(),
 
   pricing: Joi.object({
@@ -62,16 +60,13 @@ export const createPropertySchema = Joi.object({
   }).required(),
 
   auctionDetails: Joi.object({
-    auctionStartDate: Joi.date().iso().required(),
-    auctionEndDate: Joi.date().iso().required(),
     auctionStatus: Joi.string()
       .valid("upcoming", "live", "closed")
       .default("upcoming"),
     bidDepositAmount: optionalNumber(),
     autoBidEnabled: Joi.boolean().default(false),
     maximumBidLimit: optionalNumber(),
-    numberOfBidders: Joi.number().default(0),
-  }).required(),
+  }).optional(),
 
   features: Joi.object({
     garden: Joi.boolean().default(false),
@@ -89,20 +84,12 @@ export const createPropertySchema = Joi.object({
       .valid("freehold", "leasehold", "shared")
       .required(),
     titleDeedNumber: optionalString(),
-    propertyTaxInfo: optionalString(),
-    mortgageStatus: Joi.string()
-      .valid("clear", "mortgaged", "partially_paid")
-      .default("clear"),
-    zoningType: optionalString(),
   }).required(),
 
   sellerInfo: Joi.object({
-    sellerName: Joi.string().required(),
-    sellerContact: Joi.string().required(),
-    sellerEmail: Joi.string().email().required(),
     agentName: optionalString(),
     agentContact: optionalString(),
-  }).required(),
+  }).optional(),
 
   approvalStatus: Joi.string()
     .valid("pending", "approved", "rejected")

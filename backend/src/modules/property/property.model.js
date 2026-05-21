@@ -53,15 +53,10 @@ const propertySchema = new mongoose.Schema(
       area: { type: String, required: true },
       streetAddress: { type: String, required: true },
       postalCode: { type: String, required: true },
-      latitude: { type: String },
-      longitude: { type: String },
     },
 
     // 3. Property Specifications
     specifications: {
-      totalArea: { type: Number, required: true },
-      landArea: { type: Number },
-      coveredArea: { type: Number },
       bedrooms: { type: Number, required: true },
       bathrooms: { type: Number, required: true },
       floors: { type: Number },
@@ -90,8 +85,6 @@ const propertySchema = new mongoose.Schema(
 
     // 5. Auction Details
     auctionDetails: {
-      auctionStartDate: { type: Date, required: true },
-      auctionEndDate: { type: Date, required: true },
       auctionStatus: {
         type: String,
         enum: ["upcoming", "live", "closed"],
@@ -138,20 +131,10 @@ const propertySchema = new mongoose.Schema(
         enum: ["freehold", "leasehold", "shared"],
       },
       titleDeedNumber: { type: String },
-      propertyTaxInfo: { type: String },
-      mortgageStatus: {
-        type: String,
-        enum: ["clear", "mortgaged", "partially_paid"],
-        default: "clear",
-      },
-      zoningType: { type: String },
     },
 
-    // 8. Seller & Agent Information
+    // 8. Agent Information
     sellerInfo: {
-      sellerName: { type: String, required: true },
-      sellerContact: { type: String, required: true },
-      sellerEmail: { type: String, required: true },
       agentName: { type: String },
       agentContact: { type: String },
     },
@@ -162,7 +145,7 @@ const propertySchema = new mongoose.Schema(
       propertyVideo: { type: String },
       virtualTour: { type: String },
       floorPlan: { type: String },
-      legalDocuments: [{ type: String }],
+      legalDocuments: { type: mongoose.Schema.Types.Mixed },
     },
 
     // 10. System Fields

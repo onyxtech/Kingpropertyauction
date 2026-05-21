@@ -113,14 +113,10 @@ export interface Property extends PropertyFormData {
 // Auction Types
 export interface AuctionFormData {
   auctionTitle: string;
-  auctionType: "live" | "online" | "hybrid";
+  auctionType: "online" | "reserve" | "absolute";
   startDateTime: string;
   endDateTime: string;
   description?: string;
-  venueName?: string;
-  venueAddress?: string;
-  registrationFee?: number;
-  depositRequired?: number;
   maxBidders?: number;
   enableAutoBidding: boolean;
   sendEmailNotifications: boolean;

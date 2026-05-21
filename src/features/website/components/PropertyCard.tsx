@@ -1,4 +1,4 @@
-import { Heart, MapPin, Bed, Bath, Maximize, Clock, Video, Share2, Award, ChevronRight, CheckCircle, AlertCircle, Gavel } from "lucide-react";
+import { Heart, MapPin, Bed, Bath, Clock, Video, Share2, Award, ChevronRight, CheckCircle, AlertCircle, Gavel } from "lucide-react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 import AuctionTimer from "@/features/shared/components/AuctionTimer";
 import CountdownTimer from "../../shared/ui/CountdownTimer";
@@ -28,8 +28,7 @@ const getPropertyImage = (property: any) => {
 };
 
 export default function PropertyCard({ property, auctionInfo, wishlisted, onBid, onWishlist, onShare, onTour, onNavigate, onAuctionEnded }: PropertyCardProps) {
-  const isLiveRoomAuction = auctionInfo?.auctionType === "live";
-  const isAuction = property.listingType === "auction" && auctionInfo !== null && auctionInfo?.status === "live" && !isLiveRoomAuction;
+  const isAuction = property.listingType === "auction" && auctionInfo !== null && auctionInfo?.status === "live";
   const isScheduledAuction = property.listingType === "auction" && auctionInfo !== null && auctionInfo?.status === "scheduled";
   const auctionEndDate = isAuction && auctionInfo ? auctionInfo.endDateTime : null;
   const gradient = isAuction ? "from-red-500 to-orange-500" : "from-blue-500 to-cyan-500";
@@ -71,15 +70,7 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
         {!property.featured && (
           <div className="absolute top-4 left-4">
             {property.listingType === "auction" ? (
-              isLiveRoomAuction && auctionInfo?.status === "live" ? (
-                <div className="px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-xl animate-pulse">
-                  🏛️ Live Room
-                </div>
-              ) : isLiveRoomAuction && auctionInfo?.status === "scheduled" ? (
-                <div className="px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-xl">
-                  🏛️ Upcoming Live Room
-                </div>
-              ) : isAuction ? (
+              isAuction ? (
                 <div className="px-3 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-xl animate-pulse">
                   <Clock className="size-3" /> Live Auction
                 </div>
@@ -156,45 +147,10 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
             </div>
             <span className="text-sm font-bold text-slate-900">{property.specifications?.bathrooms || 0}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="size-9 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
-              <Maximize className="size-4 text-emerald-600" />
-            </div>
-            <span className="text-sm font-bold text-slate-900">{property.specifications?.totalArea?.toLocaleString() || "N/A"} sqft</span>
-          </div>
         </div>
 
         {property.listingType === "auction" ? (
-          isLiveRoomAuction ? (
-            <div className="space-y-3">
-              <p className="text-xs text-purple-600 font-semibold flex items-center gap-1">
-                🏛️ {auctionInfo?.status === "live" ? "Live Room Auction — In Progress" : auctionInfo?.status === "completed" ? "Auction Completed" : "Upcoming Live Room Auction"}
-              </p>
-              {auctionInfo?.venue?.name && <p className="text-xs text-slate-600 font-medium">📍 {auctionInfo.venue.name}</p>}
-              {(auctionInfo?.status === "scheduled" || auctionInfo?.status === "live") && auctionInfo && (
-                <AuctionTimer startDateTime={auctionInfo.startDateTime} endDateTime={auctionInfo.endDateTime} status={auctionInfo.status} />
-              )}
-              {auctionInfo?.status === "scheduled" ? (
-                <a href="/view-live-locations" onClick={(e) => e.stopPropagation()} className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2">
-                  Register to Attend
-                </a>
-              ) : auctionInfo?.status === "live" ? (
-                <div className="w-full py-3.5 bg-red-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 animate-pulse">🔴 Live at Venue</div>
-              ) : auctionInfo?.status === "completed" ? (
-                property.propertyStatus === "sold" ? (
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold text-green-600">🎉 Sold — £{(property.soldPrice || property.currentBid || 0).toLocaleString()}</p>
-                    <button onClick={(e) => { e.stopPropagation(); onNavigate(`/properties/${property.slug || property._id}`); }} className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all">View Results</button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold text-slate-500">❌ Unsold</p>
-                    <button onClick={(e) => { e.stopPropagation(); onNavigate(`/properties/${property.slug || property._id}`); }} className="w-full py-3 bg-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-300 transition-all">View Details</button>
-                  </div>
-                )
-              ) : null}
-            </div>
-          ) : isAuction ? (
+          isAuction ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-600">Current Bid</span>

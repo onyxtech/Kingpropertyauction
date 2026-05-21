@@ -126,8 +126,6 @@ export default function StepBasicInfo({ formData, handleInputChange, theme }: St
             required
           >
             <option value="available">Available</option>
-            <option value="sold">Sold</option>
-            <option value="pending">Pending</option>
           </select>
         </div>
 

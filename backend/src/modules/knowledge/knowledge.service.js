@@ -6,7 +6,7 @@ const DEFAULT_KNOWLEDGE = [
     title: 'Company Overview',
     category: 'company',
     order: 1,
-    content: `King Property Auction is a UK-based property auction platform operating since 2024. We specialise in residential, commercial, land, and investment property auctions across the United Kingdom. We offer live in-room auctions, online auctions, and hybrid auctions combining both formats. Our platform serves buyers, sellers, agents, and property investors.`,
+    content: `King Property Auction is a UK-based property auction platform operating since 2024. We specialise in residential, commercial, land, and investment property auctions across the United Kingdom. We offer online auctions. Our platform serves buyers, sellers, agents, and property investors.`,
   },
   {
     key: 'selling_process',

@@ -86,8 +86,6 @@ import { useTheme } from "../../../app/hooks/useTheme";
 import PageBuilderWithAPI from "../components/PageBuilderWithAPI";
 import MenuEditor from "../components/MenuEditor";
 import ConfirmModal from "@/features/shared/components/ConfirmModal";
-import AuctionTimer from "@/features/shared/components/AuctionTimer";
-import { apiClient } from "@/lib/apiClient";
 import {
   allWebsitePages,
   pageCategories,
@@ -95,7 +93,6 @@ import {
 import StatsOverview from "../components/dashboard/StatsOverview";
 import AuctionsTab from "../components/dashboard/AuctionsTab";
 import UsersTab from "../components/dashboard/UsersTab";
-import LiveRoomResultsModal from "../components/dashboard/LiveRoomResultsModal";
 import PageBuilderTab from "../components/PageBuilderTab";
 import MenuManagerTab from "../components/MenuManagerTab";
 import AiTab from "../components/AiTab";
@@ -103,7 +100,6 @@ import ComplianceTab from "../components/ComplianceTab";
 import FinancialTab from "../components/FinancialTab";
 import SocialTab from "../components/SocialTab";
 import InvestorsTab from "../components/InvestorsTab";
-import RejectModal from "../components/RejectModal";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -138,27 +134,6 @@ export default function Admin() {
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState("");
 
-  // Live Room Auction management state
-  const [liveRoomAuctions, setLiveRoomAuctions] = useState<any[]>([]);
-  const [liveRegistrations, setLiveRegistrations] = useState<any[]>([]);
-  const [selectedLiveAuction, setSelectedLiveAuction] = useState<any>(null);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectingLead, setRejectingLead] = useState<any>(null);
-  const [rejectReason, setRejectReason] = useState("");
-  const [auctionViewMode, setAuctionViewMode] = useState<"online" | "liveroom">(
-    "online",
-  );
-  const [liveRoomStats, setLiveRoomStats] = useState({
-    total: 0,
-    live: 0,
-    scheduled: 0,
-    completed: 0,
-    totalRegistrations: 0,
-  });
-  const [showResultsModal, setShowResultsModal] = useState(false);
-  const [resultsAuction, setResultsAuction] = useState<any>(null);
-  const [propertyResults, setPropertyResults] = useState<any[]>([]);
-  const [savingResults, setSavingResults] = useState(false);
 
   useEffect(() => {
     let path = location.pathname.replace("/admin/", "").replace("/admin", "");
@@ -166,50 +141,9 @@ export default function Admin() {
     setActiveTab(path);
   }, [location]);
 
-  useEffect(() => {
-    if (activeTab !== "auctions") return;
-    Promise.all([
-      apiClient.fetch("/auctions?limit=100"),
-      apiClient.fetch("/leads?leadType=live-registration&limit=1"),
-    ])
-      .then(([auctionData, regData]: any[]) => {
-        const all = (auctionData.data || []) as any[];
-        const liveRoom = all.filter((a: any) => a.auctionType === "live");
-        setLiveRoomAuctions(liveRoom);
-        setLiveRoomStats({
-          total: liveRoom.length,
-          live: liveRoom.filter((a: any) => a.status === "live").length,
-          scheduled: liveRoom.filter((a: any) => a.status === "scheduled")
-            .length,
-          completed: liveRoom.filter((a: any) => a.status === "completed")
-            .length,
-          totalRegistrations:
-            regData?.pagination?.total || regData?.data?.length || 0,
-        });
-      })
-      .catch(() => {});
-  }, [activeTab]);
-
   const refetchAllAuctions = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["auctions"] });
     queryClient.invalidateQueries({ queryKey: ["properties"] });
-    apiClient
-      .fetch("/auctions?limit=100")
-      .then((data: any) => {
-        const all = (data.data || []) as any[];
-        const liveRoom = all.filter((a: any) => a.auctionType === "live");
-        setLiveRoomAuctions(liveRoom);
-        setLiveRoomStats((prev) => ({
-          ...prev,
-          total: liveRoom.length,
-          live: liveRoom.filter((a: any) => a.status === "live").length,
-          scheduled: liveRoom.filter((a: any) => a.status === "scheduled")
-            .length,
-          completed: liveRoom.filter((a: any) => a.status === "completed")
-            .length,
-        }));
-      })
-      .catch(() => {});
   }, [queryClient]);
 
   useAuctionSocket({
@@ -217,85 +151,6 @@ export default function Admin() {
     onBidUpdate: () => refetchAllAuctions(),
   });
 
-  const fetchLiveRegistrations = async (auctionId: string) => {
-    const data = await apiClient.fetch(
-      `/leads/live-registrations?auctionId=${auctionId}`,
-    );
-    if (data.success) setLiveRegistrations(data.data || []);
-  };
-
-  const handleApproveLead = async (leadId: string) => {
-    const data = await apiClient.fetch(`/leads/${leadId}/approve`, {
-      method: "PATCH",
-    });
-    if (data.success) {
-      setLiveRegistrations((prev) =>
-        prev.map((l) =>
-          l._id === leadId ? { ...l, approvalStatus: "approved" } : l,
-        ),
-      );
-      setToastMsg("Registration approved!");
-      setTimeout(() => setToastMsg(""), 4000);
-    }
-  };
-
-  const handleRejectLead = async () => {
-    if (!rejectingLead) return;
-    const data = await apiClient.fetch(`/leads/${rejectingLead._id}/reject`, {
-      method: "PATCH",
-      body: JSON.stringify({ reason: rejectReason }),
-    });
-    if (data.success) {
-      setLiveRegistrations((prev) =>
-        prev.map((l) =>
-          l._id === rejectingLead._id
-            ? { ...l, approvalStatus: "rejected" }
-            : l,
-        ),
-      );
-      setShowRejectModal(false);
-      setRejectingLead(null);
-      setRejectReason("");
-      setToastMsg("Registration rejected.");
-      setTimeout(() => setToastMsg(""), 4000);
-    }
-  };
-
-  const handleSaveResults = async () => {
-    if (!resultsAuction || savingResults) return;
-    setSavingResults(true);
-    try {
-      const data = await apiClient.fetch(
-        `/auctions/${resultsAuction._id}/live-results`,
-        {
-          method: "POST",
-          body: JSON.stringify({ results: propertyResults }),
-        },
-      );
-      if (data.success) {
-        setShowResultsModal(false);
-        setResultsAuction(null);
-        setToastMsg("Results saved successfully!");
-        setTimeout(() => setToastMsg(""), 4000);
-        apiClient
-          .fetch("/auctions?limit=100")
-          .then((auctionData: any) => {
-            const all = (auctionData.data || []) as any[];
-            const liveRoom = all.filter((a: any) => a.auctionType === "live");
-            setLiveRoomAuctions(liveRoom);
-          })
-          .catch(() => {});
-      } else {
-        setToastMsg("❌ " + (data.message || "Failed to save results"));
-        setTimeout(() => setToastMsg(""), 5000);
-      }
-    } catch (e: any) {
-      setToastMsg("❌ Error: " + e.message);
-      setTimeout(() => setToastMsg(""), 5000);
-    } finally {
-      setSavingResults(false);
-    }
-  };
 
   const modules = [
     {
@@ -546,37 +401,7 @@ export default function Admin() {
       {activeTab === "auctions" && (
         <AuctionsTab
           theme={theme}
-          auctionViewMode={auctionViewMode}
-          setAuctionViewMode={setAuctionViewMode}
-          liveRoomAuctions={liveRoomAuctions}
-          liveRoomStats={liveRoomStats}
-          liveRegistrations={liveRegistrations}
-          selectedLiveAuction={selectedLiveAuction}
           onCreateAuction={() => setShowCreateAuctionModal(true)}
-          onSelectAuction={(auction) => {
-            setSelectedLiveAuction(auction);
-            fetchLiveRegistrations(auction._id);
-          }}
-          onApproveLead={handleApproveLead}
-          onShowReject={(lead) => {
-            setRejectingLead(lead);
-            setShowRejectModal(true);
-            setRejectReason("");
-          }}
-          onEnterResults={(auction) => {
-            setResultsAuction(auction);
-            setPropertyResults(
-              (auction.properties || []).map((p: any) => ({
-                id: p._id || p,
-                title: p.propertyTitle || "Property",
-                status: "unsold",
-                soldPrice: "",
-                winnerName: "",
-                winnerEmail: "",
-              })),
-            );
-            setShowResultsModal(true);
-          }}
         />
       )}
 
@@ -675,33 +500,6 @@ export default function Admin() {
       {showCreateAuctionModal && (
         <AuctionFormModal onClose={() => setShowCreateAuctionModal(false)} />
       )}
-
-      {/* Reject Registration Modal */}
-      <RejectModal
-        rejectingLead={rejectingLead}
-        rejectReason={rejectReason}
-        setRejectReason={setRejectReason}
-        onReject={handleRejectLead}
-        onClose={() => {
-          setShowRejectModal(false);
-          setRejectingLead(null);
-          setRejectReason("");
-        }}
-      />
-
-      {/* Live Results Modal */}      {/* Live Results Modal */}
-      <LiveRoomResultsModal
-        show={showResultsModal}
-        resultsAuction={resultsAuction}
-        propertyResults={propertyResults}
-        setPropertyResults={setPropertyResults}
-        savingResults={savingResults}
-        onSave={handleSaveResults}
-        onClose={() => {
-          setShowResultsModal(false);
-          setResultsAuction(null);
-        }}
-      />
 
       {editingUser && (
         <EditUserModal

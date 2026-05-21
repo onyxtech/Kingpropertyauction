@@ -15,7 +15,7 @@ const auctionSchema = new mongoose.Schema(
     },
     auctionType: {
       type: String,
-      enum: ["live", "online", "reserve", "absolute"],
+      enum: ["online", "reserve", "absolute"],
       required: true,
     },
     description: {
@@ -65,26 +65,8 @@ const auctionSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Venue (for live/hybrid auctions)
-    venue: {
-      name: { type: String },
-      address: { type: String },
-      city: { type: String },
-      postcode: { type: String },
-    },
-
     auctionImage: { type: String }, // Banner image for the auction
     totalLots: { type: Number, default: 0 }, // Number of properties
-
-    // Fees
-    registrationFee: {
-      type: Number,
-      default: 0,
-    },
-    depositRequired: {
-      type: Number,
-      default: 0,
-    },
 
     // Status & Tracking
     status: {

@@ -5,7 +5,10 @@ import { authorize } from "../../middlewares/role.middleware.js";
 
 const router = express.Router();
 
-router.get("/", protect, authorize("admin"), getAll);
+// PUBLIC - anyone can read menus (needed for Header/Footer)
+router.get("/", getAll);
+
+// ADMIN only - create, edit, delete
 router.post("/", protect, authorize("admin"), create);
 router.get("/:id", protect, authorize("admin"), getById);
 router.put("/:id", protect, authorize("admin"), update);

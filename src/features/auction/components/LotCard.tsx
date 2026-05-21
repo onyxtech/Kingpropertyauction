@@ -1,11 +1,10 @@
-import { MapPin, Bed, Bath, Maximize, CheckCircle, AlertCircle, Gavel, Eye, ChevronDown } from "lucide-react";
+import { MapPin, Bed, Bath, CheckCircle, AlertCircle, Gavel, Eye, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 
 interface LotCardProps {
   property: any;
   auction: any;
-  isLiveRoomAuction: boolean;
   lotIndex: number;
   onPlaceBid: (property: any) => void;
   bidHistory: any;
@@ -26,7 +25,6 @@ function getPropertyImage(property: any) {
 export default function LotCard({
   property,
   auction,
-  isLiveRoomAuction,
   lotIndex,
   onPlaceBid,
   bidHistory,
@@ -85,13 +83,6 @@ export default function LotCard({
               {property.specifications?.bathrooms || 0}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <Maximize className="size-4 text-emerald-600" />
-            <span className="text-sm font-bold">
-              {property.specifications?.totalArea?.toLocaleString() || "N/A"}{" "}
-              sqft
-            </span>
-          </div>
         </div>
 
         {/* Bidding Section */}
@@ -145,28 +136,13 @@ export default function LotCard({
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          {!isLiveRoomAuction && auction.status === "live" ? (
+          {auction.status === "live" ? (
             <button
               onClick={() => onPlaceBid(property)}
               className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2"
             >
               <Gavel className="size-5" /> Place Bid
             </button>
-          ) : isLiveRoomAuction && auction.status === 'live' ? (
-            <div className="flex-1 py-3.5 bg-red-100 text-red-700 rounded-xl font-bold text-center text-sm">
-              🔴 Live at Venue
-            </div>
-          ) : isLiveRoomAuction && auction.status === 'scheduled' ? (
-            <a
-              href="/view-live-locations"
-              className="flex-1 py-3.5 bg-purple-100 text-purple-700 rounded-xl font-bold text-center text-sm block"
-            >
-              Register to Attend
-            </a>
-          ) : isLiveRoomAuction && auction.status === 'completed' ? (
-            <div className="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-xl font-bold text-center text-sm">
-              ✅ Auction Completed
-            </div>
           ) : (
             <div className="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-xl font-bold text-center">
               {auction.status === "completed" ? "Auction Ended" : "Not Started"}

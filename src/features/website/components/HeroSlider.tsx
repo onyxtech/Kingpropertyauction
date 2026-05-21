@@ -1,5 +1,5 @@
 import Slider from "react-slick";
-import { TrendingUp, Gavel, Users, Zap, Sparkles } from "lucide-react";
+import { TrendingUp, Gavel, Users, Zap, Sparkles, CheckCircle, Tag, ArrowRight } from "lucide-react";
 
 interface HeroSliderProps {
   totalProperties: number;
@@ -189,6 +189,75 @@ export default function HeroSlider({
                       Total Bids
                     </p>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Slide 3: Sell Your Property */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 opacity-95" />
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 left-0 size-96 bg-white rounded-full blur-3xl animate-pulse" />
+            <div
+              className="absolute bottom-0 right-0 size-96 bg-yellow-300 rounded-full blur-3xl animate-pulse"
+              style={{ animationDelay: "1.5s" }}
+            />
+          </div>
+
+          <div className="container mx-auto px-6 py-16 relative z-10">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="flex-1">
+                <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md rounded-full mb-6 border-2 border-white/30 shadow-xl">
+                  <Sparkles className="size-4 text-yellow-300 animate-pulse" />
+                  <span className="text-sm font-bold text-white">⚡ Fast Sale Guarantee</span>
+                </div>
+
+                <h1 className="text-6xl font-black text-white mb-6 leading-tight drop-shadow-lg">
+                  Sell Your Property
+                  <br />
+                  <span className="text-yellow-300">within 28 Days</span>
+                </h1>
+
+                <p className="text-2xl text-white/90 mb-8 font-medium">
+                  You Set The Price, No Upfront Costs &amp; No Sale, No Fee.
+                </p>
+
+                <div className="flex flex-col sm:flex-row items-start gap-4 mb-8">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="size-6 text-yellow-300 flex-shrink-0" />
+                    <span className="text-white font-semibold">You Control The Price</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="size-6 text-yellow-300 flex-shrink-0" />
+                    <span className="text-white font-semibold">Zero Upfront Costs</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="size-6 text-yellow-300 flex-shrink-0" />
+                    <span className="text-white font-semibold">No Sale, No Fee</span>
+                  </div>
+                </div>
+
+                <a href="/free-valuation" className="inline-flex items-center gap-3 px-8 py-4 bg-white text-emerald-600 rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all">
+                  <Tag className="size-6" />
+                  <span>Get Your Free Valuation</span>
+                  <ArrowRight className="size-5" />
+                </a>
+              </div>
+
+              <div className="flex flex-col gap-4 flex-shrink-0">
+                <div className="bg-white/20 backdrop-blur-md border-2 border-white/30 rounded-2xl p-6 text-center min-w-[180px]">
+                  <p className="text-5xl font-black text-white mb-2">28</p>
+                  <p className="text-emerald-50 font-bold">Days Average</p>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md border-2 border-white/30 rounded-2xl p-6 text-center min-w-[180px]">
+                  <p className="text-5xl font-black text-white mb-2">£0</p>
+                  <p className="text-emerald-50 font-bold">Upfront Costs</p>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md border-2 border-white/30 rounded-2xl p-6 text-center min-w-[180px]">
+                  <p className="text-5xl font-black text-white mb-2">100%</p>
+                  <p className="text-emerald-50 font-bold">Your Control</p>
                 </div>
               </div>
             </div>

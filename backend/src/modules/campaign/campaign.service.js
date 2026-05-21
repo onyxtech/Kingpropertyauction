@@ -109,7 +109,7 @@ export const getPropertiesForCampaign = async () => {
 // ─── Get auctions for dropdown ──────────────────────────────────
 export const getAuctionsForCampaign = async () => {
   const auctions = await Auction.find({ status: { $in: ['scheduled', 'live'] } })
-    .select('auctionTitle slug startDateTime auctionType venue.city')
+    .select('auctionTitle slug startDateTime auctionType')
     .sort('-startDateTime')
     .limit(50)
     .lean();
@@ -119,7 +119,7 @@ export const getAuctionsForCampaign = async () => {
     slug: a.slug,
     date: a.startDateTime,
     type: a.auctionType,
-    city: a.venue?.city || '',
+    city: '',
   }));
 };
 

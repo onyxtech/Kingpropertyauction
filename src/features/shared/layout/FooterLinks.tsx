@@ -24,9 +24,6 @@ export default function FooterLinks() {
             <button onClick={() => navigate("/live-auctions")} className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-red-500/50 transition-all hover:scale-105 flex items-center gap-2 animate-pulse">
               <Play className="size-5" /> Live Now
             </button>
-            <button onClick={() => navigate("/view-live-locations")} className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-blue-500/50 transition-all hover:scale-105 flex items-center gap-2">
-              <MapPin className="size-5" /> Locations
-            </button>
             <button onClick={() => navigate("/contact-us")} className="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-purple-500/50 transition-all hover:scale-105 flex items-center gap-2">
               <Mail className="size-5" /> Contact Us
             </button>
@@ -100,7 +97,6 @@ export default function FooterLinks() {
                 { path: "/live-auctions", label: "Live Auctions", color: "text-red-400" },
                 { path: "/online-auctions", label: "Online Auctions", color: "text-blue-400" },
                 { path: "/view-all-lots", label: "View All Lots", color: "text-blue-400" },
-                { path: "/view-live-locations", label: "Live Locations", color: "text-blue-400" },
                 { path: "/auction-guide", label: "Auction Guide", color: "text-blue-400" },
               ].map((item) => (
                 <li key={item.path}>
@@ -120,8 +116,7 @@ export default function FooterLinks() {
               {[
                 { path: "/buying-overview", label: "Buying Overview", color: "text-emerald-400" },
                 { path: "/selling-overview", label: "Selling Overview", color: "text-emerald-400" },
-                { path: "/free-valuation", label: "Free Valuation", color: "text-orange-400" },
-                { path: "/auction-finance", label: "Auction Finance", color: "text-emerald-400" },
+                { path: "/free-valuation", label: "Property Valuation", color: "text-orange-400" },
                 { path: "/solicitor", label: "Find Solicitor", color: "text-emerald-400" },
                 { path: "/home-report", label: "Home Report", color: "text-emerald-400" },
               ].map((item) => (

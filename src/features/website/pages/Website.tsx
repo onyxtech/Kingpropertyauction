@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
+import { CheckCircle, AlertCircle, Search } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { useAuctionSocket } from "@/hooks/useAuctionSocket";
@@ -12,7 +12,6 @@ import { useAuthStore } from "@/stores/authStore";
 import { useAuthApi } from "@/features/auth/api/useAuthApi";
 import AuthModal from "@/features/shared/components/AuthModal";
 import HeroSlider from "../components/HeroSlider";
-import SellBanner from "../components/SellBanner";
 import PropertyFilters from "../components/PropertyFilters";
 import VirtualTourModal from "../components/VirtualTourModal";
 import ShareModal from "../components/ShareModal";
@@ -32,7 +31,9 @@ export default function Website() {
   const [showFilters, setShowFilters] = useState(false);
   const [tourPlaying, setTourPlaying] = useState(false);
   const [activeRoom, setActiveRoom] = useState("living");
-  const [wishlistedProperties, setWishlistedProperties] = useState<string[]>([]);
+  const [wishlistedProperties, setWishlistedProperties] = useState<string[]>(
+    [],
+  );
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [propertyToShare, setPropertyToShare] = useState<any>(null);
   const [filters, setFilters] = useState({
@@ -69,13 +70,14 @@ export default function Website() {
   };
 
   const { useGetProperties } = usePropertyApi();
-  const { data: propertiesData, isLoading: propertiesLoading } = useGetProperties({ pageSize: 50 });
+  const { data: propertiesData, isLoading: propertiesLoading } =
+    useGetProperties({ pageSize: 50 });
   const properties = propertiesData?.data || [];
 
   const { useGetAuctions } = useAuctionApi();
   const { data: auctionsData } = useGetAuctions({});
   const allAuctions = auctionsData?.data || [];
-  const onlineAuctions = allAuctions.filter((a: any) => a.auctionType !== "live");
+  const onlineAuctions = allAuctions;
   const liveAuctions = onlineAuctions.filter((a: any) => a.status === "live");
 
   const { usePlaceBid } = useBiddingApi();
@@ -85,10 +87,21 @@ export default function Website() {
   useAuctionSocket();
 
   const totalProperties = properties.length || 0;
-  const totalUsers = onlineAuctions.reduce((sum: number, a: any) => sum + (a.totalBidders || 0), 0) || 0;
-  const totalBids = onlineAuctions.reduce((sum: number, a: any) => sum + (a.totalBids || 0), 0) || 0;
+  const totalUsers =
+    onlineAuctions.reduce(
+      (sum: number, a: any) => sum + (a.totalBidders || 0),
+      0,
+    ) || 0;
+  const totalBids =
+    onlineAuctions.reduce(
+      (sum: number, a: any) => sum + (a.totalBids || 0),
+      0,
+    ) || 0;
   const liveAuctionCount = liveAuctions.length || 0;
-  const totalAuctionValue = liveAuctions.reduce((sum: number, auction: any) => sum + (auction.startingBid || 0), 0);
+  const totalAuctionValue = liveAuctions.reduce(
+    (sum: number, auction: any) => sum + (auction.startingBid || 0),
+    0,
+  );
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +123,14 @@ export default function Website() {
           });
           setShowAuthModal(false);
           showNotification("Logged in successfully!", "success");
-          setAuthFormData({ firstName: "", lastName: "", email: "", phone: "", password: "", confirmPassword: "" });
+          setAuthFormData({
+            firstName: "",
+            lastName: "",
+            email: "",
+            phone: "",
+            password: "",
+            confirmPassword: "",
+          });
         } else {
           setAuthError(result.error || "Login failed");
         }
@@ -138,7 +158,14 @@ export default function Website() {
           });
           setShowAuthModal(false);
           showNotification("Account created successfully!", "success");
-          setAuthFormData({ firstName: "", lastName: "", email: "", phone: "", password: "", confirmPassword: "" });
+          setAuthFormData({
+            firstName: "",
+            lastName: "",
+            email: "",
+            phone: "",
+            password: "",
+            confirmPassword: "",
+          });
         } else {
           setAuthError(result.error || "Registration failed");
         }
@@ -156,7 +183,10 @@ export default function Website() {
       return;
     }
     if (user?.role === "admin" || user?.role === "agent") {
-      showNotification("Admins and agents cannot place bids. Please use a buyer account.", "error");
+      showNotification(
+        "Admins and agents cannot place bids. Please use a buyer account.",
+        "error",
+      );
       return;
     }
     setSelectedProperty(property);
@@ -169,7 +199,10 @@ export default function Website() {
     if (!bidAmount || !selectedProperty) return;
 
     const bidIncrement = selectedProperty.pricing?.minimumBidIncrement || 1000;
-    const currentBid = selectedProperty.currentBid || selectedProperty.pricing?.startingAuctionPrice || 0;
+    const currentBid =
+      selectedProperty.currentBid ||
+      selectedProperty.pricing?.startingAuctionPrice ||
+      0;
     const nextMinBid = currentBid + bidIncrement;
     const newBidValue = parseFloat(bidAmount);
 
@@ -182,11 +215,17 @@ export default function Website() {
     }
 
     const matchingAuction = allAuctions.find((auction: any) =>
-      auction.properties?.some((p: any) => (typeof p === "string" ? p : p._id) === selectedProperty._id),
+      auction.properties?.some(
+        (p: any) =>
+          (typeof p === "string" ? p : p._id) === selectedProperty._id,
+      ),
     );
 
     if (!matchingAuction) {
-      showNotification("This property is not currently part of any live auction.", "error");
+      showNotification(
+        "This property is not currently part of any live auction.",
+        "error",
+      );
       return;
     }
 
@@ -218,17 +257,24 @@ export default function Website() {
   };
 
   const roomImages: Record<string, string> = {
-    living: "https://images.unsplash.com/photo-1600210492493-0946911123ea?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBsaXZpbmclMjByb29tfGVufDF8fHx8MTc0MDAwMDAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
-    kitchen: "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBraXRjaGVufGVufDF8fHx8MTc0MDAwMDAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
-    bedroom: "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBiZWRyb29tfGVufDF8fHx8MTc0MDAwMDAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
-    bathroom: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBiYXRocm9vbXxlbnwxfHx8fDE3NDAwMDAwMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    exterior: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBob3VzZSUyMGV4dGVyaW9yfGVufDF8fHx8MTc0MDAwMDAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+    living:
+      "https://images.unsplash.com/photo-1600210492493-0946911123ea?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBsaXZpbmclMjByb29tfGVufDF8fHx8MTc0MDAwMDAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+    kitchen:
+      "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBraXRjaGVufGVufDF8fHx8MTc0MDAwMDAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+    bedroom:
+      "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBiZWRyb29tfGVufDF8fHx8MTc0MDAwMDAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+    bathroom:
+      "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBiYXRocm9vbXxlbnwxfHx8fDE3NDAwMDAwMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    exterior:
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBob3VzZSUyMGV4dGVyaW9yfGVufDF8fHx8MTc0MDAwMDAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
   };
 
   const handleToggleWishlist = (e: React.MouseEvent, propertyId: string) => {
     e.stopPropagation();
     setWishlistedProperties((prev) =>
-      prev.includes(propertyId) ? prev.filter((id) => id !== propertyId) : [...prev, propertyId],
+      prev.includes(propertyId)
+        ? prev.filter((id) => id !== propertyId)
+        : [...prev, propertyId],
     );
   };
 
@@ -257,7 +303,9 @@ export default function Website() {
     if (property.media?.propertyThumbnails?.length > 0) {
       const thumb = property.media.propertyThumbnails[0];
       if (thumb.startsWith("http")) return thumb;
-      return thumb.startsWith("/uploads") ? thumb : `/uploads/properties/${thumb}`;
+      return thumb.startsWith("/uploads")
+        ? thumb
+        : `/uploads/properties/${thumb}`;
     }
     return undefined;
   };
@@ -294,31 +342,39 @@ export default function Website() {
         show={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         isLogin={isLogin}
-        onToggleLogin={() => { setIsLogin(!isLogin); setAuthError(""); }}
+        onToggleLogin={() => {
+          setIsLogin(!isLogin);
+          setAuthError("");
+        }}
         showPassword={showPassword}
         onTogglePassword={() => setShowPassword(!showPassword)}
         authError={authError}
         authLoading={authLoading}
         formData={authFormData}
-        onFormChange={(field, value) => setAuthFormData((prev) => ({ ...prev, [field]: value }))}
+        onFormChange={(field, value) =>
+          setAuthFormData((prev) => ({ ...prev, [field]: value }))
+        }
         onSubmit={handleAuthSubmit}
       />
 
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-1/4 size-96 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }} />
-        <div className="absolute top-1/2 right-1/3 size-72 bg-gradient-to-br from-emerald-400/15 to-teal-400/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div
+          className="absolute bottom-1/4 left-1/4 size-96 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "2s" }}
+        />
+        <div
+          className="absolute top-1/2 right-1/3 size-72 bg-gradient-to-br from-emerald-400/15 to-teal-400/15 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
       </div>
 
-      <div className="container mx-auto px-6 pt-6 relative z-10">
-        <button
-          onClick={() => navigate("/")}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all shadow-sm"
-        >
-          <ArrowLeft className="size-4" />
-          Back to Home
-        </button>
-      </div>
+      <PropertyFilters
+        filters={filters}
+        setFilters={setFilters}
+        showFilters={showFilters}
+        setShowFilters={setShowFilters}
+      />
 
       <HeroSlider
         totalProperties={totalProperties}
@@ -328,30 +384,25 @@ export default function Website() {
         totalBidders={totalUsers}
       />
 
-      <SellBanner onNavigate={() => navigate("/selling")} />
-
-      <PropertyFilters
-        filters={filters}
-        setFilters={setFilters}
-        showFilters={showFilters}
-        setShowFilters={setShowFilters}
-      />
-
-      <PropertyGrid
-        properties={properties}
-        allAuctions={allAuctions}
-        filters={filters}
-        isLoading={propertiesLoading}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        wishlisted={wishlistedProperties}
-        onBid={handlePlaceBid}
-        onWishlist={handleToggleWishlist}
-        onShare={handleShareProperty}
-        onTour={handleOpenVirtualTour}
-        onNavigate={(path) => navigate(path)}
-        onAuctionEnded={() => queryClient.invalidateQueries({ queryKey: ["auctions"] })}
-      />
+      <div id="property-grid">
+        <PropertyGrid
+          properties={properties}
+          allAuctions={allAuctions}
+          filters={filters}
+          isLoading={propertiesLoading}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          wishlisted={wishlistedProperties}
+          onBid={handlePlaceBid}
+          onWishlist={handleToggleWishlist}
+          onShare={handleShareProperty}
+          onTour={handleOpenVirtualTour}
+          onNavigate={(path) => navigate(path)}
+          onAuctionEnded={() =>
+            queryClient.invalidateQueries({ queryKey: ["auctions"] })
+          }
+        />
+      </div>
 
       <BidModalWrapper
         show={bidModalOpen}
@@ -374,7 +425,10 @@ export default function Website() {
         roomImages={roomImages}
         getPropertyImage={getPropertyImage}
         onClose={() => setVirtualTourOpen(false)}
-        onShare={() => { setPropertyToShare(selectedProperty); setShareModalOpen(true); }}
+        onShare={() => {
+          setPropertyToShare(selectedProperty);
+          setShareModalOpen(true);
+        }}
         onNavigate={(path) => navigate(path)}
       />
 

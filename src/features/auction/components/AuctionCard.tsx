@@ -72,13 +72,7 @@ export default function AuctionCard({ auction }: any) {
             {auction.status === "live" && <Zap className="size-3" />}
             {auction.status.toUpperCase()}
           </span>
-          {auction.auctionType === "live" ? (
-            <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-700">🏛️ Live Room</span>
-          ) : auction.auctionType === "hybrid" ? (
-            <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700">🔄 Hybrid</span>
-          ) : (
-            <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-600">🖥️ Online</span>
-          )}
+          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-600">🖥️ Online</span>
         </div>
         <span className="text-xs font-bold text-slate-500">
           #{auction._id?.slice(-6)}
@@ -105,22 +99,18 @@ export default function AuctionCard({ auction }: any) {
             {auction.endDateTime ? formatUKDateTime(auction.endDateTime) : "N/A"}
           </p>
         </div>
-        {auction.auctionType !== 'live' && (
-          <div>
+        <div>
             <p className="text-xs text-slate-500 font-medium mb-1">Total Bids</p>
             <p className="text-sm font-black text-slate-900">
               {auction.totalBids || 0}
             </p>
           </div>
-        )}
-        {auction.auctionType !== 'live' && (
           <div>
             <p className="text-xs text-slate-500 font-medium mb-1">Bidders</p>
             <p className="text-sm font-black text-slate-900">
               {auction.totalBidders || 0}
             </p>
           </div>
-        )}
       </div>
 
       {/* Countdown / Status */}
@@ -145,7 +135,7 @@ export default function AuctionCard({ auction }: any) {
       )}
 
       {/* Bidding Activity Toggle */}
-      {auction.auctionType !== 'live' && auction.properties?.length > 0 && (
+      {auction.properties?.length > 0 && (
         <div className="mb-4">
           <button
             onClick={() => setShowActivity(!showActivity)}

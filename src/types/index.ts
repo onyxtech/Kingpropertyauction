@@ -5,7 +5,7 @@ export interface User {
   lastName: string;
   name: string;
   email: string;
-  role: 'admin' | 'agent' | 'user';
+  role: "admin" | "agent" | "user";
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -53,13 +53,19 @@ export interface Property {
   slug: string;
   propertyTitle: string;
   propertyType: string;
-  listingType: 'auction' | 'direct_sale';
-  propertyStatus: 'available' | 'sold' | 'unsold';
-  approvalStatus: 'pending' | 'approved' | 'rejected';
+  listingType: "auction" | "direct_sale";
+  propertyStatus: "available" | "sold" | "unsold";
+  approvalStatus: "pending" | "approved" | "rejected";
+  propertyID?: string;
   location: PropertyLocation;
   pricing: PropertyPricing;
   media: PropertyMedia;
   auctionDetails: PropertyAuctionDetails;
+  features?: Record<string, boolean>;
+  legalInfo?: {
+    ownershipType?: string;
+    titleDeedNumber?: string;
+  };
   specifications?: {
     bedrooms: number;
     bathrooms: number;
@@ -74,17 +80,9 @@ export interface Property {
   updatedAt: string;
 }
 
-// ─── Venue Types ───
-export interface Venue {
-  name: string;
-  address: string;
-  city: string;
-  postcode: string;
-}
-
 // ─── Auction Types ───
-export type AuctionType = 'online' | 'live';
-export type AuctionStatus = 'scheduled' | 'live' | 'completed' | 'cancelled';
+export type AuctionType = "online" | "reserve" | "absolute";
+export type AuctionStatus = "scheduled" | "live" | "completed" | "cancelled";
 
 export interface Auction {
   _id: string;
@@ -98,7 +96,6 @@ export interface Auction {
   properties: Property[] | string[];
   totalBids: number;
   totalBidders: number;
-  venue?: Venue;
   auctionImage?: string;
   bidIncrement?: number;
   createdBy?: User | string;
@@ -115,16 +112,27 @@ export interface Bid {
   amount: number;
   isAutoBid: boolean;
   maxBid?: number;
-  status: 'winning' | 'outbid' | 'won' | 'lost' | 'retracted';
+  status: "winning" | "outbid" | "won" | "lost" | "retracted";
   createdAt: string;
 }
 
 // ─── Lead Types ───
 export type LeadType =
-  | 'contact' | 'valuation' | 'finance' | 'catalogue'
-  | 'referral' | 'general' | 'chat' | 'alert' | 'solicitor'
-  | 'home-report' | 'buying' | 'selling' | 'legal' | 'faq'
-  | 'newsletter' | 'live-registration';
+  | "contact"
+  | "valuation"
+  | "finance"
+  | "catalogue"
+  | "referral"
+  | "general"
+  | "chat"
+  | "alert"
+  | "solicitor"
+  | "home-report"
+  | "buying"
+  | "selling"
+  | "legal"
+  | "faq"
+  | "newsletter";
 
 export interface Lead {
   _id: string;
@@ -134,8 +142,7 @@ export interface Lead {
   subject: string;
   message: string;
   leadType: LeadType;
-  status: 'new' | 'contacted' | 'qualified' | 'converted' | 'closed';
-  registrationStatus?: 'pending' | 'approved' | 'rejected';
+  status: "new" | "contacted" | "qualified" | "converted" | "closed";
   auctionRef?: string;
   notes?: Array<{ text: string; addedBy: string; createdAt: string }>;
   createdAt: string;

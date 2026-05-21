@@ -56,10 +56,6 @@ export const NotificationRulesSchema = z.object({
   faqSupport: z.boolean().default(true),
   legalEnquiry: z.boolean().default(true),
   newsletterSignup: z.boolean().default(true),
-  liveAuctionRegistration: z.boolean().default(true),
-  adminLiveRegistrationAlert: z.boolean().default(true),
-  liveRegistrationApproved: z.boolean().default(true),
-  liveRegistrationRejected: z.boolean().default(true),
 });
 
 // ─── API Integrations Schema ───

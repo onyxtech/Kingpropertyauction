@@ -1,4 +1,4 @@
-import { MapPin, Globe } from "lucide-react";
+import { MapPin } from "lucide-react";
 
 export default function StepLocation({ form, updateField }: any) {
   return (
@@ -11,8 +11,6 @@ export default function StepLocation({ form, updateField }: any) {
         <div><label className="block text-sm font-bold mb-1">Area *</label><input type="text" value={form.area} onChange={(e) => updateField("area", e.target.value)} className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm" /></div>
         <div><label className="block text-sm font-bold mb-1">Street Address *</label><input type="text" value={form.streetAddress} onChange={(e) => updateField("streetAddress", e.target.value)} className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm" /></div>
         <div><label className="block text-sm font-bold mb-1">Postal Code *</label><input type="text" value={form.postalCode} onChange={(e) => updateField("postalCode", e.target.value)} className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm" /></div>
-        <div><label className="block text-sm font-bold mb-1"><Globe className="size-3 inline mr-1" />Latitude</label><input type="text" value={form.latitude} onChange={(e) => updateField("latitude", e.target.value)} className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm" /></div>
-        <div><label className="block text-sm font-bold mb-1"><Globe className="size-3 inline mr-1" />Longitude</label><input type="text" value={form.longitude} onChange={(e) => updateField("longitude", e.target.value)} className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm" /></div>
       </div>
     </div>
   );

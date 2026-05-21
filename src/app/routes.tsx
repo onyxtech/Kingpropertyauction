@@ -17,9 +17,6 @@ const AdminSettings = lazy(
 );
 const Leads = lazy(() => import("../features/admin/pages/Leads"));
 const Inbox = lazy(() => import("../features/admin/pages/Inbox"));
-const LiveRegistrations = lazy(
-  () => import("../features/admin/pages/LiveRegistrations"),
-);
 import AuctionGuide from "@/features/auction/pages/AuctionGuide";
 import Buying from "@/features/website/buying/Buying";
 import Selling from "@/features/website/selling/Selling";
@@ -34,7 +31,6 @@ import OAuthCallback from "@/features/auth/pages/OAuthCallback";
 import ContactUs from "@/features/website/info/ContactUs";
 import OnlineAuctions from "@/features/website/pages/OnlineAuctions";
 import FreeValuation from "@/features/website/info/FreeValuation";
-import AuctionFinance from "@/features/auction/pages/AuctionFinance";
 import ViewAllLots from "@/features/property/pages/ViewAllLots";
 import BuyingOverview from "@/features/website/buying/BuyingOverview";
 import SellingOverview from "@/features/website/selling/SellingOverview";
@@ -48,7 +44,6 @@ import WhySellWithFuture from "@/features/website/selling/WhySellWithFuture";
 import GuideFAQ from "@/features/website/info/GuideFAQ";
 import ReferralFee from "@/features/website/info/ReferralFee";
 import HomeReport from "@/features/website/info/HomeReport";
-import ViewLiveLocations from "@/features/website/info/ViewLiveLocations";
 import PropertyDetails from "@/features/property/pages/PropertyDetails";
 import SystemArchitecture from "@/features/website/info/SystemArchitecture";
 import AddProperty from "@/features/property/pages/AddProperty";
@@ -115,14 +110,6 @@ export const router = createBrowserRouter([
     element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Inbox />
-      </ProtectedRoute>,
-    ),
-  },
-  {
-    path: "/admin/live-registrations",
-    element: lazy_eb(
-      <ProtectedRoute allowedRoles={["admin"]}>
-        <LiveRegistrations />
       </ProtectedRoute>,
     ),
   },
@@ -265,7 +252,6 @@ export const router = createBrowserRouter([
   { path: "/contact-us", element: eb(<ContactUs />) },
   { path: "/online-auctions", element: eb(<OnlineAuctions />) },
   { path: "/free-valuation", element: eb(<FreeValuation />) },
-  { path: "/auction-finance", element: eb(<AuctionFinance />) },
   { path: "/view-all-lots", element: eb(<ViewAllLots />) },
   { path: "/buying-overview", element: eb(<BuyingOverview />) },
   { path: "/selling-overview", element: eb(<SellingOverview />) },
@@ -279,7 +265,6 @@ export const router = createBrowserRouter([
   { path: "/guide-faq", element: eb(<GuideFAQ />) },
   { path: "/referral-fee", element: eb(<ReferralFee />) },
   { path: "/home-report", element: eb(<HomeReport />) },
-  { path: "/view-live-locations", element: eb(<ViewLiveLocations />) },
   { path: "/property-details", element: eb(<PropertyDetails />) },
   { path: "/properties", element: eb(<ViewAllLots />) },
   { path: "/properties/:slug", element: eb(<PropertyDetails />) },

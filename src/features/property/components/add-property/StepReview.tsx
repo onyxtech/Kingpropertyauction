@@ -1,11 +1,12 @@
-import { CheckCircle, Building2, MapPin, Home, Square, Bed, Bath, DollarSign, UserCheck } from "lucide-react";
+import { CheckCircle, Building2, MapPin, Home, Bed, Bath, DollarSign, UserCheck, Pencil } from "lucide-react";
 
 interface StepReviewProps {
   formData: any;
   theme: { primary: string };
+  onEditStep?: (step: number) => void;
 }
 
-export default function StepReview({ formData, theme }: StepReviewProps) {
+export default function StepReview({ formData, theme, onEditStep }: StepReviewProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
@@ -31,6 +32,11 @@ export default function StepReview({ formData, theme }: StepReviewProps) {
           <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
             <Building2 className="size-5 text-blue-600" />
             Basic Information
+            {onEditStep && (
+              <button type="button" onClick={() => onEditStep(1)} className="ml-auto flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
+                <Pencil className="size-3.5" /> Edit
+              </button>
+            )}
           </h3>
           <div className="grid md:grid-cols-2 gap-4 text-sm">
             <div>
@@ -67,6 +73,11 @@ export default function StepReview({ formData, theme }: StepReviewProps) {
           <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
             <MapPin className="size-5 text-green-600" />
             Location
+            {onEditStep && (
+              <button type="button" onClick={() => onEditStep(2)} className="ml-auto flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
+                <Pencil className="size-3.5" /> Edit
+              </button>
+            )}
           </h3>
           <div className="text-sm">
             <p className="text-slate-900 font-medium">
@@ -81,14 +92,13 @@ export default function StepReview({ formData, theme }: StepReviewProps) {
           <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
             <Home className="size-5 text-purple-600" />
             Specifications
+            {onEditStep && (
+              <button type="button" onClick={() => onEditStep(3)} className="ml-auto flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
+                <Pencil className="size-3.5" /> Edit
+              </button>
+            )}
           </h3>
           <div className="grid md:grid-cols-3 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <Square className="size-4 text-purple-600" />
-              <span className="font-bold">
-                {formData.totalArea || "N/A"} sq ft
-              </span>
-            </div>
             <div className="flex items-center gap-2">
               <Bed className="size-4 text-purple-600" />
               <span className="font-bold">
@@ -109,6 +119,11 @@ export default function StepReview({ formData, theme }: StepReviewProps) {
           <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
             <DollarSign className="size-5 text-green-600" />
             Pricing
+            {onEditStep && (
+              <button type="button" onClick={() => onEditStep(4)} className="ml-auto flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
+                <Pencil className="size-3.5" /> Edit
+              </button>
+            )}
           </h3>
           <div className="grid md:grid-cols-2 gap-4 text-sm">
             <div>
@@ -116,8 +131,7 @@ export default function StepReview({ formData, theme }: StepReviewProps) {
                 Starting Price:
               </span>
               <p className="text-slate-900 font-medium">
-                {formData.currency}{" "}
-                {formData.startingAuctionPrice
+                £{formData.startingAuctionPrice
                   ? Number(
                       formData.startingAuctionPrice,
                     ).toLocaleString()
@@ -129,8 +143,7 @@ export default function StepReview({ formData, theme }: StepReviewProps) {
                 Reserve Price:
               </span>
               <p className="text-slate-900 font-medium">
-                {formData.currency}{" "}
-                {formData.reservePrice
+                £{formData.reservePrice
                   ? Number(formData.reservePrice).toLocaleString()
                   : "N/A"}
               </p>
@@ -138,23 +151,28 @@ export default function StepReview({ formData, theme }: StepReviewProps) {
           </div>
         </div>
 
-        {/* Seller Information */}
+        {/* Agent Information */}
         <div className="bg-white rounded-2xl p-6 border-2 border-slate-200">
           <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
             <UserCheck className="size-5 text-orange-600" />
-            Seller Information
+            Agent Information
+            {onEditStep && (
+              <button type="button" onClick={() => onEditStep(8)} className="ml-auto flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
+                <Pencil className="size-3.5" /> Edit
+              </button>
+            )}
           </h3>
           <div className="grid md:grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="font-bold text-slate-600">Name:</span>
+              <span className="font-bold text-slate-600">Agent Name:</span>
               <p className="text-slate-900 font-medium">
-                {formData.sellerName || "Not provided"}
+                {formData.agentName || "Not assigned"}
               </p>
             </div>
             <div>
-              <span className="font-bold text-slate-600">Email:</span>
+              <span className="font-bold text-slate-600">Agent Contact:</span>
               <p className="text-slate-900 font-medium">
-                {formData.sellerEmail || "Not provided"}
+                {formData.agentContact || "Not provided"}
               </p>
             </div>
           </div>

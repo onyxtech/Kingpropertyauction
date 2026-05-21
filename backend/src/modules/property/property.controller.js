@@ -7,7 +7,7 @@ import Property from "./property.model.js";
 import notificationService, {
   NotificationEvents,
 } from "../notifications/trigger.service.js";
-import cache from '../../utils/cache.js';
+import cache from "../../utils/cache.js";
 
 export const create = async (req, res) => {
   console.log(
@@ -32,14 +32,9 @@ export const create = async (req, res) => {
         area: req.body.area,
         streetAddress: req.body.streetAddress,
         postalCode: req.body.postalCode,
-        latitude: req.body.latitude,
-        longitude: req.body.longitude,
       },
 
       specifications: {
-        totalArea: Number(req.body.totalArea) || 0,
-        landArea: Number(req.body.landArea) || undefined,
-        coveredArea: Number(req.body.coveredArea) || undefined,
         bedrooms: Number(req.body.bedrooms) || 0,
         bathrooms: Number(req.body.bathrooms) || 0,
         floors: Number(req.body.floors) || undefined,
@@ -59,13 +54,10 @@ export const create = async (req, res) => {
       },
 
       auctionDetails: {
-        auctionStartDate: req.body.auctionStartDate || new Date(),
-        auctionEndDate: req.body.auctionEndDate || new Date(),
         auctionStatus: req.body.auctionStatus || "upcoming",
         bidDepositAmount: Number(req.body.bidDepositAmount) || undefined,
         autoBidEnabled: req.body.autoBidEnabled || false,
         maximumBidLimit: Number(req.body.maximumBidLimit) || undefined,
-        numberOfBidders: Number(req.body.numberOfBidders) || 0,
       },
 
       features: req.body.features || {},
@@ -73,15 +65,12 @@ export const create = async (req, res) => {
       legalInfo: {
         ownershipType: req.body.ownershipType || "freehold",
         titleDeedNumber: req.body.titleDeedNumber,
-        propertyTaxInfo: req.body.propertyTaxInfo,
-        mortgageStatus: req.body.mortgageStatus || "clear",
-        zoningType: req.body.zoningType,
       },
 
       sellerInfo: {
-        sellerName: req.body.sellerName,
-        sellerContact: req.body.sellerContact,
-        sellerEmail: req.body.sellerEmail,
+        sellerName: req.body.sellerName || "",
+        sellerContact: req.body.sellerContact || "",
+        sellerEmail: req.body.sellerEmail || "",
         agentName: req.body.agentName,
         agentContact: req.body.agentContact,
       },
@@ -111,10 +100,17 @@ export const create = async (req, res) => {
 
     const property = await propertyService.createProperty(value, req.user._id);
 
-    if (req.user.role === 'admin') {
-      await propertyService.approveProperty(property._id, 'approved', req.user._id);
-      property.approvalStatus = 'approved';
-      console.log('[Property] Auto-approved for admin:', property.propertyTitle);
+    if (req.user.role === "admin") {
+      await propertyService.approveProperty(
+        property._id,
+        "approved",
+        req.user._id,
+      );
+      property.approvalStatus = "approved";
+      console.log(
+        "[Property] Auto-approved for admin:",
+        property.propertyTitle,
+      );
     }
 
     res.status(201).json({
@@ -123,7 +119,7 @@ export const create = async (req, res) => {
       message: "Property created successfully",
     });
   } catch (error) {
-    console.error('[Property] create error:', error.message);
+    console.error("[Property] create error:", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -138,7 +134,7 @@ export const getAll = async (req, res) => {
       pagination: result.pagination,
     });
   } catch (error) {
-    console.error('[Property] getAll error:', error.message);
+    console.error("[Property] getAll error:", error.message);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -160,7 +156,7 @@ export const getById = async (req, res) => {
     }
     res.status(200).json({ success: true, data: property });
   } catch (error) {
-    console.error('[Property] getById error:', error.message);
+    console.error("[Property] getById error:", error.message);
     res.status(404).json({ success: false, message: error.message });
   }
 };
@@ -183,7 +179,7 @@ export const update = async (req, res) => {
       message: "Property updated successfully",
     });
   } catch (error) {
-    console.error('[Property] update error:', error.message);
+    console.error("[Property] update error:", error.message);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -200,7 +196,7 @@ export const remove = async (req, res) => {
       message: "Property deleted successfully",
     });
   } catch (error) {
-    console.error('[Property] remove error:', error.message);
+    console.error("[Property] remove error:", error.message);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -214,7 +210,7 @@ export const getByIds = async (req, res) => {
     const properties = await Property.find({ _id: { $in: ids } });
     res.status(200).json({ success: true, data: properties });
   } catch (error) {
-    console.error('[Property] getByIds error:', error.message);
+    console.error("[Property] getByIds error:", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -234,7 +230,7 @@ export const approve = async (req, res) => {
       status,
     );
 
-    await cache.delPattern('properties:*');
+    await cache.delPattern("properties:*");
     await cache.del(`property:${req.params.id}`);
 
     res.status(200).json({
@@ -263,7 +259,7 @@ export const approve = async (req, res) => {
         );
     }
   } catch (error) {
-    console.error('[Property] approve error:', error.message);
+    console.error("[Property] approve error:", error.message);
     res.status(500).json({
       success: false,
       message: error.message,

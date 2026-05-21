@@ -1,11 +1,10 @@
-import { MapPin, CheckCircle, Clock, Tag, Gavel, Phone, Mail } from "lucide-react";
+import { CheckCircle, Clock, Tag, Gavel, Phone, Mail } from "lucide-react";
 
 interface PropertyActionCardProps {
   property: any;
   matchingAuction: any;
   isLiveNow: boolean;
   isCompleted: boolean;
-  isLiveRoomProperty: boolean;
   isAuctionType: boolean;
   isInLiveAuction: boolean;
   isDirectSale: boolean;
@@ -22,7 +21,6 @@ export default function PropertyActionCard({
   matchingAuction,
   isLiveNow,
   isCompleted,
-  isLiveRoomProperty,
   isAuctionType,
   isInLiveAuction,
   isDirectSale,
@@ -94,38 +92,15 @@ export default function PropertyActionCard({
 
         <div className="space-y-3">
           {isLiveNow ? (
-            isLiveRoomProperty ? (
-              <div className="bg-white/20 border-2 border-white/40 rounded-2xl p-5 text-center">
-                <MapPin className="size-8 text-white mx-auto mb-2" />
-                <p className="text-white font-bold text-sm mb-1">
-                  Live Room Auction
-                </p>
-                <p className="text-white/80 text-xs mb-3">
-                  Attend in person at the venue to bid on this property.
-                </p>
-                {matchingAuction?.venue?.name && (
-                  <p className="text-white/90 text-xs font-bold mb-3">
-                    📍 {matchingAuction.venue.name}
-                  </p>
-                )}
-                <a
-                  href="/view-live-locations"
-                  className="inline-block px-4 py-2 bg-white text-purple-700 rounded-xl font-bold text-sm hover:bg-purple-50 transition-colors"
-                >
-                  Register to Attend
-                </a>
-              </div>
-            ) : (
-              <>
-                <button
-                  onClick={onPlaceBid}
-                  className="w-full py-4 bg-white text-blue-600 rounded-xl font-black shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-2 text-lg"
-                >
-                  <Gavel className="size-6" />
-                  Place Bid
-                </button>
-              </>
-            )
+            <>
+              <button
+                onClick={onPlaceBid}
+                className="w-full py-4 bg-white text-blue-600 rounded-xl font-black shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-2 text-lg"
+              >
+                <Gavel className="size-6" />
+                Place Bid
+              </button>
+            </>
           ) : isCompleted ? (
             <>
               {property.propertyStatus === "sold" ? (

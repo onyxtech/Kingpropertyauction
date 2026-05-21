@@ -6,7 +6,9 @@ import notificationService, {
 // Get all users (admin only)
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({}).select("-password -refreshToken");
+    const filter = {};
+    if (req.query.role) filter.role = req.query.role;
+    const users = await User.find(filter).select("-password -refreshToken");
     res.status(200).json({ success: true, data: users });
   } catch (error) {
     console.error('[User] getAllUsers error:', error.message);

@@ -17,7 +17,6 @@ import {
   Menu,
   Mail,
   InboxIcon,
-  MapPin,
 } from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 import { useAuthStore } from "@/stores/authStore";
@@ -31,7 +30,6 @@ const menuItems = [
   { id: "bids", icon: TrendingUp, label: "Bids" },
     { id: "marketing", icon: Send, label: "Marketing", path: "/admin/campaigns" },
   { id: "leads", icon: Mail, label: "Leads", path: "/admin/leads" },
-  { id: "live-registrations", icon: MapPin, label: "Live Registrations", path: "/admin/live-registrations" },
   { id: "inbox", icon: InboxIcon, label: "Inbox", path: "/admin/inbox" },
   { id: "social", icon: Share2, label: "Social & Sync" },
   { id: "investors", icon: TrendingUp, label: "Investors" },

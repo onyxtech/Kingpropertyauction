@@ -2,13 +2,7 @@ import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import type { Property, Auction, Bid } from "@/types";
 import { useAuctionSocket } from "@/hooks/useAuctionSocket";
-import {
-  ArrowLeft,
-  CheckCircle,
-  AlertCircle,
-  X,
-  MapPin,
-} from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertCircle, X, MapPin } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
@@ -92,7 +86,6 @@ export default function PropertyDetails() {
   const isInLiveAuction = matchingAuction !== null;
   const isLiveNow = matchingAuction?.status === "live";
   const isCompleted = matchingAuction?.status === "completed";
-  const isLiveRoomProperty = matchingAuction?.auctionType === 'live';
   const isDirectSale = property?.listingType === "direct_sale";
 
   const currentBid =
@@ -114,18 +107,19 @@ export default function PropertyDetails() {
         )
       : ["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200"];
 
-  const features = property?.features
-    ? Object.entries(property.features)
-        .filter(([, v]) => v)
-        .map(([k]) =>
-          k
-            .replace(/([A-Z])/g, " $1")
-            .trim()
-            .split(" ")
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-            .join(" "),
-        )
-    : [];
+  const features =
+    property?.features && typeof property.features === "object"
+      ? Object.entries(property.features)
+          .filter(([, v]) => v)
+          .map(([k]) =>
+            k
+              .replace(/([A-Z])/g, " $1")
+              .trim()
+              .split(" ")
+              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(" "),
+          )
+      : [];
 
   const formatPrice = (val: number) =>
     new Intl.NumberFormat("en-GB", {
@@ -211,7 +205,7 @@ export default function PropertyDetails() {
     }
 
     // Optimistic update
-    const propertyKey = ['properties', propertyId];
+    const propertyKey = ["properties", propertyId];
     const previousProperty = queryClient.getQueryData(propertyKey);
     queryClient.setQueryData(propertyKey, (old: any) =>
       old ? { ...old, currentBid: amount } : old,
@@ -273,7 +267,9 @@ export default function PropertyDetails() {
     propertyId: property?._id?.toString(),
     onBidUpdate: () => {
       queryClient.invalidateQueries({ queryKey: ["properties"] });
-      queryClient.invalidateQueries({ queryKey: ["properties", property?.slug] });
+      queryClient.invalidateQueries({
+        queryKey: ["properties", property?.slug],
+      });
     },
   });
 
@@ -358,7 +354,7 @@ export default function PropertyDetails() {
         onSetIndex={setCurrentImageIndex}
         propertyTitle={property.propertyTitle}
         propertyId={
-          property.propertyID || `LOT-${(property._id || "").slice(-3)}`
+          property?.propertyID || `LOT-${(property?._id || "").slice(-3)}`
         }
       />
 
@@ -394,7 +390,6 @@ export default function PropertyDetails() {
             matchingAuction={matchingAuction}
             isLiveNow={isLiveNow}
             isCompleted={isCompleted}
-            isLiveRoomProperty={isLiveRoomProperty}
             isAuctionType={isAuctionType}
             isInLiveAuction={isInLiveAuction}
             isDirectSale={isDirectSale}
@@ -510,7 +505,6 @@ export default function PropertyDetails() {
           </div>
         </div>
       )}
-
     </PublicLayout>
   );
 }

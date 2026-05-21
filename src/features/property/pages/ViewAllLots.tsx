@@ -5,7 +5,6 @@ import {
   MapPin,
   Bed,
   Bath,
-  Maximize,
   Clock,
   Gavel,
   CheckCircle,
@@ -29,7 +28,7 @@ export default function ViewAllLots() {
   } as any);
   const lots: any[] = lotsData?.data || [];
 
-  // Get all auctions (including live room) to match per-lot and show correct badges/timers
+  // Get all auctions to match per-lot and show correct badges/timers
   const { useGetAuctions } = useAuctionApi();
   const { data: auctionsData } = useGetAuctions({});
   const auctions = auctionsData?.data || [];
@@ -163,7 +162,6 @@ export default function ViewAllLots() {
                   (typeof p === 'string' ? p : p._id) === lot._id
                 )
               ) || null;
-              const isLiveRoomLot = lotAuction?.auctionType === 'live';
 
               return (
                 <div
@@ -200,23 +198,13 @@ export default function ViewAllLots() {
                       )}
                     </div>
                     {/* Auction type badge */}
-                    <div className="absolute top-4 right-4">
-                      {lotAuction?.auctionType === 'live' && (
-                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-bold rounded-full shadow-md">
-                          🏛️ Live Room
-                        </span>
-                      )}
-                      {lotAuction?.auctionType === 'hybrid' && (
-                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full shadow-md">
-                          🔄 Hybrid
-                        </span>
-                      )}
-                      {lotAuction?.auctionType === 'online' && (
+                    {lotAuction?.auctionType === 'online' && (
+                      <div className="absolute top-4 right-4">
                         <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full shadow-md">
                           🖥️ Online
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {/* Countdown */}
                     {isAuction &&
@@ -256,14 +244,6 @@ export default function ViewAllLots() {
                         <Bath className="size-4 text-purple-600" />
                         <span className="font-bold text-slate-900">
                           {lot.specifications?.bathrooms || "-"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Maximize className="size-4 text-emerald-600" />
-                        <span className="font-bold text-slate-900">
-                          {lot.specifications?.totalArea
-                            ? `${lot.specifications.totalArea.toLocaleString()} sqft`
-                            : "-"}
                         </span>
                       </div>
                     </div>
@@ -331,31 +311,21 @@ export default function ViewAllLots() {
                       </div>
                     )}
 
-                    {isLiveRoomLot ? (
-                      <a
-                        href="/view-live-locations"
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center gap-2"
-                      >
-                        🏛️ Register to Attend
-                      </a>
-                    ) : (
-                      <button
-                        className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center gap-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/properties/${lot.slug || lot._id}`);
-                        }}
-                      >
-                        {isAuction && lotAuction?.status === "live" ? (
-                          <>
-                            <Gavel className="size-4" /> View & Bid
-                          </>
-                        ) : (
-                          <>View Details</>
-                        )}
-                      </button>
-                    )}
+                    <button
+                      className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/properties/${lot.slug || lot._id}`);
+                      }}
+                    >
+                      {isAuction && lotAuction?.status === "live" ? (
+                        <>
+                          <Gavel className="size-4" /> View & Bid
+                        </>
+                      ) : (
+                        <>View Details</>
+                      )}
+                    </button>
                   </div>
                 </div>
               );

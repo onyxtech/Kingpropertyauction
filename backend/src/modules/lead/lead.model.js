@@ -42,7 +42,6 @@ const leadSchema = new mongoose.Schema(
         "legal",
         "faq",
         "newsletter",
-        "live-registration",
       ],
       default: "general",
     },

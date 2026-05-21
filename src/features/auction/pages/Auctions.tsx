@@ -27,7 +27,7 @@ export default function Auctions() {
   const [filterStatus, setFilterStatus] = useState("All Status");
 
   const { useGetAuctions } = useAuctionApi();
-  const { data, isLoading } = useGetAuctions({ excludeType: 'live' });
+  const { data, isLoading } = useGetAuctions({});
   const auctions = data?.data || [];
   const queryClient = useQueryClient();
 
@@ -45,11 +45,7 @@ export default function Auctions() {
     return {
       lotNumber: `LOT-2026-${String(index + 1).padStart(3, "0")}`,
       title: a.auctionTitle || "Untitled Auction",
-      location: a.venue?.name
-        ? `${a.venue.name}, ${a.venue.city || "England"}`
-        : a.venue?.city
-          ? `${a.venue.city}, England`
-          : "Location TBD",
+      location: "Location TBD",
       type: typeMap[category] || "Mixed Portfolio",
       startDate: a.startDateTime ? formatUKDateTime(a.startDateTime) : "TBD",
       startTime: "",

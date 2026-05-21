@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import {
   Building2,
@@ -14,6 +14,7 @@ import {
   UserCheck,
   Camera,
   X,
+  AlertCircle,
 } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { useTheme } from "@/app/hooks/useTheme";
@@ -50,6 +51,7 @@ export default function AddProperty() {
   const { mutateAsync: uploadPropertyImages } = useUploadPropertyImages();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 10;
+  const formRef = useRef<HTMLDivElement>(null);
   const [toastMessage, setToastMessage] = useState<{
     text: string;
     type: "success" | "error";
@@ -69,11 +71,10 @@ export default function AddProperty() {
     area: "",
     streetAddress: "",
     postalCode: "",
-    latitude: "",
-    longitude: "",
     totalArea: "",
-    landArea: "",
-    coveredArea: "",
+    auctionStartDate: "",
+    auctionEndDate: "",
+    mortgageStatus: "clear",
     bedrooms: "",
     bathrooms: "",
     floors: "",
@@ -86,13 +87,10 @@ export default function AddProperty() {
     minimumBidIncrement: "",
     estimatedMarketValue: "",
     currency: "GBP",
-    auctionStartDate: "",
-    auctionEndDate: "",
     auctionStatus: "upcoming",
     bidDepositAmount: "",
     autoBidEnabled: false,
     maximumBidLimit: "",
-    numberOfBidders: "0",
     features: {
       garden: false,
       swimmingPool: false,
@@ -105,9 +103,6 @@ export default function AddProperty() {
     },
     ownershipType: "",
     titleDeedNumber: "",
-    propertyTaxInfo: "",
-    mortgageStatus: "clear",
-    zoningType: "",
     sellerName: "",
     sellerContact: "",
     sellerEmail: "",
@@ -164,8 +159,41 @@ export default function AddProperty() {
     setUploadedImages(uploadedImages.filter((_, i) => i !== index));
   };
 
+  const validateForm = () => {
+    const errors: string[] = [];
+    if (!formData.propertyTitle?.trim())
+      errors.push("Property title is required");
+    if (!formData.propertyDescription?.trim())
+      errors.push("Property description is required");
+    if (!formData.propertyType) errors.push("Property type is required");
+    if (!formData.listingType) errors.push("Listing type is required");
+    if (!formData.country?.trim()) errors.push("Country is required");
+    if (!formData.state?.trim()) errors.push("State/County is required");
+    if (!formData.city?.trim()) errors.push("City is required");
+    if (!formData.area?.trim()) errors.push("Area is required");
+    if (!formData.streetAddress?.trim())
+      errors.push("Street address is required");
+    if (!formData.postalCode?.trim()) errors.push("Postal code is required");
+    if (!formData.bedrooms) errors.push("Number of bedrooms is required");
+    if (!formData.bathrooms) errors.push("Number of bathrooms is required");
+    if (!formData.startingAuctionPrice)
+      errors.push("Starting auction price is required");
+    if (!formData.reservePrice) errors.push("Reserve price is required");
+    if (!formData.minimumBidIncrement)
+      errors.push("Minimum bid increment is required");
+    if (!formData.ownershipType) errors.push("Ownership type is required");
+    return errors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors = validateForm();
+    if (errors.length > 0) {
+      setToastMessage({ text: errors.join("\n"), type: "error" });
+      setTimeout(() => setToastMessage(null), 8000);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     try {
       let imageUrls: string[] = [];
       if (formData.propertyImages.length > 0) {
@@ -251,7 +279,7 @@ export default function AddProperty() {
                 ],
           propertyVideo: videoUrl,
           floorPlan: floorPlanUrl,
-          legalDocuments: legalDocUrls,
+          legalDocuments: legalDocUrls.length > 0 ? legalDocUrls[0] : undefined,
         },
       };
       delete propertyData.propertyImages;
@@ -273,15 +301,14 @@ export default function AddProperty() {
       }
     } catch (err: any) {
       console.error("Error submitting property:", err);
-      const errorMsg = err?.message || err?.response?.data?.message || "An error occurred. Please try again.";
+      const errorMsg =
+        err?.message ||
+        err?.response?.data?.message ||
+        "An error occurred. Please try again.";
       // Make validation errors more readable
       const cleanMsg = errorMsg
         .replace(/"/g, "")
         .replace("location.state", "State/Province")
-        .replace("sellerInfo.sellerName", "Seller Name")
-        .replace("sellerInfo.sellerEmail", "Seller Email")
-        .replace("sellerInfo.sellerContact", "Seller Contact Number")
-        .replace("specifications.totalArea", "Total Area")
         .replace("specifications.bedrooms", "Bedrooms")
         .replace("specifications.bathrooms", "Bathrooms")
         .replace("pricing.startingAuctionPrice", "Starting Auction Price")
@@ -297,17 +324,25 @@ export default function AddProperty() {
     }
   };
 
+  const scrollToForm = () => {
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const nextStep = () => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      scrollToForm();
     }
   };
   const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      scrollToForm();
     }
+  };
+  const goToStep = (step: number) => {
+    setCurrentStep(step);
+    scrollToForm();
   };
 
   const steps = [
@@ -376,15 +411,17 @@ export default function AddProperty() {
               return (
                 <div key={step.number} className="flex items-center flex-1">
                   <div className="flex flex-col items-center flex-1">
-                    <div
-                      className={`size-12 rounded-xl flex items-center justify-center font-bold transition-all ${isCompleted ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg" : isActive ? `bg-gradient-to-br ${theme.primary} text-white shadow-xl scale-110` : "bg-slate-200 text-slate-500"}`}
+                    <button
+                      type="button"
+                      onClick={() => goToStep(step.number)}
+                      className={`size-12 rounded-xl flex items-center justify-center font-bold transition-all ${isCompleted ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg hover:scale-105" : isActive ? `bg-gradient-to-br ${theme.primary} text-white shadow-xl scale-110` : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}
                     >
                       {isCompleted ? (
                         <CheckCircle className="size-6" />
                       ) : (
                         <Icon className="size-6" />
                       )}
-                    </div>
+                    </button>
                     <span
                       className={`text-xs font-bold mt-2 text-center ${isActive ? "text-blue-600" : isCompleted ? "text-green-600" : "text-slate-500"}`}
                     >
@@ -401,122 +438,174 @@ export default function AddProperty() {
             })}
           </div>
         </div>
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60"
-        >
-          {currentStep === 1 && (
-            <StepBasicInfo
-              formData={formData}
-              handleInputChange={handleInputChange}
-              theme={theme}
-            />
-          )}
-          {currentStep === 2 && (
-            <StepLocation
-              formData={formData}
-              handleInputChange={handleInputChange}
-              theme={theme}
-            />
-          )}
-          {currentStep === 3 && (
-            <StepSpecifications
-              formData={formData}
-              handleInputChange={handleInputChange}
-              theme={theme}
-            />
-          )}
-          {currentStep === 4 && (
-            <StepPricing
-              formData={formData}
-              handleInputChange={handleInputChange}
-              theme={theme}
-            />
-          )}
-          {currentStep === 5 && (
-            <StepAuction
-              formData={formData}
-              handleInputChange={handleInputChange}
-              theme={theme}
-            />
-          )}
-          {currentStep === 6 && (
-            <StepFeatures
-              formData={formData}
-              handleFeatureToggle={handleFeatureToggle}
-              theme={theme}
-            />
-          )}
-          {currentStep === 7 && (
-            <StepLegal
-              formData={formData}
-              handleInputChange={handleInputChange}
-              theme={theme}
-            />
-          )}
-          {currentStep === 8 && (
-            <StepSeller
-              formData={formData}
-              handleInputChange={handleInputChange}
-              theme={theme}
-            />
-          )}
-          {currentStep === 9 && (
-            <StepMedia
-              formData={formData}
-              uploadedImages={uploadedImages}
-              handleInputChange={handleInputChange}
-              handleImageUpload={handleImageUpload}
-              removeImage={removeImage}
-              theme={theme}
-            />
-          )}
-          {currentStep === 10 && (
-            <StepReview formData={formData} theme={theme} />
-          )}
-          <div className="flex items-center justify-between pt-8 border-t-2 border-slate-200">
-            <button
-              type="button"
-              onClick={prevStep}
-              disabled={currentStep === 1}
-              className={`px-8 py-4 rounded-xl font-bold transition-all flex items-center gap-2 ${currentStep === 1 ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-slate-200 text-slate-700 hover:bg-slate-300"}`}
-            >
-              <ChevronLeft className="size-5" /> Previous
-            </button>
-            <div className="text-center">
-              <p className="text-sm font-bold text-slate-600">
+        <div ref={formRef}>
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60"
+          >
+            {currentStep === 1 && (
+              <StepBasicInfo
+                formData={formData}
+                handleInputChange={handleInputChange}
+                theme={theme}
+              />
+            )}
+            {currentStep === 2 && (
+              <StepLocation
+                formData={formData}
+                handleInputChange={handleInputChange}
+                theme={theme}
+              />
+            )}
+            {currentStep === 3 && (
+              <StepSpecifications
+                formData={formData}
+                handleInputChange={handleInputChange}
+                theme={theme}
+              />
+            )}
+            {currentStep === 4 && (
+              <StepPricing
+                formData={formData}
+                handleInputChange={handleInputChange}
+                theme={theme}
+              />
+            )}
+            {currentStep === 5 && (
+              <StepAuction
+                formData={formData}
+                handleInputChange={handleInputChange}
+                theme={theme}
+              />
+            )}
+            {currentStep === 6 && (
+              <StepFeatures
+                formData={formData}
+                handleFeatureToggle={handleFeatureToggle}
+                theme={theme}
+              />
+            )}
+            {currentStep === 7 && (
+              <StepLegal
+                formData={formData}
+                handleInputChange={handleInputChange}
+                theme={theme}
+              />
+            )}
+            {currentStep === 8 && (
+              <StepSeller
+                formData={formData}
+                handleInputChange={handleInputChange}
+                theme={theme}
+              />
+            )}
+            {currentStep === 9 && (
+              <StepMedia
+                formData={formData}
+                uploadedImages={uploadedImages}
+                handleInputChange={handleInputChange}
+                handleImageUpload={handleImageUpload}
+                removeImage={removeImage}
+                theme={theme}
+              />
+            )}
+            {currentStep === 10 && (
+              <StepReview
+                formData={formData}
+                theme={theme}
+                onEditStep={goToStep}
+              />
+            )}
+            <div className="flex items-center justify-end gap-3 pt-8 border-t-2 border-slate-200">
+              <p className="text-sm font-bold text-slate-600 mr-auto">
                 Step {currentStep} of {totalSteps}
               </p>
-            </div>
-            {currentStep < totalSteps ? (
               <button
                 type="button"
-                onClick={nextStep}
-                className={`px-8 py-4 bg-gradient-to-r ${theme.secondary} text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg flex items-center gap-2`}
+                onClick={prevStep}
+                disabled={currentStep === 1}
+                className={`px-8 py-4 rounded-xl font-bold transition-all flex items-center gap-2 ${currentStep === 1 ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-slate-200 text-slate-700 hover:bg-slate-300"}`}
               >
-                Next <ChevronRight className="size-5" />
+                <ChevronLeft className="size-5" /> Previous
               </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={apiLoading}
-                className={`px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg flex items-center gap-2 ${apiLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <CheckCircle className="size-5" />{" "}
-                {apiLoading ? "Submitting..." : "Submit Property"}
-              </button>
-            )}
-          </div>
-        </form>
+              {currentStep < totalSteps ? (
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className={`px-8 py-4 bg-gradient-to-r ${theme.secondary} text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg flex items-center gap-2`}
+                >
+                  Next <ChevronRight className="size-5" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={apiLoading}
+                  className={`px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold transition-all shadow-lg flex items-center gap-2 ${apiLoading ? "opacity-50 cursor-not-allowed" : "hover:scale-105"}`}
+                >
+                  {apiLoading ? (
+                    <>
+                      <svg
+                        className="animate-spin size-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      Creating Property...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="size-5" /> Submit Property
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
       </div>
       {toastMessage && (
         <div
-          className={`fixed bottom-6 right-6 z-50 px-6 py-3 rounded-2xl shadow-2xl text-white font-bold ${toastMessage.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+          className={`fixed bottom-6 right-6 z-50 px-6 py-4 rounded-2xl shadow-2xl text-white font-bold max-w-sm ${toastMessage.type === "success" ? "bg-green-500" : "bg-red-500"}`}
         >
-          {toastMessage.text}
-          <button onClick={() => setToastMessage(null)} className="ml-3">
-            <X className="size-4 inline" />
-          </button>
+          {toastMessage.text.includes("\n") ? (
+            <div className="flex items-start gap-2">
+              <AlertCircle className="size-5 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-black mb-1">Please fix these issues:</p>
+                {toastMessage.text.split("\n").map((err, i) => (
+                  <p key={i} className="text-sm font-medium">
+                    • {err}
+                  </p>
+                ))}
+              </div>
+              <button
+                onClick={() => setToastMessage(null)}
+                className="ml-1 flex-shrink-0"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+          ) : (
+            <span>
+              {toastMessage.text}
+              <button onClick={() => setToastMessage(null)} className="ml-3">
+                <X className="size-4 inline" />
+              </button>
+            </span>
+          )}
         </div>
       )}
     </PublicLayout>

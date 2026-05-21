@@ -23,7 +23,7 @@ export default function LiveAuctions() {
   const navigate = useNavigate();
 
   const { useGetAuctions } = useAuctionApi();
-  const { data: auctionsData, isLoading } = useGetAuctions({ status: "live", excludeType: "live" });
+  const { data: auctionsData, isLoading } = useGetAuctions({ status: "live" });
   const auctions = auctionsData?.data || [];
   const queryClient = useQueryClient();
 
@@ -49,11 +49,7 @@ export default function LiveAuctions() {
       slug: a.slug || a._id,
       title: a.auctionTitle || "Untitled Auction",
       description: a.description || "",
-      location: a.venue?.name
-        ? `${a.venue.name}, ${a.venue.city || "UK"}`
-        : a.venue?.city
-          ? `${a.venue.city}, UK`
-          : "Online Auction",
+      location: "Online Auction",
       image: cardImage,
       startDateTime: new Date(a.startDateTime),
       endDateTime: new Date(a.endDateTime),
@@ -64,7 +60,7 @@ export default function LiveAuctions() {
       totalValue: totalCurrentBids || a.startingBid || 0,
       status: a.status === "live" ? "active" : "ending",
       rawStatus: a.status,
-      auctionType: a.auctionType || "live",
+      auctionType: a.auctionType || "online",
     };
   });
 

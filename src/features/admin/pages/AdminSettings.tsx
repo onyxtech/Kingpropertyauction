@@ -555,10 +555,6 @@ export default function AdminSettings() {
     faqSupport: "FAQ Support Enquiry",
     legalEnquiry: "Legal Enquiry",
     newsletterSignup: "Newsletter Signup",
-    liveAuctionRegistration: "Live Auction Registration (User)",
-    adminLiveRegistrationAlert: "Live Auction Registration (Admin Alert)",
-    liveRegistrationApproved: "Live Registration Approved (Email)",
-    liveRegistrationRejected: "Live Registration Rejected (Email)",
   };
 
   if (isLoading) {

@@ -31,7 +31,7 @@ export default function OnlineAuctions() {
   });
   const { data: allData } = useQuery({
     queryKey: [CACHE_KEYS.AUCTIONS, 'all'],
-    queryFn: () => apiClient.fetch('/auctions?limit=6&excludeType=live'),
+    queryFn: () => apiClient.fetch('/auctions?limit=6'),
     refetchInterval: 30000,
   });
 
@@ -277,7 +277,7 @@ export default function OnlineAuctions() {
                         </div>
                         <div className="flex items-center gap-2 text-slate-600 font-medium">
                           <Gavel className="size-5 text-purple-600" />
-                          {auction.auctionType === 'live' ? 'Live Room Auction' : auction.auctionType === 'hybrid' ? 'Hybrid Auction' : 'Online Bidding'}
+                          Online Bidding
                         </div>
                       </div>
                       {auction.startDateTime && auction.endDateTime && (

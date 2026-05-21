@@ -2,7 +2,7 @@ import Joi from 'joi';
 
 export const createAuctionSchema = Joi.object({
   auctionTitle: Joi.string().trim().required(),
-  auctionType: Joi.string().valid('live', 'online', 'hybrid', 'reserve', 'absolute').required(),
+  auctionType: Joi.string().valid('online', 'reserve', 'absolute').required(),
   description: Joi.string().max(2000).optional(),
    properties: Joi.array().items(Joi.string()).min(1).required(),
   
@@ -16,18 +16,8 @@ export const createAuctionSchema = Joi.object({
   startDateTime: Joi.date().iso().required(),
   endDateTime: Joi.date().iso().greater(Joi.ref('startDateTime')).required(),
   
-  venue: Joi.object({
-    name: Joi.string().optional().allow(''),
-    address: Joi.string().optional().allow(''),
-    city: Joi.string().optional().allow(''),
-    postcode: Joi.string().optional().allow(''),
-  }).optional(),
-
   auctionImage: Joi.string().optional(),
   totalLots: Joi.number().default(0),
-  
-  registrationFee: Joi.number().min(0).default(0),
-  depositRequired: Joi.number().min(0).default(0),
   
   status: Joi.string().valid('scheduled', 'live', 'completed', 'cancelled').default('scheduled'),
   sendEmailNotifications: Joi.boolean().default(false),

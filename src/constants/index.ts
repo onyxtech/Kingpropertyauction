@@ -21,7 +21,6 @@ export const CACHE_TTL = {
 // ─── Auction Types ───
 export const AUCTION_TYPES = {
   ONLINE: 'online',
-  LIVE: 'live',
 } as const;
 
 // ─── Auction Statuses ───
@@ -45,7 +44,6 @@ export const LEAD_TYPES = {
   VALUATION: 'valuation',
   FINANCE: 'finance',
   CATALOGUE: 'catalogue',
-  LIVE_REGISTRATION: 'live-registration',
   NEWSLETTER: 'newsletter',
   FAQ: 'faq',
   LEGAL: 'legal',
@@ -55,9 +53,7 @@ export const LEAD_TYPES = {
 export const ROUTES = {
   HOME: '/',
   AUCTIONS: '/auctions',
-  LIVE_AUCTIONS: '/live-auctions',
   VIEW_ALL_LOTS: '/view-all-lots',
-  VIEW_LIVE_LOCATIONS: '/view-live-locations',
   PROPERTIES: '/properties',
   CONTACT: '/contact-us',
   FREE_VALUATION: '/free-valuation',
@@ -65,7 +61,6 @@ export const ROUTES = {
   REGISTER: '/register',
   ADMIN: '/admin',
   ADMIN_LEADS: '/admin/leads',
-  ADMIN_LIVE_REGISTRATIONS: '/admin/live-registrations',
 } as const;
 
 // ─── UK Timezone ───

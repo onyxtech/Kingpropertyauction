@@ -106,7 +106,7 @@ export default function SellingDropdown({ show, onMouseEnter, onMouseLeave, onNa
                 <FileText className="size-5 text-white" />
               </div>
               <div>
-                <div className="font-bold group-hover:text-orange-600 transition-colors">Free Valuation</div>
+                <div className="font-bold group-hover:text-orange-600 transition-colors">Property Valuation</div>
                 <div className="text-xs text-slate-500 font-medium mt-0.5">Know your worth</div>
               </div>
             </div>

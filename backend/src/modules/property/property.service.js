@@ -2,8 +2,8 @@ import Property from "./property.model.js";
 import notificationService, {
   NotificationEvents,
 } from "../notifications/trigger.service.js";
-import Auction from '../auction/auction.model.js';
-import cache from '../../utils/cache.js';
+import Auction from "../auction/auction.model.js";
+import cache from "../../utils/cache.js";
 
 export const createProperty = async (propertyData, userId) => {
   const property = await Property.create({
@@ -19,7 +19,7 @@ export const createProperty = async (propertyData, userId) => {
     })
     .catch((e) => console.error("Property submitted event failed:", e.message));
 
-  await cache.delPattern('properties:*');
+  await cache.delPattern("properties:*");
   return property;
 };
 
@@ -71,7 +71,9 @@ export const getProperties = async (query = {}) => {
 
   const [properties, total] = await Promise.all([
     Property.find(filter)
-      .select('propertyTitle slug propertyType listingType propertyStatus approvalStatus location pricing media auctionDetails currentBid totalBids featured createdBy winningBidder createdAt updatedAt')
+      .select(
+        "propertyTitle slug propertyType listingType propertyStatus approvalStatus location pricing media auctionDetails currentBid totalBids featured createdBy winningBidder createdAt updatedAt",
+      )
       .sort(sortBy)
       .skip(skip)
       .limit(limit)
@@ -112,15 +114,21 @@ export const getPropertyById = async (id) => {
 };
 
 export const updateProperty = async (id, updateData) => {
+  // If starting price changed and no bids yet, sync currentBid
+  if (updateData.pricing?.startingAuctionPrice) {
+    const existing = await Property.findById(id);
+    if (existing && (!existing.totalBids || existing.totalBids === 0)) {
+      updateData.currentBid = Number(updateData.pricing.startingAuctionPrice);
+    }
+  }
+
   const property = await Property.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
   });
   if (!property) throw new Error("Property not found");
-
-  await cache.delPattern('properties:*');
+  await cache.delPattern("properties:*");
   await cache.del(`property:${id}`);
-
   return property;
 };
 
@@ -131,7 +139,7 @@ export const deleteProperty = async (id) => {
   // Remove this property from all auctions that reference it
   await Auction.updateMany({ properties: id }, { $pull: { properties: id } });
 
-  await cache.delPattern('properties:*');
+  await cache.delPattern("properties:*");
   await cache.del(`property:${id}`);
 
   return property;

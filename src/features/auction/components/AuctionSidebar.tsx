@@ -1,13 +1,12 @@
-import { Info, MapPin, Calendar } from "lucide-react";
+import { Info, Calendar } from "lucide-react";
 import { formatUKDateTime } from "@/features/shared/utils/dateUtils";
 
 interface AuctionSidebarProps {
   auction: any;
-  isLiveRoomAuction: boolean;
   propertyCount: number;
 }
 
-export default function AuctionSidebar({ auction, isLiveRoomAuction, propertyCount }: AuctionSidebarProps) {
+export default function AuctionSidebar({ auction, propertyCount }: AuctionSidebarProps) {
   return (
     <div className="space-y-6">
       {/* Auction Status */}
@@ -42,29 +41,6 @@ export default function AuctionSidebar({ auction, isLiveRoomAuction, propertyCou
         </div>
       </div>
 
-      {/* Venue Info */}
-      {auction.venue?.name && (
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 border-2 border-white/60 shadow-xl">
-          <h3 className="text-lg font-black text-slate-900 mb-3 flex items-center gap-2">
-            <MapPin className="size-5 text-purple-600" /> Venue
-          </h3>
-          <p className="font-bold text-slate-900">{auction.venue.name}</p>
-          {auction.venue.address && (
-            <p className="text-sm text-slate-600">
-              {auction.venue.address}
-            </p>
-          )}
-          {auction.venue.city && (
-            <p className="text-sm text-slate-600">
-              {auction.venue.city}
-              {auction.venue.postcode
-                ? `, ${auction.venue.postcode}`
-                : ""}
-            </p>
-          )}
-        </div>
-      )}
-
       {/* Auction Details */}
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 border-2 border-white/60 shadow-xl">
         <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
@@ -87,18 +63,6 @@ export default function AuctionSidebar({ auction, isLiveRoomAuction, propertyCou
             <span className="text-slate-600">Auction Type</span>
             <span className="font-bold capitalize">
               {auction.auctionType}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-600">Registration Fee</span>
-            <span className="font-bold">
-              £{auction.registrationFee?.toLocaleString() || "0"}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-600">Deposit Required</span>
-            <span className="font-bold">
-              £{auction.depositRequired?.toLocaleString() || "0"}
             </span>
           </div>
         </div>

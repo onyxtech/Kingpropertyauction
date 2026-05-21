@@ -1,4 +1,4 @@
-import { MapPin, Globe } from "lucide-react";
+import { MapPin } from "lucide-react";
 
 interface StepLocationProps {
   formData: any;
@@ -116,32 +116,6 @@ export default function StepLocation({ formData, handleInputChange, theme }: Ste
           />
         </div>
 
-        <div className="md:col-span-2">
-          <label className="block text-sm font-bold text-slate-700 mb-2">
-            <Globe className="inline size-4 mr-1" />
-            Google Map Location (Optional)
-          </label>
-          <div className="grid md:grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="Latitude (e.g., 51.5074)"
-              value={formData.latitude}
-              onChange={(e) =>
-                handleInputChange("latitude", e.target.value)
-              }
-              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <input
-              type="text"
-              placeholder="Longitude (e.g., -0.1278)"
-              value={formData.longitude}
-              onChange={(e) =>
-                handleInputChange("longitude", e.target.value)
-              }
-              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-        </div>
       </div>
     </div>
   );
