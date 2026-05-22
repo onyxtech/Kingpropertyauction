@@ -5,6 +5,7 @@ import http from "http";
 import app from "./app.js";
 import { connectDB } from "./config/db.js";
 import Auction from "./modules/auction/auction.model.js";
+import Property from "./modules/property/property.model.js";
 import { warmCache } from "./modules/settings/settings.service.js";
 import { initSocket } from "./socket.js";
 import { redisConnection } from "./config/redis.js";
@@ -78,6 +79,26 @@ const rescheduleAllPendingAuctions = async () => {
 };
 
 await rescheduleAllPendingAuctions();
+
+// ─── One-time migration: backfill soldPrice from currentBid ───
+const fixSoldProperties = async () => {
+  try {
+    const result = await Property.updateMany(
+      {
+        propertyStatus: "sold",
+        $or: [{ soldPrice: null }, { soldPrice: { $exists: false } }, { soldPrice: 0 }],
+        currentBid: { $gt: 0 },
+      },
+      [{ $set: { soldPrice: "$currentBid" } }],
+    );
+    if (result.modifiedCount > 0) {
+      console.log(`✅ Fixed ${result.modifiedCount} sold properties missing soldPrice`);
+    }
+  } catch (err) {
+    console.error('Migration error:', err.message);
+  }
+};
+await fixSoldProperties();
 
 // ─── Graceful shutdown ───
 process.on('SIGTERM', async () => {

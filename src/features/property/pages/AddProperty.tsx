@@ -15,6 +15,7 @@ import {
   Camera,
   X,
   AlertCircle,
+  Upload,
 } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { useTheme } from "@/app/hooks/useTheme";
@@ -60,6 +61,8 @@ export default function AddProperty() {
     type: "success" | "error";
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ step: '', percent: 0 });
+  const [uploadStatus, setUploadStatus] = useState('');
 
   const [formData, setFormData] = useState<LocalPropertyFormData>({
     propertyTitle: "",
@@ -171,6 +174,7 @@ export default function AddProperty() {
     if (!formData.propertyDescription?.trim())
       errors.push("Property description is required");
     if (!formData.propertyType) errors.push("Property type is required");
+    if (!formData.propertyCategory) errors.push("Property category is required");
     if (!formData.listingType) errors.push("Listing type is required");
     if (!formData.country?.trim()) errors.push("Country is required");
     if (!formData.state?.trim()) errors.push("State/County is required");
@@ -181,6 +185,9 @@ export default function AddProperty() {
     if (!formData.postalCode?.trim()) errors.push("Postal code is required");
     if (!formData.bedrooms) errors.push("Number of bedrooms is required");
     if (!formData.bathrooms) errors.push("Number of bathrooms is required");
+    if (formData.floors && (parseInt(formData.floors) < 0 || parseInt(formData.floors) > 200)) errors.push("Floors must be between 0 and 200");
+    if (formData.yearBuilt && (parseInt(formData.yearBuilt) < 1800 || parseInt(formData.yearBuilt) > new Date().getFullYear())) errors.push("Year built must be between 1800 and " + new Date().getFullYear());
+    if (formData.parkingSpaces && (parseInt(formData.parkingSpaces) < 0 || parseInt(formData.parkingSpaces) > 100)) errors.push("Parking spaces must be between 0 and 100");
     if (!formData.startingAuctionPrice)
       errors.push("Starting auction price is required");
     if (!formData.reservePrice) errors.push("Reserve price is required");
@@ -200,6 +207,32 @@ export default function AddProperty() {
     return errors;
   };
 
+  const uploadWithProgress = (url: string, formData: FormData, token: string): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          setUploadProgress(prev => ({ ...prev, percent }));
+        }
+      };
+      
+      xhr.onload = () => {
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch {
+          reject(new Error('Invalid response'));
+        }
+      };
+      
+      xhr.onerror = () => reject(new Error('Upload failed'));
+      xhr.send(formData);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -215,86 +248,92 @@ export default function AddProperty() {
 
     // Step 2: Only upload files AFTER validation passes
     setIsSubmitting(true);
+    const token = localStorage.getItem("token") || "";
     try {
-      // Images - only upload if not already done
+      // Images - with progress
       let imageUrls: string[] = uploadedImageUrls;
       if (imageUrls.length === 0 && formData.propertyImages.length > 0) {
+        setUploadStatus('Uploading images...');
+        setUploadProgress({ step: 'images', percent: 0 });
         try {
-          const uploadResponse = await uploadPropertyImages(formData.propertyImages);
+          const fd = new FormData();
+          formData.propertyImages.forEach((img: File) => fd.append('propertyImages', img));
+          const uploadResponse = await uploadWithProgress('/api/upload/images', fd, token);
           if (uploadResponse.success && uploadResponse.data) {
             imageUrls = uploadResponse.data.map((img: any) => img.fileUrl || img);
             setUploadedImageUrls(imageUrls);
           }
+          setUploadProgress({ step: 'images', percent: 100 });
         } catch (uploadErr) {
           console.error("Image upload failed:", uploadErr);
         }
       }
-      // Videos - only upload if not already done
+      
+      // Videos - with progress
       let videoUrls: string[] = uploadedVideoUrls;
-      if (videoUrls.length === 0) {
+      if (videoUrls.length === 0 && (formData.propertyVideos || []).length > 0) {
+        setUploadStatus('Uploading video...');
+        setUploadProgress({ step: 'video', percent: 0 });
         for (const vid of (formData.propertyVideos || [])) {
           try {
             const vfd = new FormData();
             vfd.append("propertyVideos", vid);
-            const vr = await fetch("/api/upload/video", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-              body: vfd,
-            });
-            const vd = await vr.json();
+            const vd = await uploadWithProgress('/api/upload/video', vfd, token);
             if (vd?.success && vd.data) {
               const urls = Array.isArray(vd.data) ? vd.data.map((f: any) => f.fileUrl) : [vd.data.fileUrl];
               videoUrls = [...videoUrls, ...urls];
             }
+            setUploadProgress({ step: 'video', percent: 100 });
           } catch (e) { console.error("Video upload failed:", e); }
         }
         if (videoUrls.length > 0) setUploadedVideoUrls(videoUrls);
       }
-      // Floor plans - only upload if not already done
+      
+      // Floor plans - with progress
       let floorPlanUrls: string[] = uploadedFloorPlanUrls;
-      if (floorPlanUrls.length === 0) {
+      if (floorPlanUrls.length === 0 && (formData.floorPlans || []).length > 0) {
+        setUploadStatus('Uploading floor plans...');
+        setUploadProgress({ step: 'floorplans', percent: 0 });
         for (const fp of (formData.floorPlans || [])) {
           try {
             const ffd = new FormData();
             ffd.append("floorPlans", fp);
-            const fr = await fetch("/api/upload/floorplan", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-              body: ffd,
-            });
-            const fd = await fr.json();
+            const fd = await uploadWithProgress('/api/upload/floorplan', ffd, token);
             if (fd?.success && fd.data) {
               const urls = Array.isArray(fd.data) ? fd.data.map((f: any) => f.fileUrl) : [fd.data.fileUrl];
               floorPlanUrls = [...floorPlanUrls, ...urls];
             }
+            setUploadProgress({ step: 'floorplans', percent: 100 });
           } catch (e) { console.error("Floor plan upload failed:", e); }
         }
         if (floorPlanUrls.length > 0) setUploadedFloorPlanUrls(floorPlanUrls);
       }
-      // Legal docs - only upload if not already done
+      
+      // Legal docs - with progress
       let legalDocUrls: string[] = uploadedLegalDocUrls;
       if (legalDocUrls.length === 0 && formData.legalDocuments?.length > 0) {
+        setUploadStatus('Uploading documents...');
+        setUploadProgress({ step: 'documents', percent: 0 });
         try {
           const lfd = new FormData();
           formData.legalDocuments.forEach((doc: File) =>
             lfd.append("legalDocuments", doc),
           );
-          const lr = await fetch("/api/upload/documents", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-            body: lfd,
-          });
-          const ld = await lr.json();
+          const ld = await uploadWithProgress('/api/upload/documents', lfd, token);
           if (ld?.success && ld.data) {
             legalDocUrls = ld.data.map((d: any) => d.fileUrl);
             setUploadedLegalDocUrls(legalDocUrls);
           }
+          setUploadProgress({ step: 'documents', percent: 100 });
         } catch (e) {
           console.error("Documents upload failed:", e);
         }
       }
 
-      // ORIGINAL FLAT SPREAD - keep all fields flat like the old code
+      // Create property
+      setUploadStatus('Creating property...');
+      setUploadProgress({ step: 'create', percent: 0 });
+
       const propertyData: any = {
         ...formData,
         media: {
@@ -316,6 +355,7 @@ export default function AddProperty() {
 
       const response = await createProperty(propertyData);
       if (response.success) {
+        setUploadProgress({ step: 'create', percent: 100 });
         setUploadedImageUrls([]);
         setUploadedVideoUrls([]);
         setUploadedFloorPlanUrls([]);
@@ -336,7 +376,6 @@ export default function AddProperty() {
         err?.message ||
         err?.response?.data?.message ||
         "An error occurred. Please try again.";
-      // Make validation errors more readable
       const cleanMsg = errorMsg
         .replace(/"/g, "")
         .replace("location.state", "State/Province")
@@ -353,7 +392,9 @@ export default function AddProperty() {
       setToastMessage({ text: cleanMsg, type: "error" });
       setTimeout(() => setToastMessage(null), 6000);
     } finally {
-      setIsSubmitting(false); // Re-enable after everything is done
+      setIsSubmitting(false);
+      setUploadStatus('');
+      setUploadProgress({ step: '', percent: 0 });
     }
   };
 
@@ -621,11 +662,33 @@ export default function AddProperty() {
               <p className="text-sm font-bold text-slate-600 mr-auto">
                 Step {currentStep} of {totalSteps}
               </p>
+              
+              {/* Progress indicator */}
+              {isSubmitting && (
+                <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 rounded-xl border border-blue-200">
+                  <svg className="animate-spin size-5 text-blue-600" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-bold text-blue-700">{uploadStatus || 'Processing...'}</p>
+                    {uploadProgress.percent > 0 && uploadProgress.percent < 100 && (
+                      <div className="w-32 h-2 bg-blue-200 rounded-full mt-1">
+                        <div 
+                          className="h-full bg-blue-600 rounded-full transition-all duration-300" 
+                          style={{ width: `${uploadProgress.percent}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <button
                 type="button"
                 onClick={prevStep}
-                disabled={currentStep === 1}
-                className={`px-8 py-4 rounded-xl font-bold transition-all flex items-center gap-2 ${currentStep === 1 ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-slate-200 text-slate-700 hover:bg-slate-300"}`}
+                disabled={currentStep === 1 || isSubmitting}
+                className={`px-8 py-4 rounded-xl font-bold transition-all flex items-center gap-2 ${currentStep === 1 || isSubmitting ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-slate-200 text-slate-700 hover:bg-slate-300"}`}
               >
                 <ChevronLeft className="size-5" /> Previous
               </button>
@@ -633,7 +696,8 @@ export default function AddProperty() {
                 <button
                   type="button"
                   onClick={nextStep}
-                  className={`px-8 py-4 bg-gradient-to-r ${theme.secondary} text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg flex items-center gap-2`}
+                  disabled={isSubmitting}
+                  className={`px-8 py-4 bg-gradient-to-r ${theme.secondary} text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg flex items-center gap-2 ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   Next <ChevronRight className="size-5" />
                 </button>
@@ -664,7 +728,7 @@ export default function AddProperty() {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                         />
                       </svg>
-                      Creating Property...
+                      Submitting...
                     </>
                   ) : (
                     <>

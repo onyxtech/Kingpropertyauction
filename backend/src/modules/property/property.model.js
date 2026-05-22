@@ -169,6 +169,15 @@ const propertySchema = new mongoose.Schema(
       type: mongoose.Schema.ObjectId,
       ref: "User",
     },
+    soldPrice: {
+      type: Number,
+      default: null,
+    },
+    soldTo: {
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+      default: null,
+    },
     approvalStatus: {
       type: String,
       enum: ["pending", "approved", "rejected"],

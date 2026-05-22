@@ -30,7 +30,7 @@ export default function AuctionFormModal({
   const { data: propsData } = useGetProperties({
     approvalStatus: "approved",
     listingType: "auction",
-    status: "available", // Only show available properties, not sold ones
+    status: "available,unsold", // Show available AND unsold properties
   } as any);
   const allProperties = propsData?.data || [];
   // Build set of property IDs already in other auctions
@@ -202,7 +202,9 @@ export default function AuctionFormModal({
                   }
                   className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="online">🖥️ Online Auction (bidding on website)</option>
+                  <option value="online">
+                    🖥️ Online Auction (bidding on website)
+                  </option>
                 </select>
               </div>
               <div>
@@ -295,8 +297,8 @@ export default function AuctionFormModal({
                         {prop.propertyTitle}
                       </p>
                       <p className="text-[10px] text-slate-500 truncate">
-                        {prop.location?.city || "N/A"} •{" "}
-                        £{prop.pricing?.startingAuctionPrice?.toLocaleString()}
+                        {prop.location?.city || "N/A"} • £
+                        {prop.pricing?.startingAuctionPrice?.toLocaleString()}
                       </p>
                     </div>
                   </label>
@@ -344,7 +346,10 @@ export default function AuctionFormModal({
                 <input
                   type="datetime-local"
                   required
-                  min={formData.startDateTime || new Date().toISOString().slice(0, 16)}
+                  min={
+                    formData.startDateTime ||
+                    new Date().toISOString().slice(0, 16)
+                  }
                   value={formData.endDateTime}
                   onChange={(e) =>
                     setFormData({ ...formData, endDateTime: e.target.value })

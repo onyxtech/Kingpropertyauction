@@ -50,12 +50,12 @@ export const getOverview = async () => {
   // Calculate total revenue from sold properties
   const soldPropsAgg = await Property.aggregate([
     {
-      $match: { propertyStatus: "sold", soldPrice: { $exists: true, $gt: 0 } },
+      $match: { propertyStatus: "sold" },
     },
     {
       $group: {
         _id: null,
-        totalRevenue: { $sum: "$soldPrice" },
+        totalRevenue: { $sum: { $ifNull: ["$soldPrice", "$currentBid"] } },
         count: { $sum: 1 },
       },
     },
@@ -118,7 +118,6 @@ export const getRevenueTrend = async (months = 12) => {
     {
       $match: {
         propertyStatus: "sold",
-        soldPrice: { $exists: true, $gt: 0 },
         updatedAt: { $gte: startDate },
       },
     },
@@ -128,7 +127,7 @@ export const getRevenueTrend = async (months = 12) => {
           year: { $year: "$updatedAt" },
           month: { $month: "$updatedAt" },
         },
-        revenue: { $sum: "$soldPrice" },
+        revenue: { $sum: { $ifNull: ["$soldPrice", "$currentBid"] } },
         count: { $sum: 1 },
       },
     },
@@ -353,16 +352,16 @@ export const getKpiMetrics = async () => {
   // Average property value (from sold properties)
   const avgValueAgg = await Property.aggregate([
     {
-      $match: { propertyStatus: "sold", soldPrice: { $exists: true, $gt: 0 } },
+      $match: { propertyStatus: "sold" },
     },
-    { $group: { _id: null, avgPrice: { $avg: "$soldPrice" } } },
+    { $group: { _id: null, avgPrice: { $avg: { $ifNull: ["$soldPrice", "$currentBid"] } } } },
   ]);
   const avgPropertyValue = avgValueAgg[0]?.avgPrice || 0;
 
   // Average time to sale (in days)
   const timeToSaleAgg = await Property.aggregate([
     {
-      $match: { propertyStatus: "sold", soldPrice: { $exists: true, $gt: 0 } },
+      $match: { propertyStatus: "sold" },
     },
     {
       $project: {
@@ -401,21 +400,19 @@ export const getKpiMetrics = async () => {
       {
         $match: {
           propertyStatus: "sold",
-          soldPrice: { $exists: true, $gt: 0 },
           updatedAt: { $gte: thisMonthStart },
         },
       },
-      { $group: { _id: null, total: { $sum: "$soldPrice" } } },
+      { $group: { _id: null, total: { $sum: { $ifNull: ["$soldPrice", "$currentBid"] } } } },
     ]),
     Property.aggregate([
       {
         $match: {
           propertyStatus: "sold",
-          soldPrice: { $exists: true, $gt: 0 },
           updatedAt: { $gte: lastMonthStart, $lt: thisMonthStart },
         },
       },
-      { $group: { _id: null, total: { $sum: "$soldPrice" } } },
+      { $group: { _id: null, total: { $sum: { $ifNull: ["$soldPrice", "$currentBid"] } } } },
     ]),
   ]);
 
@@ -462,7 +459,7 @@ export const getExportData = async (type, startDate, endDate) => {
     case "sales": {
       const soldProperties = await Property.find(matchFilter)
         .select(
-          "propertyTitle propertyType location pricing soldPrice updatedAt",
+          "propertyTitle propertyType location pricing soldPrice currentBid updatedAt",
         )
         .sort("-updatedAt")
         .limit(1000)
@@ -472,7 +469,7 @@ export const getExportData = async (type, startDate, endDate) => {
         generatedAt: new Date().toISOString(),
         totalSold: soldProperties.length,
         totalRevenue: soldProperties.reduce(
-          (sum, p) => sum + (p.soldPrice || 0),
+          (sum, p) => sum + (p.soldPrice || p.currentBid || 0),
           0,
         ),
         ...(soldProperties.length === 1000 && { note: 'Results capped at 1000 records. Narrow your date range for complete data.' }),
