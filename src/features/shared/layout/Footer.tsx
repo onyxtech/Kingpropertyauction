@@ -11,6 +11,11 @@ export default function Footer() {
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setNewsletterError("Please enter a valid email address.");
+      setTimeout(() => setNewsletterError(""), 3000);
+      return;
+    }
     setNewsletterLoading(true);
     setNewsletterError("");
     try {

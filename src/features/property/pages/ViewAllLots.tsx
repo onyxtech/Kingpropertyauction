@@ -1,3 +1,4 @@
+import { mediaUrl } from "@/lib/mediaUrl";
 import { useNavigate, useParams } from "react-router";
 import {
   Sparkles,
@@ -11,6 +12,8 @@ import {
   AlertCircle,
   ArrowLeft,
   Building2,
+  Building,
+  Car,
 } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
@@ -149,12 +152,24 @@ export default function ViewAllLots() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {lots.map((lot) => {
               const isAuction = lot.listingType === "auction";
+              const isSold = lot.propertyStatus === 'sold';
+              const isUnsold = lot.propertyStatus === 'unsold';
               const currentBid =
                 lot.currentBid || lot.pricing?.startingAuctionPrice || 0;
               const reservePrice = lot.pricing?.reservePrice || 0;
               const reserveMet = currentBid >= reservePrice;
               const nextMinBid =
                 currentBid + (lot.pricing?.minimumBidIncrement || 1000);
+              const displayBid = isSold
+                ? lot.soldPrice || lot.currentBid || 0
+                : lot.currentBid || lot.pricing?.startingAuctionPrice || 0;
+              const bidLabel = isSold
+                ? 'Current Bid'
+                : isUnsold
+                ? 'Highest Bid'
+                : lot.currentBid > 0
+                ? 'Current Bid'
+                : 'Starting Price';
 
               // Find which auction this lot belongs to
               const lotAuction = auction || auctions.find((a: any) =>
@@ -174,9 +189,7 @@ export default function ViewAllLots() {
                     {lot.media?.propertyImages?.length > 0 ? (
                       <img
                         src={
-                          lot.media.propertyImages[0].startsWith("http")
-                            ? lot.media.propertyImages[0]
-                            : lot.media.propertyImages[0]
+                          mediaUrl(lot.media.propertyImages[0])
                         }
                         alt={lot.propertyTitle}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
@@ -194,6 +207,16 @@ export default function ViewAllLots() {
                         <div className="px-3 py-1.5 bg-red-500 text-white rounded-full text-xs font-bold flex items-center gap-1 animate-pulse">
                           <span className="size-1.5 bg-white rounded-full" />{" "}
                           LIVE
+                        </div>
+                      )}
+                      {lot.propertyStatus === 'sold' && (
+                        <div className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+                          🎉 Sold
+                        </div>
+                      )}
+                      {lot.propertyStatus === 'unsold' && (
+                        <div className="px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-full">
+                          ❌ Unsold
                         </div>
                       )}
                     </div>
@@ -233,19 +256,27 @@ export default function ViewAllLots() {
                     </div>
 
                     {/* Specs */}
-                    <div className="flex items-center justify-between gap-3 mb-4 pb-4 border-b-2 border-slate-100">
+                    <div className="flex items-center flex-wrap gap-3 mb-4 pb-4 border-b-2 border-slate-100">
                       <div className="flex items-center gap-2">
                         <Bed className="size-4 text-blue-600" />
-                        <span className="font-bold text-slate-900">
-                          {lot.specifications?.bedrooms || "-"}
-                        </span>
+                        <span className="font-bold text-slate-900">{lot.specifications?.bedrooms ?? '-'}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Bath className="size-4 text-purple-600" />
-                        <span className="font-bold text-slate-900">
-                          {lot.specifications?.bathrooms || "-"}
-                        </span>
+                        <span className="font-bold text-slate-900">{lot.specifications?.bathrooms ?? '-'}</span>
                       </div>
+                      {(lot.specifications?.floors ?? 0) > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Building className="size-4 text-green-600" />
+                          <span className="font-bold text-slate-900">{lot.specifications.floors} fl</span>
+                        </div>
+                      )}
+                      {(lot.specifications?.parkingSpaces ?? 0) > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Car className="size-4 text-slate-600" />
+                          <span className="font-bold text-slate-900">{lot.specifications.parkingSpaces}P</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Pricing */}
@@ -285,18 +316,23 @@ export default function ViewAllLots() {
                         </div>
                       </div>
                     ) : (
-                      <div className="mb-4">
-                        <p className="text-sm font-semibold text-slate-600 mb-1">
-                          {lot.listingType === "direct_sale"
-                            ? "Asking Price"
-                            : "Starting Price"}
-                        </p>
-                        <p className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                          {formatPrice(
-                            lot.pricing?.startingAuctionPrice || 0,
-                            lot.pricing?.currency,
-                          )}
-                        </p>
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-500 font-semibold">{bidLabel}</span>
+                          <span className="font-black text-emerald-600">{formatPrice(displayBid, lot.pricing?.currency)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-500">Reserve</span>
+                          <span className="font-bold text-slate-700">{formatPrice(reservePrice, lot.pricing?.currency)}</span>
+                        </div>
+                        {(isSold || isUnsold || lot.currentBid > 0) && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-500">Reserve Met</span>
+                            <span className={`font-bold ${isSold ? 'text-green-600' : 'text-red-500'}`}>
+                              {isSold ? '✅ Yes' : '❌ No'}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
 

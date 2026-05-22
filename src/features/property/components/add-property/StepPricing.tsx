@@ -1,4 +1,5 @@
 import { DollarSign, Info } from "lucide-react";
+import { preventMinus } from "@/utils/validation";
 
 interface StepPricingProps {
   formData: any;
@@ -52,9 +53,12 @@ export default function StepPricing({ formData, handleInputChange, theme }: Step
             type="number"
             placeholder="e.g., 500000"
             value={formData.startingAuctionPrice}
-            onChange={(e) =>
-              handleInputChange("startingAuctionPrice", e.target.value)
-            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '' || Number(v) >= 0) handleInputChange("startingAuctionPrice", v);
+            }}
+            min="1"
+            onKeyDown={preventMinus}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
@@ -68,9 +72,12 @@ export default function StepPricing({ formData, handleInputChange, theme }: Step
             type="number"
             placeholder="e.g., 600000"
             value={formData.reservePrice}
-            onChange={(e) =>
-              handleInputChange("reservePrice", e.target.value)
-            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '' || Number(v) >= 0) handleInputChange("reservePrice", v);
+            }}
+            min="1"
+            onKeyDown={preventMinus}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
@@ -84,9 +91,12 @@ export default function StepPricing({ formData, handleInputChange, theme }: Step
             type="number"
             placeholder="e.g., 750000"
             value={formData.buyNowPrice}
-            onChange={(e) =>
-              handleInputChange("buyNowPrice", e.target.value)
-            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '' || Number(v) >= 0) handleInputChange("buyNowPrice", v);
+            }}
+            min="1"
+            onKeyDown={preventMinus}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -99,9 +109,12 @@ export default function StepPricing({ formData, handleInputChange, theme }: Step
             type="number"
             placeholder="e.g., 5000"
             value={formData.minimumBidIncrement}
-            onChange={(e) =>
-              handleInputChange("minimumBidIncrement", e.target.value)
-            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '' || Number(v) >= 0) handleInputChange("minimumBidIncrement", v);
+            }}
+            min="100"
+            onKeyDown={preventMinus}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
@@ -115,9 +128,12 @@ export default function StepPricing({ formData, handleInputChange, theme }: Step
             type="number"
             placeholder="e.g., 700000"
             value={formData.estimatedMarketValue}
-            onChange={(e) =>
-              handleInputChange("estimatedMarketValue", e.target.value)
-            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '' || Number(v) >= 0) handleInputChange("estimatedMarketValue", v);
+            }}
+            min="1"
+            onKeyDown={preventMinus}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>

@@ -3,6 +3,7 @@ import {
   DollarSign, Clock, CheckCircle, FileText, X, User, Mail, Phone,
   Home, MapPin, Building2, Percent, Calendar, Briefcase,
 } from "lucide-react";
+import { preventMinus } from "@/utils/validation";
 
 const loanTypeNames = ["Bridging Finance", "Development Finance", "Refurbishment Finance"];
 
@@ -21,9 +22,15 @@ interface FinanceFormProps {
 export default function FinanceForm({ show, onClose }: FinanceFormProps) {
   const [formData, setFormData] = useState(emptyForm);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError("");
+    const errors: string[] = [];
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.push("Valid email address is required");
+    if (!formData.phone || formData.phone.replace(/[\s\-\+\(\)]/g, "").length < 10) errors.push("Please enter a valid phone number");
+    if (errors.length > 0) { setFormError(errors.join(". ")); return; }
     setFormSubmitted(true);
     setTimeout(() => {
       onClose();
@@ -94,11 +101,11 @@ export default function FinanceForm({ show, onClose }: FinanceFormProps) {
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><DollarSign className="size-4 text-emerald-600" /> Property Value *</label>
-                        <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required value={formData.propertyValue} onChange={(e) => setFormData({ ...formData, propertyValue: e.target.value })} placeholder="500000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
+                        <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required min="0" onKeyDown={preventMinus} value={formData.propertyValue} onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) setFormData({ ...formData, propertyValue: v }); }} placeholder="500000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
                       </div>
                       <div>
                         <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><DollarSign className="size-4 text-emerald-600" /> Purchase Price *</label>
-                        <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required value={formData.purchasePrice} onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })} placeholder="450000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
+                        <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required min="0" onKeyDown={preventMinus} value={formData.purchasePrice} onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) setFormData({ ...formData, purchasePrice: v }); }} placeholder="450000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
                       </div>
                     </div>
                   </div>
@@ -120,15 +127,15 @@ export default function FinanceForm({ show, onClose }: FinanceFormProps) {
                     </div>
                     <div>
                       <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><DollarSign className="size-4 text-purple-600" /> Loan Amount *</label>
-                      <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required value={formData.loanAmount} onChange={(e) => setFormData({ ...formData, loanAmount: e.target.value })} placeholder="375000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
+                      <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required min="0" onKeyDown={preventMinus} value={formData.loanAmount} onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) setFormData({ ...formData, loanAmount: v }); }} placeholder="375000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
                     </div>
                     <div>
                       <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><Calendar className="size-4 text-purple-600" /> Loan Term (months) *</label>
-                      <input type="number" required value={formData.loanTerm} onChange={(e) => setFormData({ ...formData, loanTerm: e.target.value })} placeholder="12" className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 font-semibold text-slate-900 shadow-lg transition-all" />
+                      <input type="number" required min="0" onKeyDown={preventMinus} value={formData.loanTerm} onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) setFormData({ ...formData, loanTerm: v }); }} placeholder="12" className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 font-semibold text-slate-900 shadow-lg transition-all" />
                     </div>
                     <div className="md:col-span-2">
                       <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><Percent className="size-4 text-purple-600" /> Deposit Amount *</label>
-                      <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required value={formData.deposit} onChange={(e) => setFormData({ ...formData, deposit: e.target.value })} placeholder="75000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
+                      <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required min="0" onKeyDown={preventMinus} value={formData.deposit} onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) setFormData({ ...formData, deposit: v }); }} placeholder="75000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
                     </div>
                   </div>
                 </div>
@@ -152,7 +159,7 @@ export default function FinanceForm({ show, onClose }: FinanceFormProps) {
                     </div>
                     <div>
                       <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><DollarSign className="size-4 text-cyan-600" /> Annual Income *</label>
-                      <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required value={formData.annualIncome} onChange={(e) => setFormData({ ...formData, annualIncome: e.target.value })} placeholder="60000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
+                      <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required min="0" onKeyDown={preventMinus} value={formData.annualIncome} onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) setFormData({ ...formData, annualIncome: v }); }} placeholder="60000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
                     </div>
                   </div>
                 </div>
@@ -169,6 +176,11 @@ export default function FinanceForm({ show, onClose }: FinanceFormProps) {
                   </div>
                 </div>
 
+                {formError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                    {formError}
+                  </div>
+                )}
                 <button type="submit" className="w-full py-5 bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 text-white rounded-2xl font-black text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-3">
                   <FileText className="size-6" /> Submit Application
                 </button>

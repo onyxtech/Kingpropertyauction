@@ -76,10 +76,8 @@ Always check the specific lot details for exact fees as they vary by property.`,
     title: 'Types of Auctions',
     category: 'process',
     order: 6,
-    content: `King Property Auction offers three auction formats:
-LIVE AUCTION: Traditional in-room bidding. Bidders attend in person or bid by telephone proxy.
+    content: `King Property Auction offers online auction formats:
 ONLINE AUCTION: Bid from anywhere via our website. Real-time competitive bidding with countdown timer.
-HYBRID AUCTION: Both in-room and online simultaneously. Maximum exposure and competition.
 RESERVE vs ABSOLUTE:
 - Reserve auction: Property only sells if bidding meets the reserve price
 - Absolute auction: Property sells to highest bidder regardless of price`,

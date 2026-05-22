@@ -31,6 +31,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    address: {
+      street: { type: String },
+      city: { type: String },
+      postcode: { type: String },
+      country: { type: String, default: "United Kingdom" },
+    },
     isActive: {
       type: Boolean,
       default: true,

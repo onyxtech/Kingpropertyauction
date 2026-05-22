@@ -17,8 +17,12 @@ export default function ResetPassword() {
     e.preventDefault();
     setError("");
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+    if (!/(?=.*[0-9])/.test(password)) {
+      setError("Password must contain at least one number");
       return;
     }
     if (password !== confirmPassword) {
@@ -72,7 +76,7 @@ export default function ResetPassword() {
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-400" />
                     <input type="password" required value={password} onChange={e => setPassword(e.target.value)}
                       className="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Min 6 characters" />
+                      placeholder="Min 8 characters" />
                   </div>
                 </div>
                 <div>

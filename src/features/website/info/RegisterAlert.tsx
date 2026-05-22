@@ -6,12 +6,28 @@ import { apiClient } from "@/lib/apiClient";
 export default function RegisterAlert() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setError("");
     const form = e.target as HTMLFormElement;
     const fd = new FormData(form);
+    const phone = (fd.get("phone") as string) || "";
+    const phoneRegex = /^[\+\d\s\-\(\)]{10,15}$/;
+    if (phone && !phoneRegex.test(phone)) {
+      setError("Please enter a valid phone number (10–15 digits).");
+      return;
+    }
+    const minPrice = Number(fd.get("minPrice"));
+    const maxPrice = Number(fd.get("maxPrice"));
+    if (fd.get("minPrice") && minPrice < 0) { setError("Min price cannot be negative."); return; }
+    if (fd.get("maxPrice") && maxPrice < 0) { setError("Max price cannot be negative."); return; }
+    if (fd.get("minPrice") && fd.get("maxPrice") && minPrice > maxPrice) {
+      setError("Min price cannot be greater than max price.");
+      return;
+    }
+    setLoading(true);
     try {
       await apiClient.fetch("/leads", {
         method: "POST",
@@ -37,6 +53,7 @@ export default function RegisterAlert() {
       setSubmitted(true);
     } catch (e: any) {
       console.error("Alert registration error:", e);
+      setError(e?.message || "Something went wrong. Please try again.");
     }
     setLoading(false);
   };
@@ -211,7 +228,9 @@ export default function RegisterAlert() {
                   <input
                     type="number"
                     name="minPrice"
+                    min="0"
                     placeholder="100,000"
+                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium"
                   />
                 </div>
@@ -220,7 +239,9 @@ export default function RegisterAlert() {
                   <input
                     type="number"
                     name="maxPrice"
+                    min="0"
                     placeholder="500,000"
+                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium"
                   />
                 </div>
@@ -257,6 +278,12 @@ export default function RegisterAlert() {
                   <span className="text-slate-700 font-medium">Send me auction reminders 24 hours before</span>
                 </label>
               </div>
+
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm font-medium">
+                  {error}
+                </div>
+              )}
 
               <button
                 type="submit"

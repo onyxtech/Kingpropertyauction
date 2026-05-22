@@ -16,6 +16,7 @@ export const create = async (req, res) => {
   );
   try {
     // Map flat frontend data to nested backend structure
+    const isAgentOrSeller = req.user.role === 'agent' || req.user.role === 'seller';
     const body = {
       propertyTitle: req.body.propertyTitle,
       propertyDescription: req.body.propertyDescription,
@@ -68,22 +69,33 @@ export const create = async (req, res) => {
       },
 
       sellerInfo: {
-        sellerName: req.body.sellerName || "",
-        sellerContact: req.body.sellerContact || "",
-        sellerEmail: req.body.sellerEmail || "",
-        agentName: req.body.agentName,
-        agentContact: req.body.agentContact,
+        agentName: isAgentOrSeller
+          ? req.user.name
+          : (req.body.sellerInfo?.agentName || req.body.agentName || ''),
+        agentContact: isAgentOrSeller
+          ? (req.user.phone || req.user.email || '')
+          : (req.body.sellerInfo?.agentContact || req.body.agentContact || ''),
+        agentId: isAgentOrSeller
+          ? req.user._id
+          : (req.body.sellerInfo?.agentId || req.body.agentId || null),
       },
 
       approvalStatus: req.body.approvalStatus || "pending",
       media: {
         propertyImages:
           req.body.media?.propertyImages || req.body.propertyImages || [],
-        propertyVideo:
-          req.body.media?.propertyVideo || req.body.propertyVideo || undefined,
+        propertyVideos:
+          req.body.media?.propertyVideos ||
+          (req.body.media?.propertyVideo ? [req.body.media.propertyVideo] :
+          req.body.propertyVideos ||
+          (req.body.propertyVideo ? [req.body.propertyVideo] : [])),
         virtualTour:
           req.body.media?.virtualTour || req.body.virtualTour || undefined,
-        floorPlan: req.body.media?.floorPlan || req.body.floorPlan || undefined,
+        floorPlans:
+          req.body.media?.floorPlans ||
+          (req.body.media?.floorPlan ? [req.body.media.floorPlan] :
+          req.body.floorPlans ||
+          (req.body.floorPlan ? [req.body.floorPlan] : [])),
         legalDocuments:
           req.body.media?.legalDocuments || req.body.legalDocuments || [],
       },

@@ -70,19 +70,16 @@ export const uploadImages = async (req, res) => {
 
 export const uploadVideo = async (req, res) => {
   try {
-    if (!req.file) {
+    const files = req.files || [];
+    if (files.length === 0) {
       return res.status(400).json({ success: false, message: 'No video uploaded' });
     }
-
-    res.status(200).json({
-      success: true,
-      data: {
-        fileName: req.file.filename,
-        fileUrl: `/uploads/videos/${req.file.filename}`,
-        fileSize: req.file.size,
-      },
-      message: 'Video uploaded successfully',
-    });
+    const data = files.map(file => ({
+      fileName: file.filename,
+      fileUrl: `/uploads/videos/${file.filename}`,
+      fileSize: file.size,
+    }));
+    res.status(200).json({ success: true, data, message: 'Video(s) uploaded successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -90,18 +87,15 @@ export const uploadVideo = async (req, res) => {
 
 export const uploadFloorPlan = async (req, res) => {
   try {
-    if (!req.file) {
+    const files = req.files || [];
+    if (files.length === 0) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-
-    res.status(200).json({
-      success: true,
-      data: {
-        fileName: req.file.filename,
-        fileUrl: `/uploads/floorplans/${req.file.filename}`,
-      },
-      message: 'Floor plan uploaded successfully',
-    });
+    const data = files.map(file => ({
+      fileName: file.filename,
+      fileUrl: `/uploads/floorplans/${file.filename}`,
+    }));
+    res.status(200).json({ success: true, data, message: 'Floor plan(s) uploaded successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

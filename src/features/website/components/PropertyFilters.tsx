@@ -150,7 +150,9 @@ export default function PropertyFilters({
                   </label>
                   <input
                     type="number"
+                    min="0"
                     value={filters.minPrice}
+                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
                     onChange={(e) =>
                       setFilters({ ...filters, minPrice: e.target.value })
                     }
@@ -166,7 +168,9 @@ export default function PropertyFilters({
                   </label>
                   <input
                     type="number"
+                    min="0"
                     value={filters.maxPrice}
+                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
                     onChange={(e) =>
                       setFilters({ ...filters, maxPrice: e.target.value })
                     }

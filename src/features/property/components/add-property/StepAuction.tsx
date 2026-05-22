@@ -1,4 +1,5 @@
 import { Gavel } from "lucide-react";
+import { preventMinus } from "@/utils/validation";
 
 interface StepAuctionProps {
   formData: any;
@@ -52,9 +53,12 @@ export default function StepAuction({ formData, handleInputChange, theme }: Step
             type="number"
             placeholder="e.g., 10000"
             value={formData.bidDepositAmount}
-            onChange={(e) =>
-              handleInputChange("bidDepositAmount", e.target.value)
-            }
+            min="0"
+            onKeyDown={preventMinus}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '' || Number(v) >= 0) handleInputChange("bidDepositAmount", v);
+            }}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -67,9 +71,12 @@ export default function StepAuction({ formData, handleInputChange, theme }: Step
             type="number"
             placeholder="No limit if empty"
             value={formData.maximumBidLimit}
-            onChange={(e) =>
-              handleInputChange("maximumBidLimit", e.target.value)
-            }
+            min="0"
+            onKeyDown={preventMinus}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '' || Number(v) >= 0) handleInputChange("maximumBidLimit", v);
+            }}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>

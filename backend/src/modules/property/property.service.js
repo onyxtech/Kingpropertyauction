@@ -72,7 +72,7 @@ export const getProperties = async (query = {}) => {
   const [properties, total] = await Promise.all([
     Property.find(filter)
       .select(
-        "propertyTitle slug propertyType listingType propertyStatus approvalStatus location pricing media auctionDetails currentBid totalBids featured createdBy winningBidder createdAt updatedAt",
+        "propertyTitle slug propertyType listingType propertyStatus approvalStatus location pricing specifications media auctionDetails currentBid totalBids featured soldPrice soldTo createdBy winningBidder createdAt updatedAt",
       )
       .sort(sortBy)
       .skip(skip)

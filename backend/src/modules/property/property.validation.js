@@ -29,11 +29,11 @@ export const createPropertySchema = Joi.object({
   }).required(),
 
   specifications: Joi.object({
-    bedrooms: Joi.number().required(),
-    bathrooms: Joi.number().required(),
-    floors: optionalNumber(),
-    yearBuilt: optionalNumber(),
-    parkingSpaces: optionalNumber(),
+    bedrooms: Joi.number().integer().min(0).max(50).required(),
+    bathrooms: Joi.number().integer().min(0).max(50).required(),
+    floors: Joi.number().integer().min(0).max(200).allow("", null).optional(),
+    yearBuilt: Joi.number().integer().min(1800).max(new Date().getFullYear()).allow("", null).optional(),
+    parkingSpaces: Joi.number().integer().min(0).max(100).allow("", null).optional(),
     furnishedStatus: Joi.string()
       .valid("unfurnished", "semi-furnished", "fully-furnished")
       .default("unfurnished"),
@@ -41,22 +41,19 @@ export const createPropertySchema = Joi.object({
 
   media: Joi.object({
     propertyImages: Joi.array().items(Joi.string()).optional(),
-    virtualTour: Joi.string().optional(),
-    propertyVideo: Joi.string().optional(),
-    virtualTour: Joi.string().optional(),
-    floorPlan: Joi.string().optional(),
-    legalDocuments: Joi.alternatives()
-      .try(Joi.string(), Joi.array().items(Joi.string()))
-      .optional(),
+    propertyVideos: Joi.array().items(Joi.string()).optional(),
+    floorPlans: Joi.array().items(Joi.string()).optional(),
+    virtualTour: Joi.string().optional().allow('', null),
+    legalDocuments: Joi.array().items(Joi.string()).optional(),
   }).optional(),
 
   pricing: Joi.object({
     currency: Joi.string().valid("GBP", "USD", "EUR").default("GBP"),
-    startingAuctionPrice: Joi.number().required(),
-    reservePrice: Joi.number().required(),
-    buyNowPrice: optionalNumber(),
-    minimumBidIncrement: Joi.number().required(),
-    estimatedMarketValue: optionalNumber(),
+    startingAuctionPrice: Joi.number().min(1).required(),
+    reservePrice: Joi.number().min(1).required(),
+    buyNowPrice: optionalNumber().min(1),
+    minimumBidIncrement: Joi.number().min(100).required(),
+    estimatedMarketValue: optionalNumber().min(1),
   }).required(),
 
   auctionDetails: Joi.object({

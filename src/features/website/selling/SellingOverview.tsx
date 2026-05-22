@@ -1,4 +1,5 @@
 import { Briefcase, TrendingUp, Clock, Award, Users, CheckCircle, Sparkles, DollarSign, Shield, Target, X, Building2 } from "lucide-react";
+import { preventMinus } from "@/utils/validation";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
 import { useState } from "react";
@@ -25,8 +26,12 @@ export default function SellingOverview() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setSubmitError('');
+    const errors: string[] = [];
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.push("Valid email address is required");
+    if (!formData.phone || formData.phone.replace(/[\s\-\+\(\)]/g, "").length < 10) errors.push("Please enter a valid phone number");
+    if (errors.length > 0) { setSubmitError(errors.join(". ")); return; }
+    setSubmitting(true);
     try {
       const data = await apiClient.fetch('/leads', {
         method: 'POST',
@@ -268,9 +273,10 @@ export default function SellingOverview() {
                         type="number"
                         min="0"
                         placeholder="0"
+                        onKeyDown={preventMinus}
                         className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all font-medium"
                         value={formData.bedrooms}
-                        onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value })}
+                        onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) setFormData({ ...formData, bedrooms: v }); }}
                         required
                       />
                     </div>
@@ -281,9 +287,10 @@ export default function SellingOverview() {
                         type="number"
                         min="0"
                         placeholder="0"
+                        onKeyDown={preventMinus}
                         className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all font-medium"
                         value={formData.bathrooms}
-                        onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value })}
+                        onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) setFormData({ ...formData, bathrooms: v }); }}
                         required
                       />
                     </div>

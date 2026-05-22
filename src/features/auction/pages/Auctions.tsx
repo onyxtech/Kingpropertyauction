@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { mediaUrl } from "@/lib/mediaUrl";
 import { useNavigate } from "react-router";
 import {
   Search,
@@ -57,9 +58,7 @@ export default function Auctions() {
         ? `£${a.startingBid.toLocaleString()}`
         : "£0",
       image: a.properties?.[0]?.media?.propertyImages?.[0]
-        ? a.properties[0].media.propertyImages[0].startsWith("http")
-          ? a.properties[0].media.propertyImages[0]
-          : a.properties[0].media.propertyImages[0]
+        ? mediaUrl(a.properties[0].media.propertyImages[0])
         : a.auctionImage ||
           "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1080",
       status:
@@ -235,6 +234,7 @@ export default function Auctions() {
                 <option>All Status</option>
                 <option>Live Now</option>
                 <option>Upcoming</option>
+                <option>Completed</option>
               </select>
               <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-5 text-slate-400 pointer-events-none" />
             </div>
@@ -294,9 +294,13 @@ export default function Auctions() {
                         <div className="size-2 bg-white rounded-full" />
                         LIVE NOW
                       </div>
-                    ) : (
+                    ) : lot.status === "Upcoming" ? (
                       <div className="px-4 py-2 bg-blue-600 text-white text-sm font-black rounded-full shadow-xl">
-                        UPCOMING
+                        📅 UPCOMING
+                      </div>
+                    ) : (
+                      <div className="px-4 py-2 bg-slate-600 text-white text-sm font-black rounded-full shadow-xl">
+                        ✅ COMPLETED
                       </div>
                     )}
                   </div>
@@ -467,9 +471,13 @@ export default function Auctions() {
                             <div className="size-2 bg-white rounded-full" />
                             LIVE NOW
                           </div>
-                        ) : (
+                        ) : lot.status === "Upcoming" ? (
                           <div className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 text-xs font-black rounded-full">
-                            UPCOMING
+                            📅 UPCOMING
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-black rounded-full">
+                            ✅ COMPLETED
                           </div>
                         )}
                       </td>

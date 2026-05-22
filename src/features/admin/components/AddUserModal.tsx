@@ -26,8 +26,15 @@ export default function AddUserModal({ onClose, onSuccess }: { onClose: () => vo
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirmPassword') as string;
     
+    const firstName = (formData.get('firstName') as string || '').trim();
+    const lastName = (formData.get('lastName') as string || '').trim();
+    const email = (formData.get('email') as string || '').trim();
+    const phone = (formData.get('phone') as string || '').trim();
+    if (!firstName || firstName.length < 2 || !lastName || lastName.length < 2) { setError("First and last name must each be at least 2 characters"); setLoading(false); return; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("Please enter a valid email address"); setLoading(false); return; }
+    if (!phone || phone.replace(/[\s\-\+\(\)]/g, "").length < 10) { setError("Please enter a valid phone number"); setLoading(false); return; }
     if (password !== confirmPassword) { setError("Passwords do not match"); setLoading(false); return; }
-    if (password.length < 6) { setError("Password must be at least 6 characters"); setLoading(false); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters"); setLoading(false); return; }
 
     const data = {
       name: `${formData.get('firstName')} ${formData.get('lastName')}`,

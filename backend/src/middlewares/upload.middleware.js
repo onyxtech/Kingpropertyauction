@@ -12,9 +12,9 @@ const storage = multer.diskStorage({
     
     if (file.fieldname === 'propertyImages') {
       uploadPath += 'properties/';
-    } else if (file.fieldname === 'propertyVideo') {
+    } else if (file.fieldname === 'propertyVideo' || file.fieldname === 'propertyVideos') {
       uploadPath += 'videos/';
-    } else if (file.fieldname === 'floorPlan') {
+    } else if (file.fieldname === 'floorPlan' || file.fieldname === 'floorPlans') {
       uploadPath += 'floorplans/';
     } else if (file.fieldname === 'legalDocuments') {
       uploadPath += 'documents/';
@@ -45,13 +45,13 @@ const fileFilter = (req, file, cb) => {
     } else {
       cb(new Error('Only images are allowed for property images'), false);
     }
-  } else if (file.fieldname === 'propertyVideo') {
+  } else if (file.fieldname === 'propertyVideo' || file.fieldname === 'propertyVideos') {
     if (videoTypes.test(extname)) {
       cb(null, true);
     } else {
       cb(new Error('Only videos are allowed'), false);
     }
-  } else if (file.fieldname === 'floorPlan' || file.fieldname === 'legalDocuments') {
+  } else if (file.fieldname === 'floorPlan' || file.fieldname === 'floorPlans' || file.fieldname === 'legalDocuments') {
     if (imageTypes.test(extname) || docTypes.test(extname)) {
       cb(null, true);
     } else {
@@ -75,11 +75,23 @@ export const uploadPropertyVideo = multer({
   limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
 }).single('propertyVideo');
 
+export const uploadPropertyVideos = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 100 * 1024 * 1024 },
+}).array('propertyVideos', 5);
+
 export const uploadFloorPlan = multer({
   storage,
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 },
 }).single('floorPlan');
+
+export const uploadFloorPlans = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 },
+}).array('floorPlans', 5);
 
 export const uploadLegalDocs = multer({
   storage,

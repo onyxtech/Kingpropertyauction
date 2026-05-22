@@ -13,7 +13,6 @@ export const useAuctionApi = () => {
         if (params?.page) query.set('page', String(params.page));
         if (params?.status) query.set('status', params.status);
         if (params?.type) query.set('type', params.type);
-        if (params?.excludeType) query.set('excludeType', params.excludeType);
         if (params?.limit) query.set('limit', String(params.limit));
         const result = await apiClient.fetch(`/auctions?${query}`);
         if (!result.success) throw new Error(result.message);

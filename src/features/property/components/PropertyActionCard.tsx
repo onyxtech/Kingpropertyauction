@@ -1,4 +1,4 @@
-import { CheckCircle, Clock, Tag, Gavel, Phone, Mail } from "lucide-react";
+import { CheckCircle, Clock, Tag, Gavel, Phone } from "lucide-react";
 
 interface PropertyActionCardProps {
   property: any;
@@ -31,6 +31,58 @@ export default function PropertyActionCard({
   onPlaceBid,
   onNavigate,
 }: PropertyActionCardProps) {
+  const handleDownloadBrochure = () => {
+    const lines = [
+      `PROPERTY BROCHURE`,
+      `=================`,
+      ``,
+      `Title: ${property.propertyTitle || "N/A"}`,
+      `Type: ${property.propertyType || "N/A"}`,
+      `Category: ${property.propertyCategory || "N/A"}`,
+      ``,
+      `LOCATION`,
+      `--------`,
+      `Address: ${property.location?.streetAddress || "N/A"}`,
+      `City: ${property.location?.city || "N/A"}`,
+      `State: ${property.location?.state || "N/A"}`,
+      `Postcode: ${property.location?.postalCode || "N/A"}`,
+      `Country: ${property.location?.country || "United Kingdom"}`,
+      ``,
+      `SPECIFICATIONS`,
+      `--------------`,
+      `Bedrooms: ${property.specifications?.bedrooms ?? "N/A"}`,
+      `Bathrooms: ${property.specifications?.bathrooms ?? "N/A"}`,
+      `Floors: ${property.specifications?.floors ?? "N/A"}`,
+      `Year Built: ${property.specifications?.yearBuilt ?? "N/A"}`,
+      `Parking Spaces: ${property.specifications?.parkingSpaces ?? "N/A"}`,
+      `Furnished: ${property.specifications?.furnishedStatus || "N/A"}`,
+      ``,
+      `PRICING`,
+      `-------`,
+      `Starting Price: £${(startingPrice || 0).toLocaleString()}`,
+      `Current Bid: £${(currentBid || 0).toLocaleString()}`,
+      buyNowPrice > 0 ? `Buy Now Price: £${buyNowPrice.toLocaleString()}` : "",
+      ``,
+      `LEGAL`,
+      `-----`,
+      `Ownership Type: ${property.legalInfo?.ownershipType || "N/A"}`,
+      ``,
+      `DESCRIPTION`,
+      `-----------`,
+      property.propertyDescription || "N/A",
+    ].filter((l) => l !== undefined).join("\n");
+
+    const blob = new Blob([lines], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(property.propertyTitle || "property").replace(/\s+/g, "-").toLowerCase()}-brochure.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="lg:col-span-1 space-y-6">
       {/* Gradient Action Card */}
@@ -171,7 +223,10 @@ export default function PropertyActionCard({
               )}
             </>
           )}
-          <button className="w-full py-4 bg-white/20 text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all flex items-center justify-center gap-2">
+          <button
+            onClick={handleDownloadBrochure}
+            className="w-full py-4 bg-white/20 text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all flex items-center justify-center gap-2"
+          >
             Download Brochure
           </button>
         </div>
@@ -184,17 +239,11 @@ export default function PropertyActionCard({
         </h3>
         <div className="flex items-center gap-4 mb-6">
           <div className="size-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-black text-xl">
-            {(
-              property.sellerInfo?.agentName ||
-              property.sellerInfo?.sellerName ||
-              "A"
-            )?.charAt(0)}
+            {(property.sellerInfo?.agentName || "A")?.charAt(0)}
           </div>
           <div>
             <div className="font-black text-slate-900 text-lg">
-              {property.sellerInfo?.agentName ||
-                property.sellerInfo?.sellerName ||
-                "Agent"}
+              {property.sellerInfo?.agentName || "Agent"}
             </div>
             <div className="text-sm text-slate-600 font-semibold">
               Property Agent
@@ -202,29 +251,16 @@ export default function PropertyActionCard({
           </div>
         </div>
         <div className="space-y-3">
-          {property.sellerInfo?.sellerContact && (
+          {property.sellerInfo?.agentContact && (
             <a
-              href={`tel:${property.sellerInfo.sellerContact}`}
+              href={`tel:${property.sellerInfo.agentContact}`}
               className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:scale-105 transition-all"
             >
               <div className="size-10 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Phone className="size-5 text-white" />
               </div>
               <span className="font-bold text-slate-900">
-                {property.sellerInfo.sellerContact}
-              </span>
-            </a>
-          )}
-          {property.sellerInfo?.sellerEmail && (
-            <a
-              href={`mailto:${property.sellerInfo.sellerEmail}`}
-              className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl hover:scale-105 transition-all"
-            >
-              <div className="size-10 bg-purple-600 rounded-lg flex items-center justify-center">
-                <Mail className="size-5 text-white" />
-              </div>
-              <span className="font-bold text-slate-900 text-sm">
-                {property.sellerInfo.sellerEmail}
+                {property.sellerInfo.agentContact}
               </span>
             </a>
           )}

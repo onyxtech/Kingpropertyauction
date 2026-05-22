@@ -329,6 +329,7 @@ export default function AuctionFormModal({
                 <input
                   type="datetime-local"
                   required
+                  min={new Date().toISOString().slice(0, 16)}
                   value={formData.startDateTime}
                   onChange={(e) =>
                     setFormData({ ...formData, startDateTime: e.target.value })
@@ -343,6 +344,7 @@ export default function AuctionFormModal({
                 <input
                   type="datetime-local"
                   required
+                  min={formData.startDateTime || new Date().toISOString().slice(0, 16)}
                   value={formData.endDateTime}
                   onChange={(e) =>
                     setFormData({ ...formData, endDateTime: e.target.value })

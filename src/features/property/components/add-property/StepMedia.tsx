@@ -77,19 +77,23 @@ export default function StepMedia({ formData, uploadedImages, handleInputChange,
           )}
         </div>
 
-        {/* Property Video */}
+        {/* Property Videos */}
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-3">
             <Video className="inline size-4 mr-1" />
-            Property Video (Optional)
+            Property Videos (Optional)
           </label>
           <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center bg-slate-50">
             <input
               type="file"
+              multiple
               accept="video/*"
               onChange={(e) => {
-                if (e.target.files?.[0]) {
-                  handleInputChange("propertyVideo", e.target.files[0]);
+                if (e.target.files) {
+                  handleInputChange("propertyVideos", [
+                    ...(formData.propertyVideos || []),
+                    ...Array.from(e.target.files),
+                  ]);
                 }
               }}
               className="hidden"
@@ -98,18 +102,24 @@ export default function StepMedia({ formData, uploadedImages, handleInputChange,
             <label htmlFor="property-video" className="cursor-pointer">
               <Video className="size-10 text-slate-400 mx-auto mb-3" />
               <p className="text-sm font-bold text-slate-700 mb-1">
-                Upload property video
+                Upload property video(s)
               </p>
-              <p className="text-xs text-slate-500">
-                MP4, MOV up to 100MB
-              </p>
+              <p className="text-xs text-slate-500">MP4, MOV up to 100MB each</p>
             </label>
-            {formData.propertyVideo && (
-              <p className="text-xs text-green-600 mt-2 font-medium">
-                ✓ Video uploaded
-              </p>
-            )}
           </div>
+          {(formData.propertyVideos || []).map((vid: File, i: number) => (
+            <div key={i} className="flex items-center gap-3 p-3 bg-blue-50 border-2 border-blue-200 rounded-xl mt-2">
+              <Video className="size-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-700 flex-1 truncate">{vid.name}</span>
+              <button
+                type="button"
+                onClick={() => handleInputChange("propertyVideos", (formData.propertyVideos || []).filter((_: any, idx: number) => idx !== i))}
+                className="text-red-500 hover:text-red-700"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+          ))}
         </div>
 
         {/* Virtual Tour Link */}
@@ -129,19 +139,23 @@ export default function StepMedia({ formData, uploadedImages, handleInputChange,
           />
         </div>
 
-        {/* Floor Plan */}
+        {/* Floor Plans */}
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-3">
             <Map className="inline size-4 mr-1" />
-            Floor Plan (Optional)
+            Floor Plans (Optional)
           </label>
           <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center bg-slate-50">
             <input
               type="file"
+              multiple
               accept="image/*,application/pdf"
               onChange={(e) => {
-                if (e.target.files?.[0]) {
-                  handleInputChange("floorPlan", e.target.files[0]);
+                if (e.target.files) {
+                  handleInputChange("floorPlans", [
+                    ...(formData.floorPlans || []),
+                    ...Array.from(e.target.files),
+                  ]);
                 }
               }}
               className="hidden"
@@ -150,18 +164,24 @@ export default function StepMedia({ formData, uploadedImages, handleInputChange,
             <label htmlFor="floor-plan" className="cursor-pointer">
               <FileText className="size-10 text-slate-400 mx-auto mb-3" />
               <p className="text-sm font-bold text-slate-700 mb-1">
-                Upload floor plan
+                Upload floor plan(s)
               </p>
-              <p className="text-xs text-slate-500">
-                PDF, PNG, JPG up to 10MB
-              </p>
+              <p className="text-xs text-slate-500">PDF, PNG, JPG up to 10MB each</p>
             </label>
-            {formData.floorPlan && (
-              <p className="text-xs text-green-600 mt-2 font-medium">
-                ✓ Floor plan uploaded
-              </p>
-            )}
           </div>
+          {(formData.floorPlans || []).map((fp: File, i: number) => (
+            <div key={i} className="flex items-center gap-3 p-3 bg-green-50 border-2 border-green-200 rounded-xl mt-2">
+              <FileText className="size-4 text-green-600" />
+              <span className="text-sm font-medium text-green-700 flex-1 truncate">{fp.name}</span>
+              <button
+                type="button"
+                onClick={() => handleInputChange("floorPlans", (formData.floorPlans || []).filter((_: any, idx: number) => idx !== i))}
+                className="text-red-500 hover:text-red-700"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+          ))}
         </div>
 
         {/* Legal Documents */}

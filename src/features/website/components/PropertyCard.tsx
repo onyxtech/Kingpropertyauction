@@ -1,4 +1,5 @@
-import { Heart, MapPin, Bed, Bath, Clock, Video, Share2, Award, ChevronRight, CheckCircle, AlertCircle, Gavel } from "lucide-react";
+import { mediaUrl } from "@/lib/mediaUrl";
+import { Heart, MapPin, Bed, Bath, Clock, Video, Share2, Award, ChevronRight, CheckCircle, AlertCircle, Gavel, Building, Car } from "lucide-react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 import AuctionTimer from "@/features/shared/components/AuctionTimer";
 import CountdownTimer from "../../shared/ui/CountdownTimer";
@@ -21,7 +22,7 @@ const formatPrice = (value: number) =>
 const getPropertyImage = (property: any) => {
   if (property.media?.propertyImages?.length > 0) {
     const img = property.media.propertyImages[0];
-    if (img.startsWith("http")) return img;
+    
     return img.startsWith("/uploads") ? img : `/uploads/properties/${img}`;
   }
   return "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600";
@@ -41,6 +42,8 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
   const reserveMet = isAuction ? (property.currentBid || 0) >= (property.pricing?.reservePrice || 0) : false;
   const reservePrice = property.pricing?.reservePrice || 0;
   const imageUrl = getPropertyImage(property);
+  const isSold = property.propertyStatus === 'sold';
+  const isUnsold = property.propertyStatus === 'unsold';
 
   return (
     <div
@@ -69,7 +72,15 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
 
         {!property.featured && (
           <div className="absolute top-4 left-4">
-            {property.listingType === "auction" ? (
+            {isSold ? (
+              <div className="px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-xl">
+                🎉 Sold
+              </div>
+            ) : isUnsold ? (
+              <div className="px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-xl">
+                ❌ Unsold
+              </div>
+            ) : property.listingType === "auction" ? (
               isAuction ? (
                 <div className="px-3 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-xl animate-pulse">
                   <Clock className="size-3" /> Live Auction
@@ -78,20 +89,12 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
                 <div className="px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-xl">
                   <Clock className="size-3" /> Starts Soon
                 </div>
-              ) : auctionInfo && auctionInfo.status === "completed" ? (
-                property.propertyStatus === "sold" ? (
-                  <div className="px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full shadow-xl">🎉 Sold</div>
-                ) : (
-                  <div className="px-3 py-2 bg-gradient-to-r from-slate-500 to-slate-700 text-white text-xs font-bold rounded-full shadow-xl">Unsold</div>
-                )
               ) : (
                 <div className="px-3 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-xl">
                   <Clock className="size-3" /> Upcoming Auction
                 </div>
               )
-            ) : (
-              <div className="px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs font-bold rounded-full shadow-xl">For Sale</div>
-            )}
+            ) : null}
           </div>
         )}
 
@@ -134,19 +137,36 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
           </span>
         </div>
 
-        <div className="flex items-center justify-between gap-3 mb-5 pb-5 border-b-2 border-slate-100">
+        <div className="flex items-center flex-wrap gap-3 mb-5 pb-5 border-b-2 border-slate-100">
           <div className="flex items-center gap-2">
             <div className="size-9 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
               <Bed className="size-4 text-blue-600" />
             </div>
-            <span className="text-sm font-bold text-slate-900">{property.specifications?.bedrooms || 0}</span>
+            <span className="text-sm font-bold text-slate-900">{property.specifications?.bedrooms ?? '-'}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="size-9 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
               <Bath className="size-4 text-purple-600" />
             </div>
-            <span className="text-sm font-bold text-slate-900">{property.specifications?.bathrooms || 0}</span>
+            <span className="text-sm font-bold text-slate-900">{property.specifications?.bathrooms ?? '-'}</span>
           </div>
+          {(property.specifications?.floors ?? 0) > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="size-9 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                <Building className="size-4 text-green-600" />
+              </div>
+              <span className="text-sm font-bold text-slate-900">{property.specifications.floors} fl</span>
+            </div>
+          )}
+
+          {(property.specifications?.parkingSpaces ?? 0) > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="size-9 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                <Car className="size-4 text-slate-600" />
+              </div>
+              <span className="text-sm font-bold text-slate-900">{property.specifications.parkingSpaces}P</span>
+            </div>
+          )}
         </div>
 
         {property.listingType === "auction" ? (
@@ -179,9 +199,65 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-xs text-amber-600 font-semibold">⏳ This property is not yet in a live auction</p>
-              <p className="text-3xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{formatPrice(property.pricing?.startingAuctionPrice || 0)}</p>
-              <button className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-xl font-bold hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2" onClick={(e) => { e.stopPropagation(); onNavigate(`/properties/${property.slug || property._id}`); }}>
+              {isSold ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">Current Bid</span>
+                    <span className="font-black text-green-600">{formatPrice(property.soldPrice || property.currentBid || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">Reserve Price</span>
+                    <span className="font-bold text-slate-700">{formatPrice(property.pricing?.reservePrice || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">Reserve Met</span>
+                    <span className="font-bold text-green-600">✅ Yes</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">Bids</span>
+                    <span className="font-bold text-slate-700">{property.totalBids || 0}</span>
+                  </div>
+                </div>
+              ) : isUnsold ? (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">Highest Bid</span>
+                    <span className="font-black text-orange-600">{formatPrice(property.currentBid || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">Reserve Price</span>
+                    <span className="font-bold text-slate-700">{formatPrice(property.pricing?.reservePrice || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">Reserve Met</span>
+                    <span className="font-bold text-red-600">❌ No</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">{property.currentBid > 0 ? 'Current Bid' : 'Starting Price'}</span>
+                    <span className="font-black text-emerald-600">{formatPrice(property.currentBid || property.pricing?.startingAuctionPrice || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">Reserve Price</span>
+                    <span className="font-bold text-slate-700">{formatPrice(property.pricing?.reservePrice || 0)}</span>
+                  </div>
+                  {property.currentBid > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500 font-medium">Reserve Met</span>
+                      <span className={`font-bold ${property.currentBid >= (property.pricing?.reservePrice || 0) ? 'text-green-600' : 'text-red-500'}`}>
+                        {property.currentBid >= (property.pricing?.reservePrice || 0) ? '✅ Yes' : '❌ No'}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500 font-medium">Bids</span>
+                    <span className="font-bold text-slate-700">{property.totalBids || 0}</span>
+                  </div>
+                </div>
+              )}
+              <button className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-bold hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2" onClick={(e) => { e.stopPropagation(); onNavigate(`/properties/${property.slug || property._id}`); }}>
                 View Details <ChevronRight className="size-4" />
               </button>
             </div>

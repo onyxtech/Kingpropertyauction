@@ -270,9 +270,12 @@ export const router = createBrowserRouter([
   { path: "/properties/:slug", element: eb(<PropertyDetails />) },
   { path: "/architecture", element: eb(<SystemArchitecture />) },
   {
-    path: "/admin/properties/new",
+    path: "/add-property",
     element: eb(
-      <ProtectedRoute allowedRoles={["admin", "agent"]}>
+      <ProtectedRoute
+        allowedRoles={["admin", "agent", "seller"]}
+        redirectTo="/register?reason=seller"
+      >
         <AddProperty />
       </ProtectedRoute>,
     ),
@@ -286,7 +289,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/add-property",
-    element: <Navigate to="/admin/properties/new" replace />,
+    path: "/admin/properties/new",
+    element: <Navigate to="/add-property" replace />,
   },
 ]);

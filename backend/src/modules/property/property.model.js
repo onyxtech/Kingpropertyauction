@@ -41,7 +41,7 @@ const propertySchema = new mongoose.Schema(
     },
     propertyStatus: {
       type: String,
-      enum: ["available", "sold", "pending"],
+      enum: ["available", "sold", "pending", "unsold"],
       default: "available",
     },
 
@@ -142,10 +142,10 @@ const propertySchema = new mongoose.Schema(
     // 9. Media
     media: {
       propertyImages: [{ type: String }],
-      propertyVideo: { type: String },
+      propertyVideos: [{ type: String }],
       virtualTour: { type: String },
-      floorPlan: { type: String },
-      legalDocuments: { type: mongoose.Schema.Types.Mixed },
+      floorPlans: [{ type: String }],
+      legalDocuments: [{ type: String }],
     },
 
     // 10. System Fields

@@ -109,11 +109,13 @@ export default function StepLocation({ formData, handleInputChange, theme }: Ste
             placeholder="e.g., W1K 1AA"
             value={formData.postalCode}
             onChange={(e) =>
-              handleInputChange("postalCode", e.target.value)
+              handleInputChange("postalCode", e.target.value.toUpperCase())
             }
+            maxLength={8}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
+          <p className="text-xs text-slate-500 mt-1">UK postcode format (e.g. SW1A 1AA)</p>
         </div>
 
       </div>

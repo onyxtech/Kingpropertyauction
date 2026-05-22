@@ -58,10 +58,10 @@ export default function EditProperty() {
   const [newImages, setNewImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [floorPlanFile, setFloorPlanFile] = useState<File | null>(null);
-  const [existingVideo, setExistingVideo] = useState("");
-  const [existingFloorPlan, setExistingFloorPlan] = useState("");
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
+  const [floorPlanFiles, setFloorPlanFiles] = useState<File[]>([]);
+  const [existingVideos, setExistingVideos] = useState<string[]>([]);
+  const [existingFloorPlans, setExistingFloorPlans] = useState<string[]>([]);
   const [existingLegalDocs, setExistingLegalDocs] = useState<string[]>([]);
   const [legalDocFiles, setLegalDocFiles] = useState<File[]>([]);
 
@@ -145,8 +145,8 @@ export default function EditProperty() {
         agentContact: property.sellerInfo?.agentContact || "",
         existingImages: property.media?.propertyImages || [],
       });
-      setExistingVideo(property.media?.propertyVideo || "");
-      setExistingFloorPlan(property.media?.floorPlan || "");
+      setExistingVideos(property.media?.propertyVideos || (property.media?.propertyVideo ? [property.media.propertyVideo] : []));
+      setExistingFloorPlans(property.media?.floorPlans || (property.media?.floorPlan ? [property.media.floorPlan] : []));
       const docs = property.media?.legalDocuments;
       setExistingLegalDocs(docs ? (Array.isArray(docs) ? docs : [docs]) : []);
     }
@@ -206,38 +206,40 @@ export default function EditProperty() {
       }
       const allImages = [...(form.existingImages || []), ...uploadedUrls];
 
-      let videoUrl = existingVideo;
-      if (videoFile) {
-        const vfd = new FormData();
-        vfd.append("propertyVideo", videoFile);
+      let videoUrls: string[] = [...existingVideos];
+      for (const vid of videoFiles) {
         try {
-          const vr = await fetch("/api/upload/video", {
+          const vfd = new FormData();
+          vfd.append("propertyVideos", vid);
+          const vd = await fetch("/api/upload/video", {
             method: "POST",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
             body: vfd,
           });
-          const vd = await vr.json();
-          if (vd.success) videoUrl = vd.data?.fileUrl;
-        } catch {}
+          const vdData = await vd.json();
+          if (vdData?.success && vdData.data) {
+            const urls = Array.isArray(vdData.data) ? vdData.data.map((f: any) => f.fileUrl) : [vdData.data.fileUrl];
+            videoUrls = [...videoUrls, ...urls];
+          }
+        } catch (e) { console.error("Video upload failed:", e); }
       }
 
-      let floorPlanUrl = existingFloorPlan;
-      if (floorPlanFile) {
-        const ffd = new FormData();
-        ffd.append("floorPlan", floorPlanFile);
+      let floorPlanUrls: string[] = [...existingFloorPlans];
+      for (const fp of floorPlanFiles) {
         try {
-          const fr = await fetch("/api/upload/floorplan", {
+          const ffd = new FormData();
+          ffd.append("floorPlans", fp);
+          const fd = await fetch("/api/upload/floorplan", {
             method: "POST",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
             body: ffd,
           });
-          const fd = await fr.json();
-          if (fd.success) floorPlanUrl = fd.data?.fileUrl;
-        } catch {}
+          const fdData = await fd.json();
+          if (fdData?.success && fdData.data) {
+            const urls = Array.isArray(fdData.data) ? fdData.data.map((f: any) => f.fileUrl) : [fdData.data.fileUrl];
+            floorPlanUrls = [...floorPlanUrls, ...urls];
+          }
+        } catch (e) { console.error("Floor plan upload failed:", e); }
       }
 
       // Upload legal documents
@@ -311,9 +313,9 @@ export default function EditProperty() {
         },
         media: {
           propertyImages: allImages,
-          propertyVideo: videoUrl || undefined,
-          floorPlan: floorPlanUrl || undefined,
-          legalDocuments: legalDocUrls.length > 0 ? legalDocUrls[0] : undefined,
+          propertyVideos: videoUrls,
+          floorPlans: floorPlanUrls,
+          legalDocuments: legalDocUrls,
         },
       };
       const result = await apiClient.fetch(`/properties/${id}`, {
@@ -321,6 +323,15 @@ export default function EditProperty() {
         body: JSON.stringify(body),
       });
       if (result.success) {
+        setVideoFiles([]);
+        setFloorPlanFiles([]);
+        setLegalDocFiles([]);
+        setNewImages([]);
+        setImagePreviews([]);
+        setExistingVideos(videoUrls);
+        setExistingFloorPlans(floorPlanUrls);
+        setExistingLegalDocs(legalDocUrls);
+        updateField("existingImages", allImages);
         queryClient.invalidateQueries({ queryKey: ["properties"] });
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
@@ -421,14 +432,14 @@ export default function EditProperty() {
               removeExistingImage={removeExistingImage}
               removeNewImage={removeNewImage}
               property={property}
-              videoFile={videoFile}
-              setVideoFile={setVideoFile}
-              floorPlanFile={floorPlanFile}
-              setFloorPlanFile={setFloorPlanFile}
-              existingVideo={existingVideo}
-              setExistingVideo={setExistingVideo}
-              existingFloorPlan={existingFloorPlan}
-              setExistingFloorPlan={setExistingFloorPlan}
+              videoFiles={videoFiles}
+              setVideoFiles={setVideoFiles}
+              floorPlanFiles={floorPlanFiles}
+              setFloorPlanFiles={setFloorPlanFiles}
+              existingVideos={existingVideos}
+              setExistingVideos={setExistingVideos}
+              existingFloorPlans={existingFloorPlans}
+              setExistingFloorPlans={setExistingFloorPlans}
               existingLegalDocs={existingLegalDocs}
               removeExistingLegalDoc={removeExistingLegalDoc}
               legalDocFiles={legalDocFiles}

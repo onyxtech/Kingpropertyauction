@@ -155,13 +155,20 @@ export default function BidModal({
                   type="number"
                   value={bidAmount}
                   onChange={(e) => onBidAmountChange(e.target.value)}
+                  min={nextMinBid}
+                  step="1"
+                  onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
                   className="w-full pl-12 pr-6 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-2xl"
                   placeholder="0"
                 />
               </div>
-              <p className="text-xs text-slate-500 mt-2">
-                💡 Bid must be at least {formatPrice(nextMinBid)}
-              </p>
+              {bidAmount && Number(bidAmount) < nextMinBid ? (
+                <p className="text-xs text-red-600 font-bold mt-1">⚠️ Bid must be at least {formatPrice(nextMinBid)}</p>
+              ) : (
+                <p className="text-xs text-slate-500 mt-2">
+                  💡 Bid must be at least {formatPrice(nextMinBid)}
+                </p>
+              )}
             </div>
 
             {/* Auto-Bid Toggle */}
@@ -196,6 +203,9 @@ export default function BidModal({
                         type="number"
                         value={maxBidAmount}
                         onChange={(e) => onMaxBidChange?.(e.target.value)}
+                        min={nextMinBid}
+                        step="1"
+                        onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
                         className="w-full pl-12 pr-6 py-3 bg-white border-2 border-amber-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all font-bold text-lg"
                         placeholder="Your absolute maximum"
                       />

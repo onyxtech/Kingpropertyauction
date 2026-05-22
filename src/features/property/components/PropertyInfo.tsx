@@ -1,3 +1,4 @@
+import { mediaUrl } from "@/lib/mediaUrl";
 import {
   MapPin,
   Bed,
@@ -345,56 +346,55 @@ export default function PropertyInfo({
         </div>
       )}
 
-      {/* Property Video */}
-      {property?.media?.propertyVideo && (
+      {/* Property Videos */}
+      {(property?.media?.propertyVideos?.length > 0 || property?.media?.propertyVideo) && (
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
           <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
             <FileText className="size-6 text-blue-600" />
-            Property Video
+            Property Videos
           </h2>
-          <video
-            src={
-              property.media.propertyVideo.startsWith("http")
-                ? property.media.propertyVideo
-                : property.media.propertyVideo
-            }
-            controls
-            className="w-full rounded-2xl border-2 border-slate-200"
-          />
+          <div className="space-y-4">
+            {(property.media?.propertyVideos || (property.media?.propertyVideo ? [property.media.propertyVideo] : [])).map((vid: string, i: number) => (
+              <video
+                key={i}
+                src={mediaUrl(vid)}
+                controls
+                className="w-full rounded-2xl border-2 border-slate-200"
+              />
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Floor Plan */}
-      {property?.media?.floorPlan && (
+      {/* Floor Plans */}
+      {(property?.media?.floorPlans?.length > 0 || property?.media?.floorPlan) && (
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
           <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
             <FileText className="size-6 text-green-600" />
-            Floor Plan
+            Floor Plans
           </h2>
-          {property.media.floorPlan.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-            <img
-              src={
-                property.media.floorPlan.startsWith("http")
-                  ? property.media.floorPlan
-                  : property.media.floorPlan
-              }
-              alt="Floor Plan"
-              className="w-full rounded-2xl border-2 border-slate-200"
-            />
-          ) : (
-            <a
-              href={
-                property.media.floorPlan.startsWith("http")
-                  ? property.media.floorPlan
-                  : property.media.floorPlan
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 px-6 py-4 bg-green-50 border-2 border-green-200 rounded-2xl text-green-700 font-bold hover:bg-green-100 transition-colors w-fit"
-            >
-              <FileText className="size-5" /> Download Floor Plan PDF
-            </a>
-          )}
+          <div className="space-y-4">
+            {(property.media?.floorPlans || (property.media?.floorPlan ? [property.media.floorPlan] : [])).map((fp: string, i: number) => (
+              fp.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                <img
+                  key={i}
+                  src={mediaUrl(fp)}
+                  alt={`Floor Plan ${i + 1}`}
+                  className="w-full rounded-2xl border-2 border-slate-200"
+                />
+              ) : (
+                <a
+                  key={i}
+                  href={mediaUrl(fp)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-6 py-4 bg-green-50 border-2 border-green-200 rounded-2xl text-green-700 font-bold hover:bg-green-100 transition-colors w-fit"
+                >
+                  <FileText className="size-5" /> Floor Plan {i + 1}
+                </a>
+              )
+            ))}
+          </div>
         </div>
       )}
 
@@ -417,9 +417,7 @@ export default function PropertyInfo({
             ).map((doc: string, i: number) => (
               <a
                 key={i}
-                href={
-                  doc
-                }
+                href={mediaUrl(doc)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 px-6 py-4 bg-purple-50 border-2 border-purple-200 rounded-2xl text-purple-700 font-bold hover:bg-purple-100 transition-colors"

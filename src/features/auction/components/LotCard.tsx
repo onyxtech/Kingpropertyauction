@@ -1,4 +1,5 @@
-import { MapPin, Bed, Bath, CheckCircle, AlertCircle, Gavel, Eye, ChevronDown } from "lucide-react";
+import { mediaUrl } from "@/lib/mediaUrl";
+import { MapPin, Bed, Bath, CheckCircle, AlertCircle, Gavel, Eye, ChevronDown, Building, Car } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 
@@ -16,7 +17,7 @@ interface LotCardProps {
 function getPropertyImage(property: any) {
   if (property?.media?.propertyImages?.length > 0) {
     const img = property.media.propertyImages[0];
-    if (img.startsWith("http")) return img;
+    
     return img.startsWith("/uploads") ? img : `/uploads/properties/${img}`;
   }
   return "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600";
@@ -70,19 +71,27 @@ export default function LotCard({
         </div>
 
         {/* Specs */}
-        <div className="flex items-center gap-4 mb-6 pb-6 border-b-2 border-slate-100">
+        <div className="flex items-center flex-wrap gap-4 mb-6 pb-6 border-b-2 border-slate-100">
           <div className="flex items-center gap-2">
             <Bed className="size-4 text-blue-600" />
-            <span className="text-sm font-bold">
-              {property.specifications?.bedrooms || 0}
-            </span>
+            <span className="text-sm font-bold">{property.specifications?.bedrooms ?? '-'}</span>
           </div>
           <div className="flex items-center gap-2">
             <Bath className="size-4 text-purple-600" />
-            <span className="text-sm font-bold">
-              {property.specifications?.bathrooms || 0}
-            </span>
+            <span className="text-sm font-bold">{property.specifications?.bathrooms ?? '-'}</span>
           </div>
+          {(property.specifications?.floors ?? 0) > 0 && (
+            <div className="flex items-center gap-2">
+              <Building className="size-4 text-green-600" />
+              <span className="text-sm font-bold">{property.specifications.floors} fl</span>
+            </div>
+          )}
+          {(property.specifications?.parkingSpaces ?? 0) > 0 && (
+            <div className="flex items-center gap-2">
+              <Car className="size-4 text-slate-600" />
+              <span className="text-sm font-bold">{property.specifications.parkingSpaces}P</span>
+            </div>
+          )}
         </div>
 
         {/* Bidding Section */}

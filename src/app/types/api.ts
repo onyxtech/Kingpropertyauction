@@ -83,10 +83,7 @@ export interface PropertyFormData {
   mortgageStatus: "clear" | "mortgaged" | "partially_paid";
   zoningType?: string;
 
-  // 8. Seller / Agent Information
-  sellerName: string;
-  sellerContact: string;
-  sellerEmail: string;
+  // 8. Agent Information
   agentName?: string;
   agentContact?: string;
 

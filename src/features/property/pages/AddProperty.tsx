@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { useTheme } from "@/app/hooks/useTheme";
+import { useAuthStore } from "@/stores/authStore";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
 import type { PropertyFormData } from "@/app/types/api";
 import StepBasicInfo from "../components/add-property/StepBasicInfo";
@@ -33,11 +34,11 @@ import StepReview from "../components/add-property/StepReview";
 
 type LocalPropertyFormData = Omit<
   PropertyFormData,
-  "propertyImages" | "propertyVideo" | "floorPlan" | "legalDocuments"
+  "propertyImages" | "propertyVideo" | "propertyVideos" | "floorPlan" | "floorPlans" | "legalDocuments"
 > & {
   propertyImages: File[];
-  propertyVideo: File | null;
-  floorPlan: File | null;
+  propertyVideos: File[];
+  floorPlans: File[];
   legalDocuments: File[];
   [key: string]: any;
 };
@@ -45,12 +46,14 @@ type LocalPropertyFormData = Omit<
 export default function AddProperty() {
   const navigate = useNavigate();
   const theme = useTheme();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === "admin";
   const { useCreateProperty, useUploadPropertyImages } = usePropertyApi();
   const { mutateAsync: createProperty, isPending: apiLoading } =
     useCreateProperty();
   const { mutateAsync: uploadPropertyImages } = useUploadPropertyImages();
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 10;
+  const totalSteps = isAdmin ? 10 : 9;
   const formRef = useRef<HTMLDivElement>(null);
   const [toastMessage, setToastMessage] = useState<{
     text: string;
@@ -104,15 +107,12 @@ export default function AddProperty() {
     },
     ownershipType: "",
     titleDeedNumber: "",
-    sellerName: "",
-    sellerContact: "",
-    sellerEmail: "",
     agentName: "",
     agentContact: "",
     propertyImages: [] as File[],
-    propertyVideo: null as File | null,
+    propertyVideos: [] as File[],
     virtualTour: "",
-    floorPlan: null as File | null,
+    floorPlans: [] as File[],
     legalDocuments: [] as File[],
     createdBy: "Current User",
     approvalStatus: "pending",
@@ -121,9 +121,13 @@ export default function AddProperty() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [createdTitle, setCreatedTitle] = useState("");
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
+  const [uploadedVideoUrls, setUploadedVideoUrls] = useState<string[]>([]);
+  const [uploadedFloorPlanUrls, setUploadedFloorPlanUrls] = useState<string[]>([]);
+  const [uploadedLegalDocUrls, setUploadedLegalDocUrls] = useState<string[]>([]);
 
   const handleInputChange = (field: string, value: any) =>
-    setFormData({ ...formData, [field]: value });
+    setFormData((prev) => ({ ...prev, [field]: value }));
 
   const handleFeatureToggle = (feature: string) => {
     setFormData({
@@ -183,75 +187,93 @@ export default function AddProperty() {
     if (!formData.minimumBidIncrement)
       errors.push("Minimum bid increment is required");
     if (!formData.ownershipType) errors.push("Ownership type is required");
+    if (formData.startingAuctionPrice && Number(formData.startingAuctionPrice) < 1)
+      errors.push("Starting auction price must be at least £1");
+    if (formData.reservePrice && Number(formData.reservePrice) < 1)
+      errors.push("Reserve price must be at least £1");
+    if (formData.minimumBidIncrement && Number(formData.minimumBidIncrement) < 100)
+      errors.push("Minimum bid increment must be at least £100");
+    if (formData.bedrooms && (Number(formData.bedrooms) < 0 || Number(formData.bedrooms) > 50))
+      errors.push("Bedrooms must be between 0 and 50");
+    if (formData.bathrooms && (Number(formData.bathrooms) < 0 || Number(formData.bathrooms) > 50))
+      errors.push("Bathrooms must be between 0 and 50");
     return errors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    setIsSubmitting(true); // Disable button immediately
-    
+    if (isSubmitting) return;
+
+    // Step 1: Validate FIRST - no uploads yet
     const errors = validateForm();
     if (errors.length > 0) {
       setToastMessage({ text: errors.join("\n"), type: "error" });
       setTimeout(() => setToastMessage(null), 8000);
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setIsSubmitting(false); // Re-enable on validation error
-      return;
+      return; // EXIT - no uploads happen
     }
+
+    // Step 2: Only upload files AFTER validation passes
+    setIsSubmitting(true);
     try {
-      let imageUrls: string[] = [];
-      if (formData.propertyImages.length > 0) {
+      // Images - only upload if not already done
+      let imageUrls: string[] = uploadedImageUrls;
+      if (imageUrls.length === 0 && formData.propertyImages.length > 0) {
         try {
-          const uploadResponse = await uploadPropertyImages(
-            formData.propertyImages,
-          );
-          if (uploadResponse.success && uploadResponse.data)
-            imageUrls = uploadResponse.data.map(
-              (img: any) => img.fileUrl || img,
-            );
+          const uploadResponse = await uploadPropertyImages(formData.propertyImages);
+          if (uploadResponse.success && uploadResponse.data) {
+            imageUrls = uploadResponse.data.map((img: any) => img.fileUrl || img);
+            setUploadedImageUrls(imageUrls);
+          }
         } catch (uploadErr) {
           console.error("Image upload failed:", uploadErr);
         }
       }
-      let videoUrl: string | undefined;
-      if (formData.propertyVideo) {
-        try {
-          const vfd = new FormData();
-          vfd.append("propertyVideo", formData.propertyVideo);
-          const vr = await fetch("/api/upload/video", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-            body: vfd,
-          });
-          const vd = await vr.json();
-          if (vd.success) videoUrl = vd.data?.fileUrl;
-        } catch (e) {
-          console.error("Video upload failed:", e);
+      // Videos - only upload if not already done
+      let videoUrls: string[] = uploadedVideoUrls;
+      if (videoUrls.length === 0) {
+        for (const vid of (formData.propertyVideos || [])) {
+          try {
+            const vfd = new FormData();
+            vfd.append("propertyVideos", vid);
+            const vr = await fetch("/api/upload/video", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+              body: vfd,
+            });
+            const vd = await vr.json();
+            if (vd?.success && vd.data) {
+              const urls = Array.isArray(vd.data) ? vd.data.map((f: any) => f.fileUrl) : [vd.data.fileUrl];
+              videoUrls = [...videoUrls, ...urls];
+            }
+          } catch (e) { console.error("Video upload failed:", e); }
         }
+        if (videoUrls.length > 0) setUploadedVideoUrls(videoUrls);
       }
-      let floorPlanUrl: string | undefined;
-      if (formData.floorPlan) {
-        try {
-          const ffd = new FormData();
-          ffd.append("floorPlan", formData.floorPlan);
-          const fr = await fetch("/api/upload/floorplan", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-            body: ffd,
-          });
-          const fd = await fr.json();
-          if (fd.success) floorPlanUrl = fd.data?.fileUrl;
-        } catch (e) {
-          console.error("Floor plan upload failed:", e);
+      // Floor plans - only upload if not already done
+      let floorPlanUrls: string[] = uploadedFloorPlanUrls;
+      if (floorPlanUrls.length === 0) {
+        for (const fp of (formData.floorPlans || [])) {
+          try {
+            const ffd = new FormData();
+            ffd.append("floorPlans", fp);
+            const fr = await fetch("/api/upload/floorplan", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+              body: ffd,
+            });
+            const fd = await fr.json();
+            if (fd?.success && fd.data) {
+              const urls = Array.isArray(fd.data) ? fd.data.map((f: any) => f.fileUrl) : [fd.data.fileUrl];
+              floorPlanUrls = [...floorPlanUrls, ...urls];
+            }
+          } catch (e) { console.error("Floor plan upload failed:", e); }
         }
+        if (floorPlanUrls.length > 0) setUploadedFloorPlanUrls(floorPlanUrls);
       }
-      let legalDocUrls: string[] = [];
-      if (formData.legalDocuments.length > 0) {
+      // Legal docs - only upload if not already done
+      let legalDocUrls: string[] = uploadedLegalDocUrls;
+      if (legalDocUrls.length === 0 && formData.legalDocuments?.length > 0) {
         try {
           const lfd = new FormData();
           formData.legalDocuments.forEach((doc: File) =>
@@ -259,14 +281,14 @@ export default function AddProperty() {
           );
           const lr = await fetch("/api/upload/documents", {
             method: "POST",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
             body: lfd,
           });
           const ld = await lr.json();
-          if (ld.success)
-            legalDocUrls = ld.data?.map((d: any) => d.fileUrl) || [];
+          if (ld?.success && ld.data) {
+            legalDocUrls = ld.data.map((d: any) => d.fileUrl);
+            setUploadedLegalDocUrls(legalDocUrls);
+          }
         } catch (e) {
           console.error("Documents upload failed:", e);
         }
@@ -282,18 +304,22 @@ export default function AddProperty() {
               : [
                   "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
                 ],
-          propertyVideo: videoUrl,
-          floorPlan: floorPlanUrl,
-          legalDocuments: legalDocUrls.length > 0 ? legalDocUrls[0] : undefined,
+          propertyVideos: videoUrls,
+          floorPlans: floorPlanUrls,
+          legalDocuments: legalDocUrls,
         },
       };
       delete propertyData.propertyImages;
-      delete propertyData.propertyVideo;
-      delete propertyData.floorPlan;
+      delete propertyData.propertyVideos;
+      delete propertyData.floorPlans;
       delete propertyData.legalDocuments;
 
       const response = await createProperty(propertyData);
       if (response.success) {
+        setUploadedImageUrls([]);
+        setUploadedVideoUrls([]);
+        setUploadedFloorPlanUrls([]);
+        setUploadedLegalDocUrls([]);
         setCreatedTitle(formData.propertyTitle || "Property");
         setSubmitted(true);
         window.scrollTo({ top: 0, behavior: "instant" });
@@ -336,18 +362,21 @@ export default function AddProperty() {
   };
 
   const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
+    const next = currentStep + 1;
+    if (next <= totalSteps) {
+      setCurrentStep(next);
       scrollToForm();
     }
   };
   const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+    const prev = currentStep - 1;
+    if (prev >= 1) {
+      setCurrentStep(prev);
       scrollToForm();
     }
   };
   const goToStep = (step: number) => {
+    if (!isAdmin && step === 8) return;
     setCurrentStep(step);
     scrollToForm();
   };
@@ -360,9 +389,12 @@ export default function AddProperty() {
     { number: 5, title: "Auction Details", icon: Gavel },
     { number: 6, title: "Features", icon: Star },
     { number: 7, title: "Legal Info", icon: Scale },
-    { number: 8, title: "Seller/Agent", icon: UserCheck },
-    { number: 9, title: "Media", icon: Camera },
-    { number: 10, title: "Review", icon: CheckCircle },
+    ...(isAdmin
+      ? [{ number: 8, title: "Seller/Agent", icon: UserCheck }]
+      : []
+    ),
+    { number: isAdmin ? 9 : 8, title: "Media", icon: Camera },
+    { number: isAdmin ? 10 : 9, title: "Review", icon: CheckCircle },
   ];
 
   if (submitted) {
@@ -384,8 +416,70 @@ export default function AddProperty() {
               </button>
               <button
                 onClick={() => {
+                  setFormData({
+                    propertyTitle: "",
+                    propertyDescription: "",
+                    propertyType: "house",
+                    propertyCategory: "residential",
+                    listingType: "auction",
+                    propertyID: "",
+                    propertyStatus: "available",
+                    country: "United Kingdom",
+                    state: "",
+                    city: "",
+                    area: "",
+                    streetAddress: "",
+                    postalCode: "",
+                    totalArea: "",
+                    auctionStartDate: "",
+                    auctionEndDate: "",
+                    mortgageStatus: "clear",
+                    bedrooms: "",
+                    bathrooms: "",
+                    floors: "",
+                    yearBuilt: "",
+                    parkingSpaces: "",
+                    furnishedStatus: "unfurnished",
+                    startingAuctionPrice: "",
+                    reservePrice: "",
+                    buyNowPrice: "",
+                    minimumBidIncrement: "",
+                    estimatedMarketValue: "",
+                    currency: "GBP",
+                    auctionStatus: "upcoming",
+                    bidDepositAmount: "",
+                    autoBidEnabled: false,
+                    maximumBidLimit: "",
+                    features: {
+                      garden: false,
+                      swimmingPool: false,
+                      balcony: false,
+                      airConditioning: false,
+                      securitySystem: false,
+                      elevator: false,
+                      gym: false,
+                      solarSystem: false,
+                    },
+                    ownershipType: "",
+                    titleDeedNumber: "",
+                    agentName: "",
+                    agentContact: "",
+                    propertyImages: [] as File[],
+                    propertyVideos: [] as File[],
+                    virtualTour: "",
+                    floorPlans: [] as File[],
+                    legalDocuments: [] as File[],
+                    createdBy: "Current User",
+                    approvalStatus: "pending",
+                  });
+                  setUploadedImages([]);
+                  setUploadedImageUrls([]);
+                  setUploadedVideoUrls([]);
+                  setUploadedFloorPlanUrls([]);
+                  setUploadedLegalDocUrls([]);
                   setSubmitted(false);
                   setCurrentStep(1);
+                  window.scrollTo({ top: 0, behavior: "instant" });
                 }}
                 className="px-6 py-3 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl font-bold hover:border-slate-300 transition-all"
               >
@@ -499,14 +593,14 @@ export default function AddProperty() {
                 theme={theme}
               />
             )}
-            {currentStep === 8 && (
+            {currentStep === 8 && isAdmin && (
               <StepSeller
                 formData={formData}
                 handleInputChange={handleInputChange}
                 theme={theme}
               />
             )}
-            {currentStep === 9 && (
+            {currentStep === (isAdmin ? 9 : 8) && (
               <StepMedia
                 formData={formData}
                 uploadedImages={uploadedImages}
@@ -516,7 +610,7 @@ export default function AddProperty() {
                 theme={theme}
               />
             )}
-            {currentStep === 10 && (
+            {currentStep === (isAdmin ? 10 : 9) && (
               <StepReview
                 formData={formData}
                 theme={theme}

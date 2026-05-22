@@ -1,3 +1,4 @@
+import { mediaUrl } from "@/lib/mediaUrl";
 import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import type { Property, Auction, Bid } from "@/types";
@@ -102,9 +103,7 @@ export default function PropertyDetails() {
 
   const images =
     property?.media?.propertyImages?.length > 0
-      ? property.media.propertyImages.map((img: string) =>
-          img.startsWith("http") ? img : img,
-        )
+      ? property.media.propertyImages.map((img: string) => mediaUrl(img))
       : ["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200"];
 
   const features =
@@ -131,6 +130,31 @@ export default function PropertyDetails() {
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(authFormData.email)) {
+      setAuthError("Please enter a valid email address");
+      return;
+    }
+    if (authFormData.password.length < 8) {
+      setAuthError("Password must be at least 8 characters");
+      return;
+    }
+    if (!isLogin) {
+      if (
+        authFormData.firstName.trim().length < 2 ||
+        authFormData.lastName.trim().length < 2
+      ) {
+        setAuthError("First and last name must each be at least 2 characters");
+        return;
+      }
+      if (
+        authFormData.phone &&
+        authFormData.phone.replace(/[\s\-\+\(\)]/g, "").length < 10
+      ) {
+        setAuthError("Please enter a valid phone number");
+        return;
+      }
+    }
     setAuthLoading(true);
     try {
       if (isLogin) {
@@ -186,8 +210,15 @@ export default function PropertyDetails() {
       setShowAuthModal(true);
       return;
     }
-    if (user?.role === "admin" || user?.role === "agent") {
-      showNotification("Admins/agents cannot bid.", "error");
+    if (
+      user?.role === "admin" ||
+      user?.role === "agent" ||
+      user?.role === "seller"
+    ) {
+      showNotification(
+        "Bidding is only available for buyer and investor accounts.",
+        "error",
+      );
       return;
     }
     setBidAmount("");
@@ -425,7 +456,7 @@ export default function PropertyDetails() {
         onSubmit={handleSubmitBid}
         formatPrice={formatPrice}
         getPropertyImage={(p) =>
-          p?.media?.propertyImages?.[0]?.startsWith("http")
+          p?.media?.propertyImages?.[0]
             ? p.media.propertyImages[0]
             : p.media?.propertyImages?.[0] ||
               "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600"

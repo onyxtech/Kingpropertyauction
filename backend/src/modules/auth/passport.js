@@ -41,8 +41,12 @@ const ensureGoogleStrategy = async () => {
               name: profile.displayName,
               email,
               password: "oauth-" + Math.random().toString(36).slice(2),
-              role: "user",
+              role: "buyer",
               isActive: true,
+              permissions: {
+                canBid: true,
+                canListProperties: false,
+              },
             });
           }
 
@@ -77,7 +81,6 @@ const ensureGitHubStrategy = async () => {
           if (!github.enabled)
             return done(null, false, { message: "GitHub login is disabled" });
 
-          // Get real email - GitHub requires a separate API call
           let email = profile.emails?.[0]?.value;
           if (!email || email.includes("github.user")) {
             try {
@@ -106,8 +109,12 @@ const ensureGitHubStrategy = async () => {
               name: profile.displayName || profile.username,
               email,
               password: "oauth-" + Math.random().toString(36).slice(2),
-              role: "user",
+              role: "buyer",
               isActive: true,
+              permissions: {
+                canBid: true,
+                canListProperties: false,
+              },
             });
           }
 
@@ -146,8 +153,12 @@ const ensureFacebookStrategy = async () => {
           name: profile.displayName,
           email,
           password: 'oauth-' + Math.random().toString(36).slice(2),
-          role: 'user',
+          role: 'buyer',
           isActive: true,
+          permissions: {
+            canBid: true,
+            canListProperties: false,
+          },
         });
       }
 

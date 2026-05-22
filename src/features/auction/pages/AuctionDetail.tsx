@@ -1,3 +1,4 @@
+import { mediaUrl } from "@/lib/mediaUrl";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { Auction, Property, Bid } from "@/types";
@@ -93,7 +94,10 @@ export default function AuctionDetail() {
   const auctionId = auctionFromList?._id;
 
   // Then fetch the full auction with populated properties by ID
-  const { data: auction, isLoading } = useGetAuctionById(auctionId || "") as { data: Auction | undefined; isLoading: boolean };
+  const { data: auction, isLoading } = useGetAuctionById(auctionId || "") as {
+    data: Auction | undefined;
+    isLoading: boolean;
+  };
 
   // Auto-refresh when params change or bid is placed
   useEffect(() => {
@@ -107,14 +111,14 @@ export default function AuctionDetail() {
     auctionId: auctionId,
     onAuctionUpdate: (data) => {
       if (data.auctionId === auction?._id) {
-        queryClient.invalidateQueries({ queryKey: ['auctions', auctionId] });
-        queryClient.invalidateQueries({ queryKey: ['auctions'] });
+        queryClient.invalidateQueries({ queryKey: ["auctions", auctionId] });
+        queryClient.invalidateQueries({ queryKey: ["auctions"] });
       }
     },
     onBidUpdate: () => {
-      queryClient.invalidateQueries({ queryKey: ['auctions', auctionId] });
-      queryClient.invalidateQueries({ queryKey: ['auctions'] });
-      queryClient.invalidateQueries({ queryKey: ['properties'] });
+      queryClient.invalidateQueries({ queryKey: ["auctions", auctionId] });
+      queryClient.invalidateQueries({ queryKey: ["auctions"] });
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
     },
   });
 
@@ -187,6 +191,31 @@ export default function AuctionDetail() {
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(authFormData.email)) {
+      setAuthError("Please enter a valid email address");
+      return;
+    }
+    if (authFormData.password.length < 8) {
+      setAuthError("Password must be at least 8 characters");
+      return;
+    }
+    if (!isLogin) {
+      if (
+        authFormData.firstName.trim().length < 2 ||
+        authFormData.lastName.trim().length < 2
+      ) {
+        setAuthError("First and last name must each be at least 2 characters");
+        return;
+      }
+      if (
+        authFormData.phone &&
+        authFormData.phone.replace(/[\s\-\+\(\)]/g, "").length < 10
+      ) {
+        setAuthError("Please enter a valid phone number");
+        return;
+      }
+    }
     setAuthLoading(true);
     try {
       if (isLogin) {
@@ -263,8 +292,16 @@ export default function AuctionDetail() {
       setShowAuthModal(true);
       return;
     }
-    if (user?.role === "admin" || user?.role === "agent") {
-      showNotification("Admins and agents cannot place bids.", "error");
+
+    if (
+      user?.role === "admin" ||
+      user?.role === "agent" ||
+      user?.role === "seller"
+    ) {
+      showNotification(
+        "Bidding is only available for buyer and investor accounts.",
+        "error",
+      );
       return;
     }
     setSelectedLot(property);
@@ -289,8 +326,8 @@ export default function AuctionDetail() {
     }
 
     // Optimistic update
-    const previousData = queryClient.getQueryData(['auctions', auctionId]);
-    queryClient.setQueryData(['auctions', auctionId], (old: any) => {
+    const previousData = queryClient.getQueryData(["auctions", auctionId]);
+    queryClient.setQueryData(["auctions", auctionId], (old: any) => {
       if (!old) return old;
       return {
         ...old,
@@ -321,7 +358,7 @@ export default function AuctionDetail() {
         setMaxBidAmount("");
       }, 2000);
     } catch (err: any) {
-      queryClient.setQueryData(['auctions', auctionId], previousData);
+      queryClient.setQueryData(["auctions", auctionId], previousData);
       showNotification(err.message || "Bid failed", "error");
     }
   };
@@ -536,13 +573,12 @@ export default function AuctionDetail() {
         onSubmit={() => handleSubmitBid()}
         formatPrice={(val) => `£${val.toLocaleString()}`}
         getPropertyImage={(p) =>
-          p?.media?.propertyImages?.[0]?.startsWith("http")
+          p?.media?.propertyImages?.[0]
             ? p.media.propertyImages[0]
-            : p?.media?.propertyImages?.[0] ||
+            : mediaUrl(p?.media?.propertyImages?.[0]) ||
               "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600"
         }
       />
-
-  </PublicLayout>
+    </PublicLayout>
   );
 }

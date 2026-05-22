@@ -7,6 +7,13 @@ import cache from '../../utils/cache.js';
 
 // ─── Place Bid (Manual + Auto) ───
 export const placeBid = async (data, userId) => {
+  if (!data.amount || !isFinite(data.amount) || data.amount <= 0) {
+    throw new Error("Invalid bid amount");
+  }
+  if (data.amount > 100_000_000) {
+    throw new Error("Bid amount cannot exceed £100,000,000");
+  }
+
   // 1. Check auction exists and is live
   const auction = await Auction.findById(data.auction);
   if (!auction) throw new Error("Auction not found");

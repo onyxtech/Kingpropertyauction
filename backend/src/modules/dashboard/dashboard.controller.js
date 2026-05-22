@@ -154,10 +154,7 @@ export const globalSearch = async (req, res) => {
         .limit(5)
         .lean(),
       Auction.find({
-        $or: [
-          { auctionTitle: searchRegex },
-          { auctionType: searchRegex },
-        ],
+        $or: [{ auctionTitle: searchRegex }, { auctionType: searchRegex }],
       })
         .select("auctionTitle slug auctionType status")
         .limit(5)
@@ -411,10 +408,28 @@ export const getNotifications = async (req, res) => {
       (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime(),
     );
 
+    // Save notifications to DB and get their IDs
+    const Notification = (
+      await import("../notifications/notification.model.js")
+    ).default;
+    const savedNotifications = [];
+    for (const n of notifications.slice(0, 25)) {
+      try {
+        const saved = await Notification.findOneAndUpdate(
+          { message: n.message, type: n.type },
+          { $setOnInsert: { ...n, readBy: [] } },
+          { upsert: true, new: true },
+        );
+        savedNotifications.push({ ...n, _id: saved._id });
+      } catch (e) {
+        savedNotifications.push(n);
+      }
+    }
+
     res.json({
       success: true,
       data: {
-        notifications: notifications.slice(0, 25),
+        notifications: savedNotifications.slice(0, 25),
         unreadCount: notifications.length,
       },
     });

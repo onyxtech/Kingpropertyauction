@@ -55,9 +55,15 @@ export default function CatalogueRequest() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     const form = e.target as HTMLFormElement;
     const fd = new FormData(form);
+    const phone = (fd.get("phone") as string) || "";
+    const phoneRegex = /^[\+\d\s\-\(\)]{10,15}$/;
+    if (phone && !phoneRegex.test(phone)) {
+      alert("Please enter a valid phone number (10–15 digits).");
+      return;
+    }
+    setLoading(true);
 
     const selectedAuctions = upcomingAuctions
       .filter(a => fd.get(`auction_${a.id}`) === 'on')

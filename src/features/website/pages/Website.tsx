@@ -1,3 +1,4 @@
+import { mediaUrl } from "@/lib/mediaUrl";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { CheckCircle, AlertCircle, Search } from "lucide-react";
@@ -182,9 +183,13 @@ export default function Website() {
       setShowAuthModal(true);
       return;
     }
-    if (user?.role === "admin" || user?.role === "agent") {
+    if (
+      user?.role === "admin" ||
+      user?.role === "agent" ||
+      user?.role === "seller"
+    ) {
       showNotification(
-        "Admins and agents cannot place bids. Please use a buyer account.",
+        "Bidding is reserved for buyers and investors. Please register as a buyer or investor to place bids.",
         "error",
       );
       return;
@@ -205,6 +210,11 @@ export default function Website() {
       0;
     const nextMinBid = currentBid + bidIncrement;
     const newBidValue = parseFloat(bidAmount);
+
+    if (!isFinite(newBidValue) || newBidValue <= 0) {
+      showNotification("Please enter a valid bid amount.", "error");
+      return;
+    }
 
     if (newBidValue < nextMinBid) {
       showNotification(
@@ -293,7 +303,7 @@ export default function Website() {
   const getPropertyImage = (property: any) => {
     if (property.media?.propertyImages?.length > 0) {
       const img = property.media.propertyImages[0];
-      if (img.startsWith("http")) return img;
+
       return img.startsWith("/uploads") ? img : `/uploads/properties/${img}`;
     }
     return "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600";
@@ -302,7 +312,7 @@ export default function Website() {
   const getPropertyThumb = (property: any) => {
     if (property.media?.propertyThumbnails?.length > 0) {
       const thumb = property.media.propertyThumbnails[0];
-      if (thumb.startsWith("http")) return thumb;
+
       return thumb.startsWith("/uploads")
         ? thumb
         : `/uploads/properties/${thumb}`;

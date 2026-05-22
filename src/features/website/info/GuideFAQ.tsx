@@ -26,8 +26,14 @@ export default function GuideFAQ() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setSubmitError('');
+    const errors: string[] = [];
+    if (!formData.name || formData.name.trim().length < 2) errors.push("Name must be at least 2 characters");
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.push("Valid email address is required");
+    if (formData.phone && formData.phone.replace(/[\s\-\+\(\)]/g, "").length < 10) errors.push("Please enter a valid phone number");
+    if (!formData.message || formData.message.trim().length < 10) errors.push("Message must be at least 10 characters");
+    if (errors.length > 0) { setSubmitError(errors.join(". ")); return; }
+    setSubmitting(true);
     try {
       const data = await apiClient.fetch('/leads', {
         method: 'POST',

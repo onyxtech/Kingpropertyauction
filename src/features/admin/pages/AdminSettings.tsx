@@ -517,10 +517,6 @@ export default function AdminSettings() {
     faqsupport: { label: "FAQ Support", icon: "💬", category: "Leads" },
     legalenquiry: { label: "Legal Enquiry", icon: "⚖️", category: "Leads" },
     newsletterwelcome: { label: "Newsletter Welcome", icon: "📰", category: "Leads" },
-    liveauctionpending: { label: "Live Registration Pending", icon: "📋", category: "Leads" },
-    liveauctionstarted: { label: "Live Auction Started (Attendees)", icon: "🔴", category: "Leads" },
-    liveauctionregistration: { label: "Live Auction Registration", icon: "🏛️", category: "Leads" },
-    adminliveregistrationalert: { label: "Live Registration Alert (Admin)", icon: "🏛️", category: "Leads" },
   };
 
   const ruleLabels: Record<string, string> = {

@@ -20,10 +20,21 @@ export default function FreeValuation() {
   const navigate = useNavigate();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const fd = new FormData(form);
+    const phone = (fd.get("phone") as string) || "";
+    const phoneRegex = /^[\+\d\s\-\(\)]{10,15}$/;
+    if (phone && !phoneRegex.test(phone)) {
+      alert("Please enter a valid phone number (10–15 digits).");
+      return;
+    }
+    const sqft = Number(fd.get("sqft"));
+    if (fd.get("sqft") && sqft < 0) {
+      alert("Square feet cannot be negative.");
+      return;
+    }
     setLoading(true);
     try {
-      const form = e.target as HTMLFormElement;
-      const fd = new FormData(form);
       await apiClient.fetch("/leads", {
         method: "POST",
         body: JSON.stringify({
@@ -271,7 +282,9 @@ export default function FreeValuation() {
                     type="number"
                     name="sqft"
                     required
+                    min="0"
                     placeholder="2000"
+                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
                   />
                 </div>
@@ -299,6 +312,8 @@ export default function FreeValuation() {
                   name="phone"
                   required
                   placeholder="+44 7xxx xxx xxx"
+                  pattern="[\+\d\s\-\(\)]{10,15}"
+                  title="Please enter a valid phone number (10–15 digits)"
                   className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
                 />
               </div>

@@ -7,12 +7,24 @@ export default function Solicitor() {
   const [showForm, setShowForm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleConsultation = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     const form = e.target as HTMLFormElement;
     const fd = new FormData(form);
+    const name = (fd.get("name") as string || "").trim();
+    const email = (fd.get("email") as string || "").trim();
+    const phone = (fd.get("phone") as string || "").trim();
+    const message = (fd.get("message") as string || "").trim();
+    const errors: string[] = [];
+    if (!name || name.length < 2) errors.push("Name must be at least 2 characters");
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Valid email address is required");
+    if (phone && phone.replace(/[\s\-\+\(\)]/g, "").length < 10) errors.push("Please enter a valid phone number");
+    if (!message || message.length < 10) errors.push("Message must be at least 10 characters");
+    if (errors.length > 0) { setError(errors.join(". ")); return; }
+    setError("");
+    setLoading(true);
     try {
       await apiClient.fetch("/leads", {
         method: "POST",
@@ -345,6 +357,11 @@ export default function Solicitor() {
                 <input type="email" name="email" required placeholder="Email Address" className="w-full px-4 py-3 rounded-xl text-slate-900 font-medium focus:outline-none" />
                 <input type="tel" name="phone" placeholder="Phone Number" className="w-full px-4 py-3 rounded-xl text-slate-900 font-medium focus:outline-none" />
                 <input type="text" name="message" placeholder="Brief description of your needs" className="w-full px-4 py-3 rounded-xl text-slate-900 font-medium focus:outline-none" />
+                {error && (
+                  <div className="p-3 bg-red-100/80 rounded-xl text-red-700 text-sm font-medium">
+                    {error}
+                  </div>
+                )}
                 <button type="submit" disabled={loading} className="w-full py-4 bg-white text-rose-600 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-60">
                   {loading ? "Sending..." : "Submit Request"}
                 </button>

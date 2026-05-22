@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X, UserCheck, Briefcase, DollarSign, Mail, Phone, User, Lock } from "lucide-react";
+import { preventMinus } from "@/utils/validation";
 
 export default function AddAgentModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
   const [loading, setLoading] = useState(false);
@@ -17,8 +18,15 @@ export default function AddAgentModal({ onClose, onSuccess }: { onClose: () => v
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirmPassword') as string;
     
+    const firstName = (formData.get('firstName') as string || '').trim();
+    const lastName = (formData.get('lastName') as string || '').trim();
+    const email = (formData.get('email') as string || '').trim();
+    const phone = (formData.get('phone') as string || '').trim();
+    if (!firstName || firstName.length < 2 || !lastName || lastName.length < 2) { setError("First and last name must each be at least 2 characters"); setLoading(false); return; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("Please enter a valid email address"); setLoading(false); return; }
+    if (!phone || phone.replace(/[\s\-\+\(\)]/g, "").length < 10) { setError("Please enter a valid phone number"); setLoading(false); return; }
     if (password !== confirmPassword) { setError("Passwords do not match"); setLoading(false); return; }
-    if (password.length < 6) { setError("Password must be at least 6 characters"); setLoading(false); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters"); setLoading(false); return; }
 
     const data = {
       name: `${formData.get('firstName')} ${formData.get('lastName')}`,
@@ -83,7 +91,7 @@ export default function AddAgentModal({ onClose, onSuccess }: { onClose: () => v
           <div className="space-y-4">
             <h3 className="text-xl font-black text-slate-900 flex items-center gap-2"><DollarSign className="size-6 text-green-600" />Commission & Account</h3>
             <div className="grid md:grid-cols-2 gap-4">
-              <div><label className="block text-sm font-bold text-slate-700 mb-2">Commission Rate (%)</label><input name="commission" type="number" placeholder="2.5" step="0.1" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500" /></div>
+              <div><label className="block text-sm font-bold text-slate-700 mb-2">Commission Rate (%)</label><input name="commission" type="number" placeholder="2.5" step="0.1" min="0" onKeyDown={preventMinus} className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500" /></div>
               <div><label className="block text-sm font-bold text-slate-700 mb-2">Specialization</label><select name="specialization" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500"><option value="">Select...</option><option value="residential">Residential</option><option value="commercial">Commercial</option><option value="luxury">Luxury Properties</option><option value="all">All Types</option></select></div>
             </div>
             <div className="grid md:grid-cols-2 gap-4 mt-4">

@@ -22,8 +22,13 @@ export default function BuyingOverview() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setSubmitError('');
+    const phoneRegex = /^[\+\d\s\-\(\)]{10,15}$/;
+    if (formData.phone && !phoneRegex.test(formData.phone)) {
+      setSubmitError("Please enter a valid phone number (10–15 digits).");
+      return;
+    }
+    setSubmitting(true);
     try {
       const data = await apiClient.fetch('/leads', {
         method: 'POST',

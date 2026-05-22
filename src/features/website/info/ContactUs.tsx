@@ -18,12 +18,26 @@ import AIChatWidget from "@/features/shared/components/AIChatWidget";
 export default function ContactUs() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     const form = e.target as HTMLFormElement;
     const fd = new FormData(form);
+    const firstName = (fd.get("firstName") as string || "").trim();
+    const lastName = (fd.get("lastName") as string || "").trim();
+    const fullName = `${firstName} ${lastName}`.trim();
+    const email = (fd.get("email") as string || "").trim();
+    const phone = (fd.get("phone") as string || "").trim();
+    const message = (fd.get("message") as string || "").trim();
+    const errors: string[] = [];
+    if (!fullName || fullName.length < 2) errors.push("Name must be at least 2 characters");
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Valid email address is required");
+    if (phone && phone.replace(/[\s\-\+\(\)]/g, "").length < 10) errors.push("Please enter a valid phone number");
+    if (!message || message.length < 10) errors.push("Message must be at least 10 characters");
+    if (errors.length > 0) { setError(errors.join(". ")); return; }
+    setError("");
+    setLoading(true);
     try {
       await apiClient.fetch("/leads", {
         method: "POST",
@@ -244,6 +258,11 @@ export default function ContactUs() {
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium resize-none"
                   />
                 </div>
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                    {error}
+                  </div>
+                )}
                 <button
                   type="submit"
                   disabled={loading}

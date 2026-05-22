@@ -23,8 +23,17 @@ export default function HomeReport() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setError('');
+    const phoneRegex = /^[\+\d\s\-\(\)]{10,15}$/;
+    if (formData.phone && !phoneRegex.test(formData.phone)) {
+      setError("Please enter a valid phone number (10–15 digits).");
+      return;
+    }
+    if (formData.bedrooms && (Number(formData.bedrooms) < 0 || Number(formData.bedrooms) > 50)) {
+      setError("Bedrooms must be between 0 and 50.");
+      return;
+    }
+    setSubmitting(true);
     try {
       const data = await apiClient.fetch('/leads', {
         method: 'POST',
@@ -526,9 +535,12 @@ export default function HomeReport() {
                       </label>
                       <input
                         type="number"
+                        min="0"
+                        max="50"
                         className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 transition-all font-semibold text-slate-900"
                         placeholder="3"
                         value={formData.bedrooms}
+                        onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
                         onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value })}
                         required
                       />

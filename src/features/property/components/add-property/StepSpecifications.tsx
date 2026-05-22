@@ -1,4 +1,5 @@
 import { Home, Bed, Bath, Calendar, Car } from "lucide-react";
+import { preventMinus } from "@/utils/validation";
 
 interface StepSpecificationsProps {
   formData: any;
@@ -7,6 +8,7 @@ interface StepSpecificationsProps {
 }
 
 export default function StepSpecifications({ formData, handleInputChange, theme }: StepSpecificationsProps) {
+  const currentYear = new Date().getFullYear();
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
@@ -35,9 +37,14 @@ export default function StepSpecifications({ formData, handleInputChange, theme 
             type="number"
             placeholder="e.g., 4"
             value={formData.bedrooms}
-            onChange={(e) =>
-              handleInputChange("bedrooms", e.target.value)
-            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '' || Number(v) >= 0) handleInputChange("bedrooms", v);
+            }}
+            min="0"
+            max="50"
+            step="1"
+            onKeyDown={preventMinus}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
@@ -52,9 +59,14 @@ export default function StepSpecifications({ formData, handleInputChange, theme 
             type="number"
             placeholder="e.g., 3"
             value={formData.bathrooms}
-            onChange={(e) =>
-              handleInputChange("bathrooms", e.target.value)
-            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '' || Number(v) >= 0) handleInputChange("bathrooms", v);
+            }}
+            min="0"
+            max="50"
+            step="1"
+            onKeyDown={preventMinus}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
@@ -68,9 +80,14 @@ export default function StepSpecifications({ formData, handleInputChange, theme 
             type="number"
             placeholder="e.g., 2"
             value={formData.floors}
-            onChange={(e) =>
-              handleInputChange("floors", e.target.value)
-            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '' || Number(v) >= 0) handleInputChange("floors", v);
+            }}
+            min="0"
+            max="200"
+            step="1"
+            onKeyDown={preventMinus}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -82,11 +99,16 @@ export default function StepSpecifications({ formData, handleInputChange, theme 
           </label>
           <input
             type="number"
-            placeholder="e.g., 2020"
+            placeholder={`e.g., ${currentYear - 5}`}
             value={formData.yearBuilt}
-            onChange={(e) =>
-              handleInputChange("yearBuilt", e.target.value)
-            }
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '' || val.length <= 4) handleInputChange("yearBuilt", val);
+            }}
+            min="1800"
+            max={currentYear}
+            step="1"
+            onKeyDown={preventMinus}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -100,9 +122,14 @@ export default function StepSpecifications({ formData, handleInputChange, theme 
             type="number"
             placeholder="e.g., 2"
             value={formData.parkingSpaces}
-            onChange={(e) =>
-              handleInputChange("parkingSpaces", e.target.value)
-            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '' || Number(v) >= 0) handleInputChange("parkingSpaces", v);
+            }}
+            min="0"
+            max="100"
+            step="1"
+            onKeyDown={preventMinus}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>

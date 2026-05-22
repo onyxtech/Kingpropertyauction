@@ -34,6 +34,14 @@ export const createAuction = async (data, userId) => {
   }
 
   const auction = await Auction.create({ ...data, createdBy: userId });
+
+  if (data.properties && data.properties.length > 0) {
+    await Property.updateMany(
+      { _id: { $in: data.properties } },
+      [{ $set: { propertyStatus: "available", "auctionDetails.auctionStatus": "upcoming", currentBid: "$pricing.startingAuctionPrice", totalBids: 0, winningBidder: null } }]
+    );
+  }
+
   emitAuctionUpdate(auction._id.toString(), { status: auction.status, type: 'auction_created' });
   // If created as live, notify users
   if (auction.status === "live") {
@@ -68,15 +76,10 @@ export const getAuctions = async (query = {}) => {
     type,
     search,
     sortBy = "-createdAt",
-    excludeType,
   } = query;
   const filter = {};
   if (status) filter.status = status;
   if (type) filter.auctionType = type;
-  if (excludeType) {
-    const types = String(excludeType).split(',');
-    filter.auctionType = { $nin: types };
-  }
   const skip = (page - 1) * limit;
   const [auctions, total] = await Promise.all([
     Auction.find(filter)
@@ -150,6 +153,13 @@ export const updateAuction = async (id, data) => {
   }).populate(["properties", "createdBy"]);
 
   if (!auction) throw new Error("Auction not found");
+
+  if (data.properties && data.properties.length > 0) {
+    await Property.updateMany(
+      { _id: { $in: data.properties } },
+      [{ $set: { propertyStatus: "available", "auctionDetails.auctionStatus": "upcoming", currentBid: "$pricing.startingAuctionPrice", totalBids: 0, winningBidder: null } }]
+    );
+  }
 
   // Reschedule BullMQ jobs whenever an auction is updated
   const { scheduleAuctionStart, scheduleAuctionEnd, removeAuctionJobs } = await import('./auction.queue.js');
@@ -323,10 +333,8 @@ export const completeAuction = async (auctionId) => {
         .catch((e) => console.error("Property sold event failed:", e.message));
     } else if (currentBid > 0 && currentBid < reservePrice) {
       await Property.findByIdAndUpdate(property._id, {
-        propertyStatus: "available",
+        propertyStatus: "unsold",
         "auctionDetails.auctionStatus": "closed",
-        currentBid: 0,
-        totalBids: 0,
         winningBidder: null,
         soldPrice: null,
         winner: null,

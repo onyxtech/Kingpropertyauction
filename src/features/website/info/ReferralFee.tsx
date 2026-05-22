@@ -23,8 +23,13 @@ export default function ReferralFee() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setError('');
+    const errors: string[] = [];
+    if (!formData.fullName || formData.fullName.trim().length < 2) errors.push("Full name must be at least 2 characters");
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.push("Valid email address is required");
+    if (!formData.phone || formData.phone.replace(/[\s\-\+\(\)]/g, "").length < 10) errors.push("Please enter a valid phone number");
+    if (errors.length > 0) { setError(errors.join(". ")); return; }
+    setSubmitting(true);
     try {
       const data = await apiClient.fetch('/leads', {
         method: 'POST',
