@@ -13,10 +13,13 @@ import {
 } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
 
 export default function FreeValuation() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [addressValue, setAddressValue] = useState("");
+  const [addressFields, setAddressFields] = useState<any>({});
   const navigate = useNavigate();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,9 +46,9 @@ export default function FreeValuation() {
           phone: fd.get("phone") || "",
           subject: "Free Property Valuation Request",
           message: [
-            `Property Address: ${fd.get("address") || "Not provided"}`,
-            `City: ${fd.get("city") || "Not provided"}`,
-            `Postcode: ${fd.get("postcode") || "Not provided"}`,
+            `Property Address: ${addressValue || fd.get("address") || "Not provided"}`,
+            `City: ${fd.get("city") || addressFields?.city || "Not provided"}`,
+            `Postcode: ${fd.get("postcode") || addressFields?.postalCode || "Not provided"}`,
             `Property Type: ${fd.get("propertyType") || "Not provided"}`,
             `Bedrooms: ${fd.get("bedrooms") || "Not provided"}`,
             `Bathrooms: ${fd.get("bathrooms") || "Not provided"}`,
@@ -197,15 +200,18 @@ export default function FreeValuation() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Property Address
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  placeholder="123 Example Street"
-                  className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
+                <AddressAutocomplete
+                  label="Property Address"
+                  value={addressValue}
+                  onChange={setAddressValue}
+                  onAddressSelect={(addr) => {
+                    setAddressValue(addr.streetAddress || addr.formattedAddress);
+                    setAddressFields(addr);
+                  }}
+                  placeholder="Start typing your property address..."
+                  inputClassName="px-5 py-4 bg-white/80 rounded-2xl focus:ring-orange-500 focus:border-orange-500"
                 />
+                <input type="hidden" name="address" value={addressValue} />
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">

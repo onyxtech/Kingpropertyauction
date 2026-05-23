@@ -14,6 +14,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
 
 const roles = [
   {
@@ -405,20 +406,22 @@ export default function RegisterForm() {
           </h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">
-                Street Address
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                <input
-                  type="text"
-                  name="street"
-                  value={formData.street}
-                  onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                  placeholder="123 Main Street"
-                />
-              </div>
+              <AddressAutocomplete
+                label="Street Address"
+                value={formData.street}
+                onChange={(val) => setFormData((prev) => ({ ...prev, street: val }))}
+                onAddressSelect={(addr) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    street: addr.streetAddress || addr.formattedAddress || prev.street,
+                    city: addr.city || prev.city,
+                    postcode: addr.postalCode || prev.postcode,
+                    country: addr.country || prev.country,
+                  }));
+                }}
+                placeholder="123 Main Street"
+                inputClassName="py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white border-2-0"
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

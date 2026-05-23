@@ -1,4 +1,6 @@
 import { MapPin } from "lucide-react";
+import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
+import type { ParsedAddress } from "@/lib/googlePlaces";
 
 interface StepLocationProps {
   formData: any;
@@ -85,18 +87,26 @@ export default function StepLocation({ formData, handleInputChange, theme }: Ste
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-bold text-slate-700 mb-2">
-            Street Address *
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., 123 Park Lane"
-            value={formData.streetAddress}
-            onChange={(e) =>
-              handleInputChange("streetAddress", e.target.value)
-            }
-            className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          <AddressAutocomplete
+            label="Street Address"
             required
+            value={formData.streetAddress || ""}
+            onChange={(val) => handleInputChange("streetAddress", val)}
+            onAddressSelect={(address: ParsedAddress) => {
+              if (address.streetAddress)
+                handleInputChange("streetAddress", address.streetAddress);
+              if (address.city)
+                handleInputChange("city", address.city);
+              if (address.state)
+                handleInputChange("state", address.state);
+              if (address.country)
+                handleInputChange("country", address.country);
+              if (address.postalCode)
+                handleInputChange("postalCode", address.postalCode);
+              if (address.area)
+                handleInputChange("area", address.area);
+            }}
+            placeholder="e.g., 123 Park Lane, London"
           />
         </div>
 

@@ -1,6 +1,20 @@
 import * as settingsService from "./settings.service.js";
 import * as emailService from "../notifications/email.service.js";
 
+export const getGooglePlacesKey = async (req, res) => {
+  try {
+    const settings = await settingsService.getApiIntegrations();
+    res.json({
+      success: true,
+      data: {
+        apiKey: settings?.googlePlacesApiKey || ""
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const getEmailSettingsController = async (req, res) => {
   try {
     const settings = await settingsService.getEmailSettings();

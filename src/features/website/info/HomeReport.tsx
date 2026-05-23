@@ -2,6 +2,7 @@ import { FileText, Home, CheckCircle, Sparkles, Info, Download, Clock, Shield, A
 import { useState } from "react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
 
 export default function HomeReport() {
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -482,17 +483,20 @@ export default function HomeReport() {
                   </h4>
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
-                      <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-                        <MapPin className="size-4 text-emerald-600" />
-                        Property Address *
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold text-slate-900"
-                        placeholder="123 High Street, Edinburgh, EH1 1AB"
-                        value={formData.propertyAddress}
-                        onChange={(e) => setFormData({ ...formData, propertyAddress: e.target.value })}
+                      <AddressAutocomplete
+                        label="Property Address *"
                         required
+                        value={formData.propertyAddress}
+                        onChange={(val) => setFormData({ ...formData, propertyAddress: val })}
+                        onAddressSelect={(addr) => {
+                          setFormData((prev: any) => ({
+                            ...prev,
+                            propertyAddress: addr.streetAddress || addr.formattedAddress || prev.propertyAddress,
+                          }));
+                        }}
+                        placeholder="123 High Street, Edinburgh, EH1 1AB"
+                        country="gb"
+                        inputClassName="px-5 py-4 bg-white rounded-xl focus:ring-emerald-500 focus:border-emerald-500 font-semibold text-slate-900"
                       />
                     </div>
                     <div>

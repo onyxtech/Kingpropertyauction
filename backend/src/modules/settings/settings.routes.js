@@ -9,10 +9,13 @@ import {
   updateNotificationRulesController,
   getOAuthConfigController,
   updateOAuthConfigController,
+  getGooglePlacesKey,
 } from './settings.controller.js';
 import * as settingsService from './settings.service.js';
 
 const router = express.Router();
+
+router.get('/google-places-key', getGooglePlacesKey);
 
 router.get('/email', protect, authorize('admin'), getEmailSettingsController);
 router.put('/email', protect, authorize('admin'), updateEmailSettingsController);
