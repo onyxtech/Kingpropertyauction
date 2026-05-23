@@ -1,13 +1,16 @@
 import { useNavigate } from "react-router";
 import {
   Crown, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, Youtube,
-  Gavel, Home, Shield, ArrowRight, Award, Clock, Heart, UserPlus, LogIn,
-  Play, ShoppingCart, DollarSign,
+  ArrowRight, Award, Clock, Heart, UserPlus, LogIn,
+  Play, ShoppingCart, DollarSign, Shield, Gavel, Home, FileText,
 } from "lucide-react";
+import { useMenuData } from "@/hooks/useMenuData";
 
 export default function FooterLinks() {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
+  const { getFooterGroups } = useMenuData();
+  const footerGroups = getFooterGroups();
 
   return (
     <>
@@ -88,69 +91,55 @@ export default function FooterLinks() {
             </div>
           </div>
 
-          {/* Auctions Links */}
-          <div>
-            <h4 className="font-black text-lg mb-6 flex items-center gap-2"><Gavel className="size-5 text-blue-400" /> Auctions</h4>
-            <ul className="space-y-3">
-              {[
-                { path: "/auctions", label: "View All Auctions", color: "text-blue-400" },
-                { path: "/live-auctions", label: "Live Auctions", color: "text-red-400" },
-                { path: "/online-auctions", label: "Online Auctions", color: "text-blue-400" },
-                { path: "/view-all-lots", label: "View All Lots", color: "text-blue-400" },
-                { path: "/auction-guide", label: "Auction Guide", color: "text-blue-400" },
-              ].map((item) => (
-                <li key={item.path}>
-                  <button onClick={() => navigate(item.path)} className="text-white/70 hover:text-white transition-colors flex items-center gap-2 group text-sm">
-                    <ArrowRight className={`size-4 ${item.color} group-hover:translate-x-1 transition-transform`} />
-                    {item.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Dynamic Footer Link Columns from DB */}
+          {(() => {
+            const groupConfig: Record<string, { icon: any; iconColor: string; arrowColor: string }> = {
+              Auctions: { icon: Gavel, iconColor: "text-blue-400", arrowColor: "text-blue-400" },
+              Services: { icon: Home, iconColor: "text-emerald-400", arrowColor: "text-emerald-400" },
+              Support: { icon: Shield, iconColor: "text-purple-400", arrowColor: "text-purple-400" },
+            };
+            const auctionLinkColors: Record<string, string> = {
+              "/live-auctions": "text-red-400",
+            };
+            const serviceLinkColors: Record<string, string> = {
+              "/free-valuation": "text-orange-400",
+            };
 
-          {/* Services */}
-          <div>
-            <h4 className="font-black text-lg mb-6 flex items-center gap-2"><Home className="size-5 text-emerald-400" /> Services</h4>
-            <ul className="space-y-3">
-              {[
-                { path: "/buying-overview", label: "Buying Overview", color: "text-emerald-400" },
-                { path: "/selling-overview", label: "Selling Overview", color: "text-emerald-400" },
-                { path: "/free-valuation", label: "Property Valuation", color: "text-orange-400" },
-                { path: "/solicitor", label: "Find Solicitor", color: "text-emerald-400" },
-                { path: "/home-report", label: "Home Report", color: "text-emerald-400" },
-              ].map((item) => (
-                <li key={item.path}>
-                  <button onClick={() => navigate(item.path)} className="text-white/70 hover:text-white transition-colors flex items-center gap-2 group text-sm">
-                    <ArrowRight className={`size-4 ${item.color} group-hover:translate-x-1 transition-transform`} />
-                    {item.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+            return footerGroups.map((group: any) => {
+              const config = groupConfig[group.label] || { icon: FileText, iconColor: "text-white/60", arrowColor: "text-white/60" };
+              const GroupIcon = config.icon;
 
-          {/* Support */}
-          <div>
-            <h4 className="font-black text-lg mb-6 flex items-center gap-2"><Shield className="size-5 text-purple-400" /> Support</h4>
-            <ul className="space-y-3">
-              {[
-                { path: "/guide-faq", label: "Guide & FAQ" },
-                { path: "/buying-guide", label: "Buying Guide" },
-                { path: "/contact-us", label: "Contact Us" },
-                { path: "/about", label: "About Us" },
-                { path: "/terms-of-sale", label: "Terms of Sale" },
-                { path: "/register-alert", label: "Register Alert" },
-              ].map((item) => (
-                <li key={item.path}>
-                  <button onClick={() => navigate(item.path)} className="text-white/70 hover:text-white transition-colors flex items-center gap-2 group text-sm">
-                    <ArrowRight className="size-4 text-purple-400 group-hover:translate-x-1 transition-transform" />
-                    {item.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+              return (
+                <div key={group._id}>
+                  <h4 className="font-black text-lg mb-6 flex items-center gap-2">
+                    <GroupIcon className={`size-5 ${config.iconColor}`} />
+                    {group.label}
+                  </h4>
+                  <ul className="space-y-3">
+                    {group.children.map((item: any) => {
+                      let arrowColor = config.arrowColor;
+                      if (group.label === "Auctions" && auctionLinkColors[item.url]) {
+                        arrowColor = auctionLinkColors[item.url];
+                      } else if (group.label === "Services" && serviceLinkColors[item.url]) {
+                        arrowColor = serviceLinkColors[item.url];
+                      }
+                      return (
+                        <li key={item._id}>
+                          <button
+                            onClick={() => navigate(item.url)}
+                            className="text-white/70 hover:text-white transition-colors flex items-center gap-2 group text-sm"
+                          >
+                            <ArrowRight className={`size-4 ${arrowColor} group-hover:translate-x-1 transition-transform`} />
+                            {item.label}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            });
+          })()}
         </div>
 
         {/* Trust Badges */}

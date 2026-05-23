@@ -7,18 +7,13 @@ import {
   Edit,
   Trash2,
   ExternalLink,
-  Home,
   FileText,
-  Building2,
-  Mail,
-  Phone,
-  Users,
-  Settings,
   ChevronRight,
   ChevronDown,
   Layers,
   Menu as MenuIcon,
 } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 
 interface MenuEditorProps {
@@ -26,6 +21,33 @@ interface MenuEditorProps {
   editData?: any;
   onSave?: (menuData: any) => Promise<void>;
 }
+
+const allIcons = [
+  "Home", "Building2", "Building", "MapPin", "Map",
+  "Gavel", "Package", "Grid3x3", "LayoutGrid",
+  "FileText", "File", "ClipboardList", "BookOpen",
+  "Mail", "Phone", "MessageSquare", "Bell",
+  "Users", "User", "UserCheck", "UserPlus",
+  "Settings", "Shield", "Lock", "Key",
+  "Star", "Heart", "Award", "Trophy",
+  "Zap", "Flame", "Sparkles", "Sun",
+  "DollarSign", "PoundSterling", "Calculator", "TrendingUp",
+  "Search", "Filter", "Menu", "MoreHorizontal",
+  "ChevronRight", "ChevronDown", "ArrowRight", "ExternalLink",
+  "Plus", "Edit", "Trash2", "Copy",
+  "Image", "Camera", "Video", "Play",
+  "Calendar", "Clock", "Timer", "AlarmClock",
+  "Tag", "Bookmark", "Flag", "Layers",
+  "Globe", "Link", "Share2", "Download",
+  "ThumbsUp", "ThumbsDown", "HelpCircle", "Info",
+  "Briefcase", "Gift", "ShoppingCart", "Store",
+  "Car", "Truck", "Plane", "Train",
+  "Grid", "List", "Table", "BarChart",
+  "CheckCircle", "XCircle", "AlertCircle", "Circle",
+  "Scale", "Monitor", "Laptop", "Smartphone",
+];
+
+const getDynIcon = (name: string) => (LucideIcons as any)[name] || FileText;
 
 export default function MenuEditor({
   onClose,
@@ -39,10 +61,8 @@ export default function MenuEditor({
     status: editData?.status || "active",
   });
 
-  // Fix: Ensure menuItems is always an array
   const [menuItems, setMenuItems] = useState<any[]>(() => {
     if (Array.isArray(editData?.items)) {
-      // Normalize: ensure every item has an 'id' field
       return editData.items.map((item: any, index: number) => ({
         ...item,
         id: item.id || item._id || Date.now() + index,
@@ -50,86 +70,110 @@ export default function MenuEditor({
     }
     return [];
   });
+
   const [editingItem, setEditingItem] = useState<any>(null);
   const [showItemForm, setShowItemForm] = useState(false);
+  const [iconSearch, setIconSearch] = useState("");
 
   const [itemForm, setItemForm] = useState({
     label: "",
     url: "",
     type: "link",
-    icon: "FileText",
+    icon: "",
     target: "_self",
-    parent: null,
+    parent: null as any,
     badge: false,
+    badgeLabel: "LIVE",
+    badgeColor: "red",
+    subtitle: "",
   });
 
-  const availableIcons = [
-    { name: "Home", icon: Home },
-    { name: "FileText", icon: FileText },
-    { name: "Building2", icon: Building2 },
-    { name: "Mail", icon: Mail },
-    { name: "Phone", icon: Phone },
-    { name: "Users", icon: Users },
-    { name: "Settings", icon: Settings },
-  ];
+  const getParentItems = () => {
+    return menuItems
+      .filter((item) => {
+        const parent = item.parent?._id || item.parent;
+        return !parent || parent === null || parent === "";
+      })
+      .sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+  };
+
+  const getChildItems = (parentId: any) => {
+    return menuItems
+      .filter((item) => {
+        const parent = item.parent?._id?.toString() || item.parent?.toString();
+        const pid = parentId?._id?.toString() || parentId?.toString();
+        return parent && pid && parent === pid;
+      })
+      .sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+  };
+
+  const countChildren = (parentId: any) => getChildItems(parentId).length;
 
   const handleAddItem = () => {
-    if (itemForm.label && itemForm.url) {
-      if (editingItem) {
-        setMenuItems(
-          menuItems.map((item) =>
-            (item.id || item._id) === (editingItem.id || editingItem._id)
-              ? { ...itemForm, id: editingItem.id }
-              : item,
-          ),
-        );
-        setEditingItem(null);
-      } else {
-        setMenuItems([...menuItems, { ...itemForm, id: Date.now() }]);
-      }
-      setItemForm({
-        label: "",
-        url: "",
-        type: "link",
-        icon: "FileText",
-        target: "_self",
-        parent: null,
-        badge: false,
-      });
-      setShowItemForm(false);
+    if (!itemForm.label) return;
+
+    if (itemForm.url && !itemForm.url.startsWith("/") && !itemForm.url.startsWith("http")) {
+      alert("URL must start with / (e.g., /auctions) or https://");
+      return;
     }
+
+    if (editingItem) {
+      setMenuItems(
+        menuItems.map((item) => {
+          const iid = (item.id || item._id)?.toString();
+          const eid = (editingItem?.id || editingItem?._id)?.toString();
+          return iid === eid
+            ? { ...itemForm, id: item.id, _id: item._id }
+            : item;
+        }),
+      );
+      setEditingItem(null);
+    } else {
+      const maxOrder =
+        menuItems.length > 0
+          ? Math.max(...menuItems.map((i: any) => i.order || 0)) + 1
+          : 0;
+      setMenuItems([...menuItems, { ...itemForm, id: Date.now(), order: maxOrder }]);
+    }
+
+    setItemForm({
+      label: "",
+      url: "",
+      type: "link",
+      icon: "",
+      target: "_self",
+      parent: null,
+      badge: false,
+      badgeLabel: "LIVE",
+      badgeColor: "red",
+      subtitle: "",
+    });
+    setIconSearch("");
+    setShowItemForm(false);
   };
 
   const handleEditItem = (item: any) => {
     const normalizedItem = { ...item, id: item.id || item._id };
     setEditingItem(normalizedItem);
-    setItemForm(normalizedItem);
+    setItemForm({
+      ...normalizedItem,
+      subtitle: normalizedItem.subtitle || "",
+      badgeLabel: normalizedItem.badgeLabel || "LIVE",
+      badgeColor: normalizedItem.badgeColor || "red",
+    });
+    setIconSearch("");
     setShowItemForm(true);
   };
 
   const handleDeleteItem = (id: any) => {
+    const idStr = id?.toString();
     setMenuItems(
       menuItems.filter((item) => {
-        const itemId = item.id || item._id;
-        const parentId = item.parent?._id || item.parent;
-        return itemId !== id && parentId !== id;
+        const itemId = (item.id || item._id)?.toString();
+        const parentId = (item.parent?._id || item.parent)?.toString();
+        return itemId !== idStr && parentId !== idStr;
       }),
     );
-  };
-
-  // Get parent items (items with no parent)
-  const getParentItems = () => {
-    return menuItems.filter((item) => !item.parent);
-  };
-
-  // Get children of a specific parent
-  const getChildItems = (parentId: number) => {
-    return menuItems.filter((item) => item.parent === parentId);
-  };
-
-  // Count children for a parent
-  const countChildren = (parentId: number) => {
-    return menuItems.filter((item) => item.parent === parentId).length;
   };
 
   const handleSave = async () => {
@@ -138,7 +182,6 @@ export default function MenuEditor({
       items: menuItems,
       itemCount: menuItems.length,
     };
-
     if (onSave) {
       try {
         await onSave(menuData);
@@ -153,20 +196,14 @@ export default function MenuEditor({
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in duration-300">
         {/* Header */}
-        <div
-          className={`bg-gradient-to-r ${theme.primary} p-6 flex items-center justify-between text-white`}
-        >
+        <div className={`bg-gradient-to-r ${theme.primary} p-6 flex items-center justify-between text-white`}>
           <div className="flex items-center gap-4">
             <div className="size-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center">
               <MenuIcon className="size-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-black">
-                {editData ? "Edit" : "Create"} Menu
-              </h2>
-              <p className="text-sm text-white/80 font-medium">
-                Build your navigation menu with drag & drop
-              </p>
+              <h2 className="text-2xl font-black">{editData ? "Edit" : "Create"} Menu</h2>
+              <p className="text-sm text-white/80 font-medium">Build your navigation menu with drag & drop</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -188,40 +225,27 @@ export default function MenuEditor({
 
         {/* Content */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Left Panel - Menu Settings & Add Items */}
+          {/* Left Panel */}
           <div className="w-96 bg-slate-50 border-r-2 border-slate-200 overflow-y-auto">
             <div className="p-6">
               {/* Menu Settings */}
-              <h3 className="text-lg font-black text-slate-900 mb-4">
-                Menu Settings
-              </h3>
+              <h3 className="text-lg font-black text-slate-900 mb-4">Menu Settings</h3>
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Menu Name *
-                  </label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Menu Name *</label>
                   <input
                     type="text"
                     value={menuSettings.name}
-                    onChange={(e) =>
-                      setMenuSettings({ ...menuSettings, name: e.target.value })
-                    }
+                    onChange={(e) => setMenuSettings({ ...menuSettings, name: e.target.value })}
                     placeholder="e.g., Main Navigation"
                     className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Location *
-                  </label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Location *</label>
                   <select
                     value={menuSettings.location}
-                    onChange={(e) =>
-                      setMenuSettings({
-                        ...menuSettings,
-                        location: e.target.value,
-                      })
-                    }
+                    onChange={(e) => setMenuSettings({ ...menuSettings, location: e.target.value })}
                     className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="Header">Header</option>
@@ -232,17 +256,10 @@ export default function MenuEditor({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Status *
-                  </label>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Status *</label>
                   <select
                     value={menuSettings.status}
-                    onChange={(e) =>
-                      setMenuSettings({
-                        ...menuSettings,
-                        status: e.target.value,
-                      })
-                    }
+                    onChange={(e) => setMenuSettings({ ...menuSettings, status: e.target.value })}
                     className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="active">Active</option>
@@ -255,9 +272,7 @@ export default function MenuEditor({
 
               {/* Add Menu Item */}
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-black text-slate-900">
-                  Menu Items
-                </h3>
+                <h3 className="text-lg font-black text-slate-900">Menu Items</h3>
                 <button
                   onClick={() => {
                     setEditingItem(null);
@@ -265,11 +280,15 @@ export default function MenuEditor({
                       label: "",
                       url: "",
                       type: "link",
-                      icon: "FileText",
+                      icon: "",
                       target: "_self",
                       parent: null,
                       badge: false,
+                      badgeLabel: "LIVE",
+                      badgeColor: "red",
+                      subtitle: "",
                     });
+                    setIconSearch("");
                     setShowItemForm(true);
                   }}
                   className={`px-3 py-2 bg-gradient-to-r ${theme.secondary} text-white rounded-lg text-sm font-bold hover:scale-105 transition-all flex items-center gap-1 shadow-md`}
@@ -285,34 +304,52 @@ export default function MenuEditor({
                   <h4 className="font-bold text-slate-900 text-sm">
                     {editingItem ? "Edit" : "Add"} Menu Item
                   </h4>
+
+                  {/* Label */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Label *
-                    </label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Label *</label>
                     <input
                       type="text"
                       value={itemForm.label}
-                      onChange={(e) =>
-                        setItemForm({ ...itemForm, label: e.target.value })
-                      }
+                      onChange={(e) => setItemForm({ ...itemForm, label: e.target.value })}
                       placeholder="e.g., Home"
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+
+                  {/* URL */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      URL *
-                    </label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">URL</label>
                     <input
                       type="text"
                       value={itemForm.url}
-                      onChange={(e) =>
-                        setItemForm({ ...itemForm, url: e.target.value })
-                      }
+                      onChange={(e) => setItemForm({ ...itemForm, url: e.target.value })}
                       placeholder="e.g., /home or https://..."
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    <p className="text-xs text-slate-400 mt-1">
+                      Internal: /page-name  •  External: https://...
+                    </p>
                   </div>
+
+                  {/* Subtitle */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Subtitle (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={itemForm.subtitle || ""}
+                      onChange={(e) => setItemForm({ ...itemForm, subtitle: e.target.value })}
+                      placeholder="e.g., Browse auction lots"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">
+                      Small description shown below the link label
+                    </p>
+                  </div>
+
+                  {/* Parent */}
                   <div>
                     <label className="md:block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
                       <Layers className="size-3" />
@@ -321,104 +358,227 @@ export default function MenuEditor({
                     <select
                       value={itemForm.parent || ""}
                       onChange={(e) =>
-                        setItemForm({
-                          ...itemForm,
-                          parent: e.target.value
-                            ? Number(e.target.value)
-                            : null,
-                        })
+                        setItemForm({ ...itemForm, parent: e.target.value || null })
                       }
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">None (Top Level)</option>
                       {getParentItems()
-                        .filter(
-                          (item) => !editingItem || item.id !== editingItem.id,
-                        )
+                        .filter((item) => {
+                          const iid = (item.id || item._id)?.toString();
+                          const eid = (editingItem?.id || editingItem?._id)?.toString();
+                          return !editingItem || iid !== eid;
+                        })
                         .map((item) => (
-                          <option key={item.id} value={item.id}>
+                          <option key={item.id || item._id} value={(item.id || item._id)?.toString()}>
                             {item.label}
                           </option>
                         ))}
                     </select>
                     <p className="text-xs text-slate-500 mt-1">
-                      {itemForm.parent
-                        ? "This will be a submenu item"
-                        : "This will be a top-level item"}
+                      {itemForm.parent ? "This will be a submenu item" : "This will be a top-level item"}
                     </p>
                   </div>
+
+                  {/* Icon Picker */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Icon
-                    </label>
-                    <select
-                      value={itemForm.icon}
-                      onChange={(e) =>
-                        setItemForm({ ...itemForm, icon: e.target.value })
-                      }
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {availableIcons.map((icon) => (
-                        <option key={icon.name} value={icon.name}>
-                          {icon.name}
-                        </option>
-                      ))}
-                    </select>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Icon</label>
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-2">
+                      <input
+                        type="text"
+                        value={iconSearch}
+                        onChange={(e) => setIconSearch(e.target.value)}
+                        placeholder="Search icons..."
+                        className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs mb-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      {itemForm.icon ? (
+                        <div className="flex items-center gap-2 mb-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                          {(() => {
+                            const icons: any = LucideIcons;
+                            const SelectedIcon = icons[itemForm.icon];
+                            return SelectedIcon ? (
+                              <>
+                                <SelectedIcon className="size-4 text-blue-600" />
+                                <span className="text-xs font-bold text-blue-700">{itemForm.icon}</span>
+                              </>
+                            ) : null;
+                          })()}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 mb-2 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                          <X className="size-4 text-slate-400" />
+                          <span className="text-xs font-bold text-slate-400">No icon selected</span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setItemForm({ ...itemForm, icon: "" })}
+                        className={`w-full px-3 py-2 rounded-lg text-xs font-bold mb-2 flex items-center gap-2 transition-all ${
+                          itemForm.icon === ""
+                            ? "bg-blue-500 text-white"
+                            : "bg-white border border-slate-200 text-slate-500 hover:border-blue-400"
+                        }`}
+                      >
+                        <X className="size-3" />
+                        No Icon
+                      </button>
+                      <div className="grid grid-cols-6 gap-1 max-h-36 overflow-y-auto">
+                        {allIcons
+                          .filter((name) => !iconSearch || name.toLowerCase().includes(iconSearch.toLowerCase()))
+                          .map((iconName) => {
+                            const IconComp = getDynIcon(iconName);
+                            return (
+                              <button
+                                key={iconName}
+                                type="button"
+                                title={iconName}
+                                onClick={() => setItemForm({ ...itemForm, icon: iconName })}
+                                className={`p-2 rounded-lg flex items-center justify-center transition-all hover:scale-110 ${
+                                  itemForm.icon === iconName
+                                    ? "bg-blue-500 text-white shadow-lg"
+                                    : "bg-white hover:bg-blue-50 text-slate-600 border border-slate-200"
+                                }`}
+                              >
+                                <IconComp className="size-3.5" />
+                              </button>
+                            );
+                          })}
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Type */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Type
-                    </label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Type</label>
                     <select
                       value={itemForm.type}
-                      onChange={(e) =>
-                        setItemForm({ ...itemForm, type: e.target.value })
-                      }
+                      onChange={(e) => setItemForm({ ...itemForm, type: e.target.value })}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="link">Simple Link</option>
                       <option value="dropdown">Dropdown Menu</option>
                     </select>
                   </div>
-                  {itemForm.type === "link" && !itemForm.parent && (
-                    <div>
+
+                  {/* Badge */}
+                  {itemForm.type === "link" && (
+                    <div className="space-y-3">
                       <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={itemForm.badge}
-                          onChange={(e) =>
-                            setItemForm({
-                              ...itemForm,
-                              badge: e.target.checked,
-                            })
-                          }
+                          onChange={(e) => setItemForm({ ...itemForm, badge: e.target.checked })}
                           className="size-4 rounded accent-blue-600"
                         />
-                        Show Live Count Badge
+                        Show Badge
                       </label>
+
+                      {itemForm.badge && (
+                        <div className="ml-1 space-y-3 bg-slate-50 rounded-lg p-3 border border-slate-200">
+                          {/* Badge Label Presets */}
+                          <div>
+                            <p className="text-xs font-bold text-slate-600 mb-1.5">Label Preset</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {["LIVE", "FREE", "NEW", "HOT", "SALE", "TOP"].map((preset) => (
+                                <button
+                                  key={preset}
+                                  type="button"
+                                  onClick={() => setItemForm({ ...itemForm, badgeLabel: preset })}
+                                  className={`px-2 py-1 rounded text-[10px] font-black transition-all ${
+                                    itemForm.badgeLabel === preset
+                                      ? "bg-blue-500 text-white shadow"
+                                      : "bg-white border border-slate-200 text-slate-600 hover:border-blue-400"
+                                  }`}
+                                >
+                                  {preset}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Custom Label */}
+                          <div>
+                            <p className="text-xs font-bold text-slate-600 mb-1">Custom Text</p>
+                            <input
+                              type="text"
+                              value={itemForm.badgeLabel}
+                              onChange={(e) =>
+                                setItemForm({
+                                  ...itemForm,
+                                  badgeLabel: e.target.value.toUpperCase().slice(0, 8),
+                                })
+                              }
+                              maxLength={8}
+                              placeholder="e.g., NEW"
+                              className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-500 uppercase"
+                            />
+                          </div>
+
+                          {/* Badge Color */}
+                          <div>
+                            <p className="text-xs font-bold text-slate-600 mb-1.5">Color</p>
+                            <div className="flex gap-1.5">
+                              {[
+                                { key: "red", cls: "bg-red-500" },
+                                { key: "green", cls: "bg-green-500" },
+                                { key: "blue", cls: "bg-blue-500" },
+                                { key: "orange", cls: "bg-orange-500" },
+                                { key: "purple", cls: "bg-purple-500" },
+                                { key: "amber", cls: "bg-amber-500" },
+                                { key: "cyan", cls: "bg-cyan-500" },
+                                { key: "rose", cls: "bg-rose-500" },
+                              ].map(({ key, cls }) => (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  onClick={() => setItemForm({ ...itemForm, badgeColor: key })}
+                                  className={`size-6 rounded-full ${cls} transition-all ${
+                                    itemForm.badgeColor === key
+                                      ? "ring-2 ring-offset-1 ring-slate-400 scale-110"
+                                      : "opacity-70 hover:opacity-100"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Live Preview */}
+                          <div>
+                            <p className="text-xs font-bold text-slate-600 mb-1">Preview</p>
+                            <div className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg">
+                              <span className="text-sm font-bold text-slate-700">
+                                {itemForm.label || "Menu Item"}
+                              </span>
+                              <span
+                                className={`px-2 py-0.5 text-white text-[10px] rounded-full animate-pulse font-black ${
+                                  { red: "bg-red-500", green: "bg-green-500", blue: "bg-blue-500", orange: "bg-orange-500", purple: "bg-purple-500", amber: "bg-amber-500", cyan: "bg-cyan-500", rose: "bg-rose-500" }[itemForm.badgeColor] || "bg-red-500"
+                                }`}
+                              >
+                                {itemForm.badgeLabel || "LIVE"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
+
+                  {/* Open In */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Open In
-                    </label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Open In</label>
                     <select
                       value={itemForm.target}
-                      onChange={(e) =>
-                        setItemForm({ ...itemForm, target: e.target.value })
-                      }
+                      onChange={(e) => setItemForm({ ...itemForm, target: e.target.value })}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="_self">Same Window</option>
                       <option value="_blank">New Window</option>
                     </select>
                   </div>
+
                   <div className="flex gap-2 pt-2">
                     <button
-                      onClick={() => {
-                        setShowItemForm(false);
-                        setEditingItem(null);
-                      }}
+                      onClick={() => { setShowItemForm(false); setEditingItem(null); }}
                       className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-200 transition-all"
                     >
                       Cancel
@@ -435,9 +595,7 @@ export default function MenuEditor({
 
               {/* Quick Links */}
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200">
-                <h4 className="font-bold text-blue-900 mb-2 text-sm">
-                  💡 Common Pages
-                </h4>
+                <h4 className="font-bold text-blue-900 mb-2 text-sm">💡 Common Pages</h4>
                 <div className="space-y-1">
                   {[
                     { label: "Home", url: "/" },
@@ -449,11 +607,7 @@ export default function MenuEditor({
                     <button
                       key={page.url}
                       onClick={() => {
-                        setItemForm({
-                          ...itemForm,
-                          label: page.label,
-                          url: page.url,
-                        });
+                        setItemForm({ ...itemForm, label: page.label, url: page.url });
                         setShowItemForm(true);
                       }}
                       className="w-full text-left px-2 py-1.5 bg-white hover:bg-blue-100 rounded-lg text-xs font-medium text-slate-700 hover:text-blue-700 transition-all"
@@ -478,8 +632,7 @@ export default function MenuEditor({
                         {menuSettings.name || "Untitled Menu"}
                       </h3>
                       <p className="text-sm text-slate-600 font-medium">
-                        Location: {menuSettings.location} • Items:{" "}
-                        {menuItems.length}
+                        Location: {menuSettings.location} • Items: {menuItems.length}
                       </p>
                     </div>
                     <span
@@ -497,69 +650,50 @@ export default function MenuEditor({
                 {/* Menu Items List */}
                 <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
                   <div className="bg-slate-50 border-b-2 border-slate-200 p-4">
-                    <h4 className="font-black text-slate-900">
-                      Menu Structure
-                    </h4>
-                    <p className="text-xs text-slate-500 font-medium">
-                      Drag items to reorder
-                    </p>
+                    <h4 className="font-black text-slate-900">Menu Structure</h4>
+                    <p className="text-xs text-slate-500 font-medium">Drag items to reorder</p>
                   </div>
 
                   <div className="p-4">
                     {menuItems.length === 0 ? (
                       <div className="text-center py-12">
-                        <div
-                          className={`size-16 rounded-2xl bg-gradient-to-br ${theme.primary} flex items-center justify-center mx-auto mb-4 shadow-lg`}
-                        >
+                        <div className={`size-16 rounded-2xl bg-gradient-to-br ${theme.primary} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
                           <MenuIcon className="size-8 text-white" />
                         </div>
-                        <h3 className="text-lg font-black text-slate-900 mb-2">
-                          No Menu Items Yet
-                        </h3>
-                        <p className="text-slate-600 font-medium text-sm">
-                          Click "Add Item" to start building your menu
-                        </p>
+                        <h3 className="text-lg font-black text-slate-900 mb-2">No Menu Items Yet</h3>
+                        <p className="text-slate-600 font-medium text-sm">Click "Add Item" to start building your menu</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {/* Show parent items first */}
                         {getParentItems().map((item) => {
-                          const IconComponent =
-                            availableIcons.find((i) => i.name === item.icon)
-                              ?.icon || FileText;
-                          const childrenCount = countChildren(item.id);
-                          const children = getChildItems(item.id);
+                          const IconComponent = getDynIcon(item.icon);
+                          const childrenCount = countChildren(item.id || item._id);
+                          const children = getChildItems(item.id || item._id);
 
                           return (
-                            <div key={item.id}>
+                            <div key={item.id || item._id}>
                               {/* Parent Item */}
                               <div className="group bg-gradient-to-r from-slate-50 to-white border-2 border-slate-200 rounded-xl p-4 hover:border-blue-500 transition-all">
                                 <div className="flex items-center gap-3">
                                   <GripVertical className="size-5 text-slate-400 cursor-move" />
-                                  <div
-                                    className={`size-10 rounded-lg bg-gradient-to-br ${theme.secondary} flex items-center justify-center shadow-md`}
-                                  >
+                                  <div className={`size-10 rounded-lg bg-gradient-to-br ${theme.secondary} flex items-center justify-center shadow-md`}>
                                     <IconComponent className="size-5 text-white" />
                                   </div>
-                                  <div className="flex-1">
+                                  <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                      <h4 className="font-bold text-slate-900">
-                                        {item.label}
-                                      </h4>
-                                      {item.target === "_blank" && (
-                                        <ExternalLink className="size-3 text-slate-400" />
-                                      )}
+                                      <h4 className="font-bold text-slate-900">{item.label}</h4>
+                                      {item.target === "_blank" && <ExternalLink className="size-3 text-slate-400" />}
                                       {childrenCount > 0 && (
                                         <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-bold flex items-center gap-1">
                                           <Layers className="size-3" />
-                                          {childrenCount} submenu
-                                          {childrenCount > 1 ? "s" : ""}
+                                          {childrenCount} submenu{childrenCount > 1 ? "s" : ""}
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-xs text-slate-500 font-medium">
-                                      {item.url}
-                                    </p>
+                                    <p className="text-xs text-slate-500 font-medium">{item.url}</p>
+                                    {item.subtitle && (
+                                      <p className="text-xs text-slate-400 font-normal mt-0.5">{item.subtitle}</p>
+                                    )}
                                   </div>
                                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
@@ -569,7 +703,7 @@ export default function MenuEditor({
                                       <Edit className="size-4" />
                                     </button>
                                     <button
-                                      onClick={() => handleDeleteItem(item.id)}
+                                      onClick={() => handleDeleteItem(item.id || item._id)}
                                       className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                                     >
                                       <Trash2 className="size-4" />
@@ -578,59 +712,42 @@ export default function MenuEditor({
                                 </div>
                               </div>
 
-                              {/* Child Items (Submenus) */}
+                              {/* Child Items */}
                               {children.length > 0 && (
                                 <div className="ml-8 mt-2 space-y-2">
                                   {children.map((child) => {
-                                    const ChildIconComponent =
-                                      availableIcons.find(
-                                        (i) => i.name === child.icon,
-                                      )?.icon || FileText;
-
+                                    const ChildIconComponent = getDynIcon(child.icon);
                                     return (
                                       <div
-                                        key={child.id}
+                                        key={child.id || child._id}
                                         className="group bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-3 hover:border-purple-400 transition-all relative"
                                       >
-                                        {/* Submenu Indicator Line */}
                                         <div className="absolute -left-4 top-1/2 w-4 h-px bg-purple-300" />
-
                                         <div className="flex items-center gap-2">
                                           <ChevronRight className="size-4 text-purple-500" />
-                                          <div
-                                            className={`size-8 rounded-lg bg-gradient-to-br ${theme.secondary} flex items-center justify-center shadow-md`}
-                                          >
+                                          <div className={`size-8 rounded-lg bg-gradient-to-br ${theme.secondary} flex items-center justify-center shadow-md`}>
                                             <ChildIconComponent className="size-4 text-white" />
                                           </div>
-                                          <div className="flex-1">
+                                          <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                              <h4 className="font-bold text-slate-800 text-sm">
-                                                {child.label}
-                                              </h4>
-                                              {child.target === "_blank" && (
-                                                <ExternalLink className="size-3 text-slate-400" />
-                                              )}
-                                              <span className="px-1.5 py-0.5 bg-purple-200 text-purple-700 rounded text-xs font-bold">
-                                                Submenu
-                                              </span>
+                                              <h4 className="font-bold text-slate-800 text-sm">{child.label}</h4>
+                                              {child.target === "_blank" && <ExternalLink className="size-3 text-slate-400" />}
+                                              <span className="px-1.5 py-0.5 bg-purple-200 text-purple-700 rounded text-xs font-bold">Submenu</span>
                                             </div>
-                                            <p className="text-xs text-slate-500 font-medium">
-                                              {child.url}
-                                            </p>
+                                            <p className="text-xs text-slate-500 font-medium">{child.url}</p>
+                                            {child.subtitle && (
+                                              <p className="text-xs text-slate-400 font-normal mt-0.5">{child.subtitle}</p>
+                                            )}
                                           </div>
                                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
-                                              onClick={() =>
-                                                handleEditItem(child)
-                                              }
+                                              onClick={() => handleEditItem(child)}
                                               className="p-1.5 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-all"
                                             >
                                               <Edit className="size-3" />
                                             </button>
                                             <button
-                                              onClick={() =>
-                                                handleDeleteItem(child.id)
-                                              }
+                                              onClick={() => handleDeleteItem(child.id || child._id)}
                                               className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                                             >
                                               <Trash2 className="size-3" />
@@ -654,56 +771,31 @@ export default function MenuEditor({
                 {menuItems.length > 0 && (
                   <div className="mt-6 bg-white rounded-2xl shadow-lg overflow-hidden">
                     <div className="bg-slate-50 border-b-2 border-slate-200 p-4">
-                      <h4 className="font-black text-slate-900">
-                        Live Preview
-                      </h4>
-                      <p className="text-xs text-slate-500 font-medium">
-                        How your menu will look with submenus
-                      </p>
+                      <h4 className="font-black text-slate-900">Live Preview</h4>
+                      <p className="text-xs text-slate-500 font-medium">How your menu will look with submenus</p>
                     </div>
                     <div className="p-6">
                       {menuSettings.location.includes("Header") ? (
-                        <div
-                          className={`bg-gradient-to-r ${theme.primary} rounded-xl p-4`}
-                        >
+                        <div className={`bg-gradient-to-r ${theme.primary} rounded-xl p-4`}>
                           <div className="flex items-center gap-6">
-                            <div className="text-white font-black text-xl">
-                              LOGO
-                            </div>
+                            <div className="text-white font-black text-xl">LOGO</div>
                             <nav className="flex items-center gap-4">
                               {getParentItems().map((item) => {
-                                const IconComponent =
-                                  availableIcons.find(
-                                    (i) => i.name === item.icon,
-                                  )?.icon || FileText;
-                                const children = getChildItems(item.id);
-
+                                const IconComponent = getDynIcon(item.icon);
+                                const children = getChildItems(item.id || item._id);
                                 return (
-                                  <div
-                                    key={item.id}
-                                    className="relative group/menu"
-                                  >
+                                  <div key={item.id || item._id} className="relative group/menu">
                                     <button className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold text-sm transition-all">
                                       <IconComponent className="size-4" />
                                       {item.label}
-                                      {children.length > 0 && (
-                                        <ChevronDown className="size-3" />
-                                      )}
+                                      {children.length > 0 && <ChevronDown className="size-3" />}
                                     </button>
-
-                                    {/* Submenu Dropdown */}
                                     {children.length > 0 && (
                                       <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl p-2 min-w-[200px] opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-50">
                                         {children.map((child) => {
-                                          const ChildIconComponent =
-                                            availableIcons.find(
-                                              (i) => i.name === child.icon,
-                                            )?.icon || FileText;
+                                          const ChildIconComponent = getDynIcon(child.icon);
                                           return (
-                                            <button
-                                              key={child.id}
-                                              className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-purple-50 rounded-lg text-sm font-medium transition-all"
-                                            >
+                                            <button key={child.id || child._id} className="w-full flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-purple-50 rounded-lg text-sm font-medium transition-all">
                                               <ChevronRight className="size-3 text-purple-500" />
                                               <ChildIconComponent className="size-4" />
                                               {child.label}
@@ -722,13 +814,10 @@ export default function MenuEditor({
                         <div className="bg-slate-50 rounded-xl p-4">
                           <div className="space-y-2">
                             {getParentItems().map((item) => {
-                              const IconComponent =
-                                availableIcons.find((i) => i.name === item.icon)
-                                  ?.icon || FileText;
-                              const children = getChildItems(item.id);
-
+                              const IconComponent = getDynIcon(item.icon);
+                              const children = getChildItems(item.id || item._id);
                               return (
-                                <div key={item.id}>
+                                <div key={item.id || item._id}>
                                   <button className="w-full flex items-center justify-between px-4 py-3 bg-white hover:bg-slate-100 text-slate-700 rounded-lg font-bold text-sm transition-all">
                                     <div className="flex items-center gap-3">
                                       <IconComponent className="size-4" />
@@ -736,29 +825,19 @@ export default function MenuEditor({
                                     </div>
                                     {children.length > 0 ? (
                                       <div className="flex items-center gap-1">
-                                        <span className="text-xs text-purple-600 font-bold">
-                                          {children.length}
-                                        </span>
+                                        <span className="text-xs text-purple-600 font-bold">{children.length}</span>
                                         <ChevronDown className="size-4 text-slate-400" />
                                       </div>
                                     ) : (
                                       <ChevronRight className="size-4 text-slate-400" />
                                     )}
                                   </button>
-
-                                  {/* Submenus */}
                                   {children.length > 0 && (
                                     <div className="ml-6 mt-1 space-y-1">
                                       {children.map((child) => {
-                                        const ChildIconComponent =
-                                          availableIcons.find(
-                                            (i) => i.name === child.icon,
-                                          )?.icon || FileText;
+                                        const ChildIconComponent = getDynIcon(child.icon);
                                         return (
-                                          <button
-                                            key={child.id}
-                                            className="w-full flex items-center gap-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-slate-700 rounded-lg text-sm font-medium transition-all"
-                                          >
+                                          <button key={child.id || child._id} className="w-full flex items-center gap-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-slate-700 rounded-lg text-sm font-medium transition-all">
                                             <ChevronRight className="size-3 text-purple-500" />
                                             <ChildIconComponent className="size-3" />
                                             {child.label}

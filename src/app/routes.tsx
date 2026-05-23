@@ -49,6 +49,7 @@ import SystemArchitecture from "@/features/website/info/SystemArchitecture";
 import AddProperty from "@/features/property/pages/AddProperty";
 const EditProperty = lazy(() => import("../features/admin/pages/EditProperty"));
 import ProtectedRoute from "@/features/shared/layout/ProtectedRoute";
+import NotFound from "@/features/shared/pages/NotFound";
 
 const AdminProfile = lazy(() => import("../features/admin/pages/AdminProfile"));
 import Analytics from "@/features/admin/pages/Analytics";
@@ -292,4 +293,6 @@ export const router = createBrowserRouter([
     path: "/admin/properties/new",
     element: <Navigate to="/add-property" replace />,
   },
+  { path: "/admin/*", element: eb(<NotFound />) },
+  { path: "*", element: eb(<NotFound />) },
 ]);

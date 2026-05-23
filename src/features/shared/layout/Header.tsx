@@ -2,9 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import {
   ChevronDown,
-  Gavel,
-  Zap,
-  Briefcase,
   Crown,
   Phone,
   Mail,
@@ -14,20 +11,45 @@ import {
   Linkedin,
   Youtube,
   Sparkles,
+  Gavel,
+  Zap,
+  Briefcase,
 } from "lucide-react";
+
+const dropdownIcons: Record<string, any> = {
+  Auctions: Gavel,
+  Buying: Zap,
+  Selling: Briefcase,
+};
+
+const dropdownBgTheme: Record<string, "blue" | "emerald" | "orange"> = {
+  Auctions: "blue",
+  Buying: "emerald",
+  Selling: "orange",
+};
+import * as LucideIcons from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+
+const getBadgeBg = (color: string) => {
+  const map: Record<string, string> = {
+    red: "bg-red-500", green: "bg-green-500", blue: "bg-blue-500",
+    orange: "bg-orange-500", purple: "bg-purple-500", amber: "bg-amber-500",
+    cyan: "bg-cyan-500", rose: "bg-rose-500",
+  };
+  return map[color] || "bg-red-500";
+};
 import { useAdminStats } from "@/features/admin/api/useAdminApi";
-import AuctionDropdown from "./AuctionDropdown";
-import BuyingDropdown from "./BuyingDropdown";
-import SellingDropdown from "./SellingDropdown";
+import DynamicDropdown from "./DynamicDropdown";
+import { useMenuData } from "@/hooks/useMenuData";
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const [showAuctionMenu, setShowAuctionMenu] = useState(false);
-  const [showBuyingMenu, setShowBuyingMenu] = useState(false);
-  const [showSellingMenu, setShowSellingMenu] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const { data: stats } = useAdminStats();
+  const { getHeaderDropdowns, getStandaloneLinks } = useMenuData();
+  const headerDropdowns = getHeaderDropdowns();
+  const standaloneLinks = getStandaloneLinks();
 
   return (
     <header className="relative bg-gradient-to-r from-white via-blue-50/50 to-indigo-50/50 backdrop-blur-xl border-b border-white/60 top-0 z-50 shadow-lg">
@@ -156,104 +178,83 @@ export default function Header() {
               </div>
             </button>
 
-            <nav className="hidden md:flex items-center gap-6">
-              {/* Auctions Menu */}
-              <div
-                className="relative group"
-                onMouseEnter={() => setShowAuctionMenu(true)}
-                onMouseLeave={() => setShowAuctionMenu(false)}
-              >
-                <button className="text-sm font-bold text-slate-700 hover:text-blue-600 transition-all flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 group">
-                  <div className="size-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md group-hover:shadow-lg group-hover:shadow-blue-500/30">
-                    <Gavel className="size-4 text-white" />
-                  </div>
-                  Auctions
-                  <ChevronDown
-                    className={`size-4 transition-all ${showAuctionMenu ? "rotate-180 text-blue-600" : "text-slate-400"}`}
+            <nav className="hidden md:flex items-center gap-6 flex-nowrap">
+              {/* Dynamic Dropdowns from DB */}
+              {headerDropdowns.map((dropdown: any) => (
+                <div
+                  key={dropdown._id}
+                  className="relative group"
+                  onMouseEnter={() => setOpenDropdown(dropdown._id)}
+                  onMouseLeave={() => setOpenDropdown(null)}
+                >
+                  <button className="text-sm font-bold text-slate-700 hover:text-blue-600 transition-all flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 group whitespace-nowrap">
+                    {(() => {
+                      const HardcodedIcon = dropdownIcons[dropdown.label];
+                      const icons: any = LucideIcons;
+                      const DbIcon = dropdown.icon ? icons[dropdown.icon] : null;
+                      const IconComp = HardcodedIcon || DbIcon;
+                      return IconComp ? (
+                        <div className="size-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md group-hover:shadow-lg group-hover:shadow-blue-500/30">
+                          <IconComp className="size-4 text-white" />
+                        </div>
+                      ) : null;
+                    })()}
+                    {dropdown.label}
+                    {dropdown.badge && (
+                      <span className={`px-2 py-0.5 text-white text-[10px] rounded-full animate-pulse font-black ${getBadgeBg(dropdown.badgeColor || "red")}`}>
+                        {dropdown.badgeLabel || "LIVE"}
+                      </span>
+                    )}
+                    <ChevronDown
+                      className={`size-4 transition-all ${openDropdown === dropdown._id ? "rotate-180 text-blue-600" : "text-slate-400"}`}
+                    />
+                  </button>
+                  <DynamicDropdown
+                    show={openDropdown === dropdown._id}
+                    items={dropdown.children}
+                    onMouseEnter={() => setOpenDropdown(dropdown._id)}
+                    onMouseLeave={() => setOpenDropdown(null)}
+                    onNavigate={(path) => { window.location.href = path; }}
+                    width={dropdown.label === "Auctions" ? "500px" : "320px"}
+                    bgTheme={dropdownBgTheme[dropdown.label] || "blue"}
                   />
-                </button>
-                <AuctionDropdown
-                  show={showAuctionMenu}
-                  onMouseEnter={() => setShowAuctionMenu(true)}
-                  onMouseLeave={() => setShowAuctionMenu(false)}
-                  onNavigate={(path) => {
-                    window.location.href = path;
-                  }}
-                />
-              </div>
+                </div>
+              ))}
 
-              {/* Buying Menu */}
-              <div
-                className="relative group"
-                onMouseEnter={() => setShowBuyingMenu(true)}
-                onMouseLeave={() => setShowBuyingMenu(false)}
-              >
-                <button className="text-sm font-bold text-slate-700 hover:text-blue-600 transition-all flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 group">
-                  <div className="size-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md group-hover:shadow-lg group-hover:shadow-blue-500/30">
-                    <Zap className="size-4 text-white" />
-                  </div>
-                  Buying
-                  <ChevronDown
-                    className={`size-4 transition-all ${showBuyingMenu ? "rotate-180 text-blue-600" : "text-slate-400"}`}
-                  />
-                </button>
-                <BuyingDropdown
-                  show={showBuyingMenu}
-                  onMouseEnter={() => setShowBuyingMenu(true)}
-                  onMouseLeave={() => setShowBuyingMenu(false)}
-                  onNavigate={(path) => {
-                    window.location.href = path;
-                  }}
-                />
-              </div>
+              {/* Dynamic Standalone Links */}
+              {standaloneLinks.map((link: any) => {
+                const icons: any = LucideIcons;
+                const IconComp = link.icon ? icons[link.icon] : null;
+                const isLiveLink = link.url === "/live-auctions" || link.label === "Live Now";
 
-              {/* Selling Menu */}
-              <div
-                className="relative group"
-                onMouseEnter={() => setShowSellingMenu(true)}
-                onMouseLeave={() => setShowSellingMenu(false)}
-              >
-                <button className="text-sm font-bold text-slate-700 hover:text-blue-600 transition-all flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 group">
-                  <div className="size-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md group-hover:shadow-lg group-hover:shadow-blue-500/30">
-                    <Briefcase className="size-4 text-white" />
-                  </div>
-                  Selling
-                  <ChevronDown
-                    className={`size-4 transition-all ${showSellingMenu ? "rotate-180 text-blue-600" : "text-slate-400"}`}
-                  />
-                </button>
-                <SellingDropdown
-                  show={showSellingMenu}
-                  onMouseEnter={() => setShowSellingMenu(true)}
-                  onMouseLeave={() => setShowSellingMenu(false)}
-                  onNavigate={(path) => {
-                    window.location.href = path;
-                  }}
-                />
-              </div>
+                const badge = link.badge ? (
+                  isLiveLink && (!link.badgeLabel || link.badgeLabel === "LIVE") ? (
+                    <span className="px-2.5 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs rounded-full animate-pulse font-bold shadow-lg shadow-red-500/30">
+                      {(stats as any)?.liveAuctions || 0} 🔥
+                    </span>
+                  ) : (
+                    <span className={`px-2.5 py-1 text-white text-xs rounded-full animate-pulse font-bold ${getBadgeBg(link.badgeColor || "red")}`}>
+                      {link.badgeLabel || "LIVE"}
+                    </span>
+                  )
+                ) : null;
 
-              <button
-                onClick={() => {
-                  window.location.href = "/live-auctions";
-                }}
-                className="text-sm font-medium text-slate-600 hover:text-slate-900 flex items-center gap-2 transition-colors"
-              >
-                Live Now
-                <span className="px-2.5 py-1 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs rounded-full animate-pulse font-bold shadow-lg shadow-red-500/30">
-                  {stats?.liveAuctions || 0} 🔥
-                </span>
-              </button>
-              {/* <button onClick={() => navigate("/view-live-locations")} className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-                Locations
-              </button> */}
-              <button
-                onClick={() => {
-                  window.location.href = "/contact-us";
-                }}
-                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                Contact Us
-              </button>
+                return (
+                  <button
+                    key={link._id}
+                    onClick={() => { window.location.href = link.url; }}
+                    className="text-sm font-bold text-slate-700 hover:text-blue-600 transition-all flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 group whitespace-nowrap"
+                  >
+                    {IconComp && (
+                      <div className="size-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-md group-hover:shadow-lg group-hover:shadow-blue-500/30">
+                        <IconComp className="size-4 text-white" />
+                      </div>
+                    )}
+                    {link.label}
+                    {badge}
+                  </button>
+                );
+              })}
             </nav>
           </div>
 
