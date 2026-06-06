@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, Users, Lock, Mail, Phone, User } from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 
 export default function AddUserModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
   const theme = useTheme();
@@ -50,12 +51,17 @@ export default function AddUserModal({ onClose, onSuccess }: { onClose: () => vo
       const result = await apiClient.fetch('/auth/register', { method: 'POST', body: JSON.stringify(data) });
       if (result.success) {
         setSuccess('✅ User created successfully!');
+        showSuccess("User created!", "The user account has been created successfully.");
         if (onSuccess) onSuccess();
         setTimeout(() => { setSuccess(''); onClose(); }, 1500);
       } else {
         setError(result.message || 'Failed to create user');
+        showError("Creation failed", result.message || "Failed to create user");
       }
-    } catch (err: any) { setError(err?.message || 'Cannot connect to server'); }
+    } catch (err: any) {
+      setError(err?.message || 'Cannot connect to server');
+      showError("Error", err?.message || "Cannot connect to server");
+    }
     finally { setLoading(false); }
   };
 
@@ -85,7 +91,7 @@ export default function AddUserModal({ onClose, onSuccess }: { onClose: () => vo
           <div className="space-y-4">
             <h3 className="text-xl font-black text-slate-900 flex items-center gap-2"><Lock className="size-6 text-purple-600" />Account Details</h3>
             <div className="grid md:grid-cols-2 gap-4">
-              <div><label className="block text-sm font-bold text-slate-700 mb-2">User Role *</label><select name="role" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500" required><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="investor">Investor</option><option value="agent">Agent</option><option value="admin">Administrator</option></select></div>
+              <div><label className="block text-sm font-bold text-slate-700 mb-2">User Role *</label><select name="role" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500" required><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="agent">Agent</option><option value="admin">Administrator</option></select></div>
               <div><label className="block text-sm font-bold text-slate-700 mb-2">Account Status</label><select name="status" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
             </div>
             <div className="grid md:grid-cols-2 gap-4">

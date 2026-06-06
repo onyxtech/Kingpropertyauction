@@ -61,5 +61,19 @@ export const useUserApi = () => {
     });
   };
 
-  return { useGetUsers, useUpdateUserStatus, useDeleteUser, useUpdateUser };
+  const useReviewRoleRequest = () => {
+    return useMutation({
+      mutationFn: async ({ id, decision, reviewNote }: { id: string; decision: "approved" | "rejected"; reviewNote?: string }) => {
+        const result = await apiClient.fetch(`/users/${id}/review-role`, {
+          method: "PATCH",
+          body: JSON.stringify({ decision, reviewNote }),
+        });
+        if (!result.success) throw new Error(result.message);
+        return result;
+      },
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ["users"] }),
+    });
+  };
+
+  return { useGetUsers, useUpdateUserStatus, useDeleteUser, useUpdateUser, useReviewRoleRequest };
 };

@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "agent", "admin", "buyer", "seller", "investor"],
+      enum: ["user", "agent", "admin", "buyer", "seller"],
       default: "user",
     },
     phone: {
@@ -52,6 +52,30 @@ const userSchema = new mongoose.Schema(
       licenseNumber: String,
       commissionRate: Number,
       specialization: String,
+      companyAddress: String,
+    },
+    bankDetails: {
+      accountHolderName: { type: String, default: "" },
+      bankName: { type: String, default: "" },
+      accountNumber: { type: String, default: "" },
+      sortCode: { type: String, default: "" },
+      iban: { type: String, default: "" },
+      bankAddress: { type: String, default: "" },
+    },
+    notificationSettings: {
+      bidPlaced: { type: Boolean, default: true },
+      outbid: { type: Boolean, default: true },
+      auctionWon: { type: Boolean, default: true },
+      auctionLost: { type: Boolean, default: true },
+      auctionStarted: { type: Boolean, default: true },
+      propertyApproved: { type: Boolean, default: true },
+      propertyRejected: { type: Boolean, default: true },
+      propertySold: { type: Boolean, default: true },
+      newBidOnProperty: { type: Boolean, default: true },
+      newEnquiry: { type: Boolean, default: true },
+      messageReceived: { type: Boolean, default: true },
+      auctionEnded: { type: Boolean, default: true },
+      offerReceived: { type: Boolean, default: true },
     },
     permissions: {
       canBid: { type: Boolean, default: true },
@@ -60,6 +84,18 @@ const userSchema = new mongoose.Schema(
       smsAlerts: { type: Boolean, default: false },
     },
     marketingOptOut: { type: Boolean, default: false },
+    activeView: {
+      type: String,
+      enum: ["buyer", "seller"],
+      default: "buyer",
+    },
+    roleRequest: {
+      requestedRole: { type: String, enum: ["seller", "agent", "buyer"] },
+      status: { type: String, enum: ["pending", "approved", "rejected"] },
+      requestedAt: { type: Date },
+      reviewedAt: { type: Date },
+      reviewNote: { type: String },
+    },
   },
   { timestamps: true },
 );
@@ -68,6 +104,23 @@ const userSchema = new mongoose.Schema(
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+
+// Set role-based permissions for new users
+userSchema.pre("save", function (next) {
+  if (!this.isNew) return next();
+  if (!this.permissions) this.permissions = {};
+  if (this.role === "buyer" || this.role === "user") {
+    this.permissions.canBid = true;
+    this.permissions.canListProperties = false;
+  } else if (this.role === "seller" || this.role === "agent") {
+    this.permissions.canBid = false;
+    this.permissions.canListProperties = true;
+  } else if (this.role === "admin") {
+    this.permissions.canBid = false;
+    this.permissions.canListProperties = false;
+  }
   next();
 });
 

@@ -1,4 +1,4 @@
-import { CheckCircle, Clock, Tag, Gavel, Phone } from "lucide-react";
+import { CheckCircle, Clock, Tag, Gavel, Phone, MessageSquare } from "lucide-react";
 
 interface PropertyActionCardProps {
   property: any;
@@ -14,6 +14,8 @@ interface PropertyActionCardProps {
   formatPrice: (val: number) => string;
   onPlaceBid: () => void;
   onNavigate: (path: string) => void;
+  onEnquire: () => void;
+  isOwnProperty?: boolean;
 }
 
 export default function PropertyActionCard({
@@ -30,6 +32,8 @@ export default function PropertyActionCard({
   formatPrice,
   onPlaceBid,
   onNavigate,
+  onEnquire,
+  isOwnProperty = false,
 }: PropertyActionCardProps) {
   const handleDownloadBrochure = () => {
     const lines = [
@@ -145,13 +149,20 @@ export default function PropertyActionCard({
         <div className="space-y-3">
           {isLiveNow ? (
             <>
-              <button
-                onClick={onPlaceBid}
-                className="w-full py-4 bg-white text-blue-600 rounded-xl font-black shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-2 text-lg"
-              >
-                <Gavel className="size-6" />
-                Place Bid
-              </button>
+              {isOwnProperty ? (
+                <div className="w-full py-4 bg-white/10 border-2 border-white/30 rounded-xl text-center">
+                  <p className="text-white/80 font-bold text-sm">🏠 This is your property</p>
+                  <p className="text-white/60 text-xs mt-1">You cannot bid on your own listing</p>
+                </div>
+              ) : (
+                <button
+                  onClick={onPlaceBid}
+                  className="w-full py-4 bg-white text-blue-600 rounded-xl font-black shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-2 text-lg"
+                >
+                  <Gavel className="size-6" />
+                  Place Bid
+                </button>
+              )}
             </>
           ) : isCompleted ? (
             <>
@@ -264,6 +275,19 @@ export default function PropertyActionCard({
               </span>
             </a>
           )}
+          {/* Enquiry Button */}
+          <button
+            onClick={onEnquire}
+            className="w-full flex items-center justify-center gap-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 border-2 border-emerald-200 rounded-xl transition-all hover:scale-105 group"
+          >
+            <div className="size-10 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
+              <MessageSquare className="size-5 text-white" />
+            </div>
+            <div className="text-left">
+              <p className="font-black text-slate-900 text-sm">Enquire About This Property</p>
+              <p className="text-xs text-slate-500 font-medium">Get more details from the agent</p>
+            </div>
+          </button>
         </div>
       </div>
 

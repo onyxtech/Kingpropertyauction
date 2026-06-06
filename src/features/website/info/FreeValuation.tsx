@@ -13,27 +13,30 @@ import {
 } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
 
 export default function FreeValuation() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [addressValue, setAddressValue] = useState("");
   const [addressFields, setAddressFields] = useState<any>({});
   const navigate = useNavigate();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     const form = e.target as HTMLFormElement;
     const fd = new FormData(form);
     const phone = (fd.get("phone") as string) || "";
     const phoneRegex = /^[\+\d\s\-\(\)]{10,15}$/;
     if (phone && !phoneRegex.test(phone)) {
-      alert("Please enter a valid phone number (10–15 digits).");
+      setError("Please enter a valid phone number (10–15 digits).");
       return;
     }
     const sqft = Number(fd.get("sqft"));
     if (fd.get("sqft") && sqft < 0) {
-      alert("Square feet cannot be negative.");
+      setError("Square feet cannot be negative.");
       return;
     }
     setLoading(true);
@@ -59,7 +62,10 @@ export default function FreeValuation() {
       });
       form.reset();
       setSubmitted(true);
+      showSuccess("Valuation request sent!", "We'll contact you within 24 hours.");
     } catch (e: any) {
+      showError("Submission failed", "Please try again.");
+      setError("Failed to submit. Please try again.");
       console.error("Valuation submit error:", e);
     }
     setLoading(false);
@@ -324,6 +330,11 @@ export default function FreeValuation() {
                 />
               </div>
 
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="text-sm font-bold text-red-700">{error}</p>
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={loading}

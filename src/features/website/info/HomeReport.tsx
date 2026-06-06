@@ -2,6 +2,7 @@ import { FileText, Home, CheckCircle, Sparkles, Info, Download, Clock, Shield, A
 import { useState } from "react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
 
 export default function HomeReport() {
@@ -49,12 +50,15 @@ export default function HomeReport() {
       });
       if (data.success) {
         setSubmitted(true);
+        showSuccess("Booking request sent!", "We'll contact you within 48 hours.");
         setFormData({ fullName: "", email: "", phone: "", propertyAddress: "", propertyType: "", propertyValue: "", bedrooms: "", preferredDate: "", package: "", additionalNotes: "" });
       } else {
         setError(data.message || 'Something went wrong. Please try again.');
+        showError("Submission failed", "Please try again.");
       }
     } catch (e: any) {
       setError(e?.message || 'Network error. Please try again.');
+      showError("Submission failed", "Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }

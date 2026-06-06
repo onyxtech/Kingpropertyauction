@@ -6,7 +6,7 @@ const DEFAULT_KNOWLEDGE = [
     title: 'Company Overview',
     category: 'company',
     order: 1,
-    content: `King Property Auction is a UK-based property auction platform operating since 2024. We specialise in residential, commercial, land, and investment property auctions across the United Kingdom. We offer online auctions. Our platform serves buyers, sellers, agents, and property investors.`,
+    content: `King Property Auction is a UK-based property auction platform operating since 2024. We specialise in residential, commercial, land, and investment property auctions across the United Kingdom. We offer online auctions. Our platform serves buyers, sellers, and agents.`,
   },
   {
     key: 'selling_process',
@@ -41,8 +41,7 @@ If you are an agent or have a seller account, you can also submit properties dir
 8. Complete purchase within 28 days
 Auto-bidding available: set your maximum and system bids on your behalf.
 Regular users register at /register.
-Agents apply for an agent account to list properties.
-Investors register the same as buyers at /register.`,
+Agents apply for an agent account to list properties.`,
   },
   {
     key: 'fees_and_costs',
@@ -105,7 +104,6 @@ For general enquiries: /contact-us`,
 BUYER: Register to bid on properties. Needs ID verification and deposit.
 SELLER: List properties for auction. Start with free valuation at /free-valuation.
 AGENT: Manage property listings on behalf of sellers. Apply for agent account.
-INVESTOR: Portfolio management, multiple property bidding. Same registration as buyer.
 All accounts are FREE to create at /register.
 Admin approval may be required before full account activation.`,
   },

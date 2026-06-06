@@ -1,5 +1,23 @@
-import { Clock, AlertTriangle } from "lucide-react";
+import { Clock, AlertTriangle, Building2, Users, ArrowLeftRight } from "lucide-react";
 import StatsCards from "../StatsCards";
+
+const getApprovalIcon = (type: string) => {
+  switch (type) {
+    case "property": return Building2;
+    case "user": return Users;
+    case "role": return ArrowLeftRight;
+    default: return Clock;
+  }
+};
+
+const getApprovalLabel = (type: string) => {
+  switch (type) {
+    case "property": return "Property";
+    case "user": return "New User";
+    case "role": return "Role Request";
+    default: return "Pending";
+  }
+};
 
 interface StatsOverviewProps {
   modules: {
@@ -77,13 +95,15 @@ export default function StatsOverview({
                 <p className="text-sm text-slate-600 font-medium mb-4">
                   {module.description}
                 </p>
-                <div className="flex items-center gap-4 text-xs font-bold">
-                  {Object.entries(module.stats).map(([key, value]) => (
-                    <div key={key} className="bg-slate-100 px-3 py-1.5 rounded-lg">
-                      <span className="text-slate-500 capitalize">{key}: </span>
-                      <span className="text-slate-900">{value}</span>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-3 text-xs font-bold flex-wrap">
+                  {Object.entries(module.stats || {})
+                    .filter(([_, v]) => v !== undefined && v !== null && v !== "")
+                    .map(([key, value]) => (
+                      <div key={key} className="bg-slate-100 px-3 py-1.5 rounded-lg">
+                        <span className="text-slate-500 capitalize">{key}: </span>
+                        <span className="text-slate-900">{String(value)}</span>
+                      </div>
+                    ))}
                 </div>
               </button>
             );
@@ -157,40 +177,44 @@ export default function StatsOverview({
                 No pending approvals
               </p>
             ) : (
-              pendingApprovals.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border-2 border-orange-200 hover:border-orange-300 transition-all"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-1 bg-orange-500 text-white text-xs font-black rounded-lg">
-                          {item.type}
-                        </span>
-                        <span className="text-xs font-bold text-slate-500">
-                          #{item.id}
-                        </span>
+              pendingApprovals.map((item) => {
+                const ApprovalIcon = getApprovalIcon(item.type);
+                const typeLabel = getApprovalLabel(item.type);
+                const badgeColor =
+                  item.type === "property" ? "bg-purple-500" :
+                  item.type === "user" ? "bg-blue-500" :
+                  item.type === "role" ? "bg-violet-500" : "bg-orange-500";
+                return (
+                  <div
+                    key={item.id}
+                    className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl border-2 border-orange-200 hover:border-orange-300 transition-all"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0 mr-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`px-2 py-1 ${badgeColor} text-white text-xs font-black rounded-lg flex items-center gap-1`}>
+                            <ApprovalIcon className="size-3" />
+                            {typeLabel}
+                          </span>
+                        </div>
+                        <p className="text-sm font-black text-slate-900 truncate">
+                          {item.title}
+                        </p>
+                        <p className="text-xs text-slate-600 font-medium mt-1 truncate">
+                          {item.submittedBy}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-0.5">{item.date}</p>
                       </div>
-                      <p className="text-sm font-black text-slate-900">
-                        {item.title}
-                      </p>
-                      <p className="text-xs text-slate-600 font-medium mt-1">
-                        By: {item.submittedBy}
-                      </p>
+                      <button
+                        onClick={() => onApprovalReview(item.type)}
+                        className="px-3 py-2 bg-green-500 text-white rounded-xl text-xs font-bold hover:bg-green-600 transition-all flex-shrink-0"
+                      >
+                        Review
+                      </button>
                     </div>
-                    <button
-                      onClick={() => onApprovalReview(item.type)}
-                      className="px-4 py-2 bg-green-500 text-white rounded-xl text-xs font-bold hover:bg-green-600 transition-all"
-                    >
-                      Review
-                    </button>
                   </div>
-                  <p className="text-xs text-slate-500 font-medium">
-                    {item.date}
-                  </p>
-                </div>
-              ))
+                );
+              })
             )}
             {pendingApprovals.length >= 8 && (
               <p className="w-full py-2 text-slate-400 text-xs font-medium text-center">

@@ -201,9 +201,61 @@ export default function AddressAutocomplete({
           });
 
         const mapped = (suggestions || []).map((s: any) => {
-          const raw = JSON.parse(JSON.stringify(s));
-          const data = raw.mh?.[0];
-          return { placeId: data?.[1] || "", text: data?.[2]?.[0] || "" };
+          try {
+            // Method 1: Direct placePrediction API (newer)
+            if (s.placePrediction) {
+              return {
+                placeId: s.placePrediction.placeId ||
+                         s.placePrediction.place?.id || "",
+                text: s.placePrediction.text?.text ||
+                      s.placePrediction.structuredFormat?.mainText?.text || "",
+              };
+            }
+
+            // Method 2: Parse internal structure
+            const raw = JSON.parse(JSON.stringify(s));
+
+            // Try known internal keys
+            const data = raw.mh?.[0] || raw.nh?.[0] ||
+                         raw.oh?.[0] || raw.ph?.[0] ||
+                         raw.Bh?.[0] || raw.Ch?.[0];
+            if (data) {
+              return {
+                placeId: data?.[1] || "",
+                text: data?.[2]?.[0] || data?.[3]?.[0] || "",
+              };
+            }
+
+            // Method 3: Find any array with placeId pattern
+            const keys = Object.keys(raw);
+            for (const key of keys) {
+              if (Array.isArray(raw[key]) && raw[key].length > 0) {
+                const item = raw[key][0];
+                if (Array.isArray(item) && item.length >= 3) {
+                  const possibleId = item[1];
+                  const possibleText = item[2];
+                  if (typeof possibleId === "string" &&
+                      possibleId.length > 10 &&
+                      (typeof possibleText === "string" ||
+                       Array.isArray(possibleText))) {
+                    return {
+                      placeId: possibleId,
+                      text: Array.isArray(possibleText)
+                        ? possibleText[0]
+                        : possibleText,
+                    };
+                  }
+                }
+              }
+            }
+
+            // Method 4: Log full structure for debugging
+            console.log("Suggestion structure:", JSON.stringify(raw, null, 2));
+            return { placeId: "", text: "" };
+          } catch (e) {
+            console.warn("Suggestion parse error:", e);
+            return { placeId: "", text: "" };
+          }
         });
         const parsed = mapped.filter((s: any) => s.text && s.placeId);
 

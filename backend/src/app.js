@@ -10,6 +10,7 @@ import logger from "./middlewares/logger.middleware.js";
 import { redisConnection } from "./config/redis.js";
 
 const app = express();
+app.set("trust proxy", 1);
 
 app.use(
   helmet({
@@ -129,6 +130,7 @@ app.use("/api/settings", settingsRoutes);
 
 import messageRoutes from "./modules/message/message.routes.js";
 app.use("/api/conversations", messageRoutes);
+app.use("/api/messages", messageRoutes);
 
 // ─── AI Chat (Phase 3) ───
 import chatRoutes from "./modules/chat/chat.routes.js";
@@ -145,6 +147,12 @@ app.use("/api/menus", menuRoutes);
 
 import campaignRoutes from "./modules/campaign/campaign.routes.js";
 app.use("/api/campaigns", campaignRoutes);
+
+import commissionRoutes from "./modules/commission/commission.routes.js";
+app.use("/api/commissions", commissionRoutes);
+
+import paymentRoutes from "./modules/payment/payment.routes.js";
+app.use("/api/payments", paymentRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

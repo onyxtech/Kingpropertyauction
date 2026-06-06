@@ -1,4 +1,5 @@
 import { mediaUrl } from "@/lib/mediaUrl";
+import { showSuccess, showError } from "@/lib/toast";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { Auction, Property, Bid } from "@/types";
@@ -293,15 +294,22 @@ export default function AuctionDetail() {
       return;
     }
 
-    if (
-      user?.role === "admin" ||
-      user?.role === "agent" ||
-      user?.role === "seller"
-    ) {
+    const userPermissions = (user as any)?.permissions;
+    const userCanBid = user?.role !== "admin" && userPermissions?.canBid === true;
+    if (!userCanBid) {
       showNotification(
-        "Bidding is only available for buyer and investor accounts.",
-        "error",
+        user?.role === "admin"
+          ? "Administrators cannot place bids."
+          : "You don't have bidding permissions. Apply to become a buyer from your dashboard.",
+        "error"
       );
+      return;
+    }
+    const propertyOwnerId = property?.createdBy?._id || property?.createdBy;
+    const currentUserId = user?.id || (user as any)?._id;
+    if (propertyOwnerId && currentUserId &&
+        propertyOwnerId.toString() === currentUserId.toString()) {
+      showNotification("You cannot bid on your own property.", "error");
       return;
     }
     setSelectedLot(property);
@@ -346,7 +354,7 @@ export default function AuctionDetail() {
         maxBid: useAutoBid ? parseFloat(maxBidAmount) : null,
       });
       setBidSuccess(true);
-      showNotification("Bid placed successfully! 🎉", "success");
+      showSuccess("Bid placed! 🎉", "Your bid has been submitted successfully.");
       queryClient.invalidateQueries({ queryKey: ["auctions"] });
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       setLotHistories((prev) => ({ ...prev, [selectedLot._id]: null }));
@@ -359,7 +367,7 @@ export default function AuctionDetail() {
       }, 2000);
     } catch (err: any) {
       queryClient.setQueryData(["auctions", auctionId], previousData);
-      showNotification(err.message || "Bid failed", "error");
+      showError("Bid failed", err.message || "Bid failed");
     }
   };
 

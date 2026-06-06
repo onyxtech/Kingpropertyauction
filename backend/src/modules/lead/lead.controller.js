@@ -5,6 +5,136 @@ export const create = async (req, res) => {
   try {
     const lead = await leadService.createLead(req.body);
     res.status(201).json({ success: true, data: lead, message: 'Your message has been received!' });
+
+    // Property inquiry: notify property owner and admin
+    if (req.body.leadType === "property_inquiry" && req.body.property) {
+      try {
+        const { sendEmail } = await import('../notifications/email.service.js');
+        const { isNotificationEnabled } = await import('../settings/settings.service.js');
+        const Notification = (await import('../notifications/notification.model.js')).default;
+        const Property = (await import('../property/property.model.js')).default;
+        const User = (await import('../user/user.model.js')).default;
+
+        const enabled = await isNotificationEnabled("propertyInquiry");
+        const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
+        const property = await Property.findById(req.body.property)
+          .populate("createdBy", "name email _id").lean();
+
+        const propertyUrl = `${siteUrl}/properties/${property?.slug || req.body.property}`;
+        const dashboardUrl = `${siteUrl}/admin/leads`;
+
+        const emailVars = {
+          inquirer_name: req.body.name,
+          inquirer_email: req.body.email,
+          inquirer_phone: req.body.phone || "Not provided",
+          property_title: property?.propertyTitle || "Property",
+          property_url: propertyUrl,
+          message: req.body.message,
+          dashboard_url: dashboardUrl,
+        };
+
+        if (enabled && property?.createdBy) {
+          await sendEmail({
+            to: property.createdBy.email,
+            subject: `New enquiry about ${property.propertyTitle}`,
+            templateKey: "propertyInquiry",
+            variables: emailVars,
+          }).catch(e => console.warn("Property owner inquiry email failed:", e.message));
+
+          const { emitToUser } = await import('../../socket.js');
+          await Notification.create({
+            type: "lead",
+            icon: "mail",
+            message: `New enquiry from ${req.body.name} about ${property?.propertyTitle}`,
+            link: `/dashboard/messages`,
+            color: "blue",
+            targetUser: property.createdBy._id,
+          }).catch(e => console.warn("Property owner notification failed:", e.message));
+
+          emitToUser(property.createdBy._id.toString(), "new_notification", {
+            type: "lead",
+            message: `New enquiry about ${property?.propertyTitle}`,
+            link: "/dashboard/messages",
+          });
+        }
+
+        // Admin notification
+        const admins = await User.find({ role: "admin" }).select("email name _id").lean();
+        for (const admin of admins) {
+          if (enabled) {
+            await sendEmail({
+              to: admin.email,
+              subject: `New property enquiry: ${property?.propertyTitle}`,
+              templateKey: "propertyInquiry",
+              variables: { ...emailVars, dashboard_url: `${siteUrl}/admin/leads` },
+            }).catch(e => console.warn("Admin inquiry email failed:", e.message));
+          }
+        }
+
+        await Notification.create({
+          type: "lead",
+          icon: "mail",
+          message: `New property enquiry from ${req.body.name} about ${property?.propertyTitle}`,
+          link: "/admin/leads",
+          color: "blue",
+          targetUser: null,
+        }).catch(e => console.warn("Admin inquiry notification failed:", e.message));
+
+        // Create / update conversation thread for this inquiry
+        try {
+          const { default: Conversation } = await import('../message/conversation.model.js');
+          const { default: Message } = await import('../message/message.model.js');
+
+          const propertyOwnerId = property?.createdBy?._id;
+          const inquirerUser = await User.findOne({ email: req.body.email }).select("_id").lean();
+
+          const participants = [propertyOwnerId, inquirerUser?._id].filter(Boolean);
+
+          // Upsert: update if exists (from createConversationFromLead race), create if not
+          const conversation = await Conversation.findOneAndUpdate(
+            { lead: lead._id },
+            {
+              $set: {
+                subject: `Property Enquiry: ${property?.propertyTitle || "Property"}`,
+                source: "property_inquiry",
+                participants,
+                assignedTo: propertyOwnerId || null,
+                status: "open",
+                priority: "normal",
+                tags: ["property-inquiry"],
+              },
+              $setOnInsert: {
+                lead: lead._id,
+                unreadCount: { admin: 1, user: 0 },
+                lastMessage: {
+                  text: req.body.message?.substring(0, 200),
+                  senderModel: inquirerUser ? "User" : "Lead",
+                  createdAt: new Date(),
+                },
+              },
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+          );
+
+          // Add initial message only if conversation has no messages yet
+          const msgCount = await Message.countDocuments({ conversation: conversation._id });
+          if (msgCount === 0) {
+            await Message.create({
+              conversation: conversation._id,
+              sender: inquirerUser?._id || lead._id,
+              senderModel: inquirerUser ? "User" : "Lead",
+              senderName: req.body.name,
+              text: req.body.message,
+              isAdminMessage: false,
+            });
+          }
+        } catch (convErr) {
+          console.warn("Conversation creation failed:", convErr.message);
+        }
+      } catch (e) {
+        console.warn("Property inquiry notifications failed:", e.message);
+      }
+    }
   } catch (error) {
     console.error('[Lead] create error:', error.message);
     res.status(400).json({ success: false, message: error.message });

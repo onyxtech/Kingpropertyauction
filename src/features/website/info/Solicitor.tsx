@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Briefcase, Scale, FileText, Phone, Sparkles, CheckCircle, Clock, Shield, Award, Users, Mail, MapPin } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 
 export default function Solicitor() {
   const [showForm, setShowForm] = useState(false);
@@ -38,7 +39,9 @@ export default function Solicitor() {
         }),
       });
       setSubmitted(true);
+      showSuccess("Request sent!", "Our team will contact you shortly.");
     } catch (e: any) {
+      showError("Submission failed", "Please try again.");
       console.error("Solicitor submit error:", e);
     }
     setLoading(false);

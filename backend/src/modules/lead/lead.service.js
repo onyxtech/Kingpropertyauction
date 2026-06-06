@@ -21,11 +21,13 @@ const getNotificationKeys = (lead) => {
   if (lead.leadType === 'catalogue')
     return { ruleKey: 'catalogueRequest', templateKey: 'catalogueRequest' };
   if (lead.leadType === 'faq')
-    return { ruleKey: 'faqSupport', templateKey: 'faqsupport' };
+    return { ruleKey: 'faqSupport', templateKey: 'faqSupport' };
   if (lead.leadType === 'legal')
     return { ruleKey: 'legalEnquiry', templateKey: 'legalenquiry' };
   if (lead.leadType === 'newsletter')
-    return { ruleKey: 'newsletterSignup', templateKey: 'newsletterwelcome' };
+    return { ruleKey: 'newsletterSignup', templateKey: 'newsletterWelcome' };
+  if (lead.leadType === 'property_inquiry')
+    return { ruleKey: 'propertyInquiry', templateKey: 'propertyInquiryConfirmation' };
   return { ruleKey: 'contactForm', templateKey: 'contactForm' };
 };
 
@@ -54,28 +56,46 @@ export const createLead = async (data) => {
     try {
       const enabled = await isNotificationEnabled(ruleKey);
       if (!enabled) return;
+
+      const siteUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+      const propertyTitle = lead.subject?.replace('Property Enquiry: ', '') || 'Property';
+      const msgPreview = (lead.message || '').substring(0, 150) +
+        ((lead.message || '').length > 150 ? '...' : '');
+
+      const emailVariables = lead.leadType === 'property_inquiry' ? {
+        inquirer_name: lead.name,
+        property_title: propertyTitle,
+        message_preview: msgPreview,
+        property_url: `${siteUrl}/properties`,
+        site_url: siteUrl,
+      } : {
+        user_name: lead.name,
+        user_email: lead.email,
+        user_phone: lead.phone || 'Not provided',
+        message: lead.message || '',
+        subject: lead.subject || '',
+        category: lead.leadType || 'general',
+        site_url: siteUrl,
+        property_type: extractVariable(lead.message, 'Property Type') || 'Any',
+        property_address: extractVariable(lead.message, 'Property Address') || '',
+        location: extractVariable(lead.message, 'Location') || 'Not specified',
+        budget: extractVariable(lead.message, 'Budget') || 'Not specified',
+        timeline: extractVariable(lead.message, 'Timeline') || '',
+        bedrooms: extractVariable(lead.message, 'Bedrooms') || 'Any',
+        auction_name: extractVariable(lead.message, 'Auction') || '',
+        auction_date: extractVariable(lead.message, 'Date') || '',
+        auction_time: extractVariable(lead.message, 'Time') || '',
+      };
+
+      const emailSubject = lead.leadType === 'property_inquiry'
+        ? `✅ We received your enquiry about ${propertyTitle}`
+        : (lead.subject || 'Thank you for contacting King Property Auction');
+
       await sendEmail({
         to: lead.email,
-        subject: lead.subject || 'Thank you for contacting King Property Auction',
+        subject: emailSubject,
         templateKey,
-        variables: {
-          user_name: lead.name,
-          user_email: lead.email,
-          user_phone: lead.phone || 'Not provided',
-          message: lead.message || '',
-          subject: lead.subject || '',
-          category: lead.leadType || 'general',
-          site_url: process.env.CLIENT_URL || '/',
-          property_type: extractVariable(lead.message, 'Property Type') || 'Any',
-          property_address: extractVariable(lead.message, 'Property Address') || '',
-          location: extractVariable(lead.message, 'Location') || 'Not specified',
-          budget: extractVariable(lead.message, 'Budget') || 'Not specified',
-          timeline: extractVariable(lead.message, 'Timeline') || '',
-          bedrooms: extractVariable(lead.message, 'Bedrooms') || 'Any',
-          auction_name: extractVariable(lead.message, 'Auction') || '',
-          auction_date: extractVariable(lead.message, 'Date') || '',
-          auction_time: extractVariable(lead.message, 'Time') || '',
-        },
+        variables: emailVariables,
       });
     } catch (e) {
       console.error('[Lead] Auto-reply failed:', e.message);

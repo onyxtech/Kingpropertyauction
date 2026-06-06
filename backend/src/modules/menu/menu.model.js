@@ -26,8 +26,19 @@ const menuSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     location: {
       type: String,
-      enum: ["Header", "Footer", "Header Dropdown", "Mobile Header", "Sidebar"],
-      default: "Header",
+      enum: [
+        "Header",
+        "Footer",
+        "Footer Quick Links",
+        "Mobile Header",
+        "Admin Sidebar",
+        "Admin TopBar",
+        "Customer Sidebar",
+        "Customer TopBar",
+        "Landing Page",
+        "Custom",
+      ],
+      required: true,
     },
     status: {
       type: String,

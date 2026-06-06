@@ -120,9 +120,17 @@ export const logout = async (req, res) => {
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
+    const userObj = user.toObject();
+    const correctActiveView =
+      (userObj.role === "seller" || userObj.role === "agent") &&
+      userObj.activeView === "buyer" &&
+      !userObj.permissions?.canBid
+        ? "seller"
+        : userObj.activeView;
+    userObj.activeView = correctActiveView;
     res.status(200).json({
       success: true,
-      user,
+      user: userObj,
     });
   } catch (error) {
     res.status(500).json({
@@ -136,9 +144,41 @@ export const updateProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("+password");
 
-    // Update name and email
+    // Update name, email and phone
     if (req.body.name) user.name = req.body.name;
     if (req.body.email) user.email = req.body.email;
+    if (req.body.phone !== undefined) user.phone = req.body.phone;
+
+    // Update company details for agents and sellers
+    if (req.body.agentDetails && (user.role === "agent" || user.role === "seller")) {
+      user.agentDetails = user.agentDetails || {};
+      if (req.body.agentDetails.companyName !== undefined)
+        user.agentDetails.companyName = req.body.agentDetails.companyName;
+      if (req.body.agentDetails.licenseNumber !== undefined)
+        user.agentDetails.licenseNumber = req.body.agentDetails.licenseNumber;
+      if (req.body.agentDetails.companyAddress !== undefined)
+        user.agentDetails.companyAddress = req.body.agentDetails.companyAddress;
+      user.markModified("agentDetails");
+    }
+
+    // Update bank details
+    if (req.body.bankDetails) {
+      user.bankDetails = user.bankDetails || {};
+      const bd = req.body.bankDetails;
+      if (bd.accountHolderName !== undefined) user.bankDetails.accountHolderName = bd.accountHolderName;
+      if (bd.bankName !== undefined) user.bankDetails.bankName = bd.bankName;
+      if (bd.accountNumber !== undefined) user.bankDetails.accountNumber = bd.accountNumber;
+      if (bd.sortCode !== undefined) user.bankDetails.sortCode = bd.sortCode;
+      if (bd.iban !== undefined) user.bankDetails.iban = bd.iban;
+      if (bd.bankAddress !== undefined) user.bankDetails.bankAddress = bd.bankAddress;
+      user.markModified("bankDetails");
+    }
+
+    // Update notification settings
+    if (req.body.notificationSettings) {
+      user.notificationSettings = { ...user.notificationSettings, ...req.body.notificationSettings };
+      user.markModified("notificationSettings");
+    }
 
     // Update password if provided
     if (req.body.currentPassword && req.body.newPassword) {
@@ -155,14 +195,53 @@ export const updateProfile = async (req, res) => {
 
     res.json({
       success: true,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          phone: user.phone,
+          isActive: user.isActive,
+          activeView: user.activeView,
+          permissions: user.permissions,
+          roleRequest: user.roleRequest,
+          agentDetails: user.agentDetails,
+          bankDetails: user.bankDetails,
+          notificationSettings: user.notificationSettings,
+          createdAt: user.createdAt,
+        },
       },
       message: "Profile updated successfully",
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current and new password required",
+      });
+    }
+    const user = await User.findById(req.user._id).select("+password");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+    user.password = newPassword;
+    await user.save();
+    res.json({ success: true, message: "Password changed successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

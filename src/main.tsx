@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { Toaster } from "sonner";
 import App from "./app/App.tsx";
 import "./styles/index.css";
 
@@ -32,5 +33,6 @@ window.addEventListener('beforeunload', () => {
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
     <App />
+    <Toaster richColors position="top-right" duration={4000} />
   </QueryClientProvider>
 );

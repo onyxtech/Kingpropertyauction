@@ -67,6 +67,53 @@ export const useMenuData = () => {
     });
   };
 
+  const getFooterQuickLinks = () => {
+    const menu = menus.find(
+      (m: any) => m.location === "Footer Quick Links" && m.status === "active",
+    );
+    if (!menu?.items) return [];
+    return menu.items
+      .filter((item: any) => !item.parent)
+      .sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+  };
+
+  const getMobileMenuItems = () => {
+    const menu = menus.find(
+      (m: any) => m.location === "Mobile Header" && m.status === "active",
+    );
+    if (!menu?.items) return [];
+    return menu.items
+      .filter((item: any) => !item.parent)
+      .sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+  };
+
+  const getMobileChildren = (parentId: string) => {
+    const menu = menus.find(
+      (m: any) => m.location === "Mobile Header" && m.status === "active",
+    );
+    return getChildren(menu, parentId);
+  };
+
+  const getAdminSidebarItems = () => {
+    const menu = menus.find(
+      (m: any) => m.location === "Admin Sidebar" && m.status === "active",
+    );
+    if (!menu?.items) return [];
+    return menu.items
+      .filter((item: any) => !item.parent)
+      .sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+  };
+
+  const getAdminTopBarItems = () => {
+    const menu = menus.find(
+      (m: any) => m.location === "Admin TopBar" && m.status === "active",
+    );
+    if (!menu?.items) return [];
+    return menu.items
+      .filter((item: any) => !item.parent)
+      .sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+  };
+
   return {
     menus,
     isLoading,
@@ -77,5 +124,10 @@ export const useMenuData = () => {
     getFooterGroups,
     getHeaderDropdowns,
     getStandaloneLinks,
+    getFooterQuickLinks,
+    getMobileMenuItems,
+    getMobileChildren,
+    getAdminSidebarItems,
+    getAdminTopBarItems,
   };
 };

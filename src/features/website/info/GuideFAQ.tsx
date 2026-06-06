@@ -1,6 +1,7 @@
 import { HelpCircle, BookOpen, Sparkles, CheckCircle, Info, AlertCircle, ChevronDown, Search, X, Send, Phone, Mail, MessageSquare } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 import { useState } from "react";
 
 export default function GuideFAQ() {
@@ -48,12 +49,15 @@ export default function GuideFAQ() {
       });
       if (data.success) {
         setSubmitted(true);
+        showSuccess("Message sent!", "Our support team will respond within 2-4 hours.");
         setFormData({ name: '', email: '', phone: '', category: '', message: '' });
       } else {
         setSubmitError(data.message || 'Something went wrong. Please try again.');
+        showError("Submission failed", "Please try again.");
       }
     } catch (e: any) {
       setSubmitError(e?.message || 'Network error. Please try again.');
+      showError("Submission failed", "Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }

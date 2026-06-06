@@ -4,13 +4,28 @@ import {
   ArrowRight, Award, Clock, Heart, UserPlus, LogIn,
   Play, ShoppingCart, DollarSign, Shield, Gavel, Home, FileText,
 } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
+
+const quickLinkStyles: Record<string, string> = {
+  emerald: "bg-gradient-to-r from-emerald-500 to-teal-500 hover:shadow-emerald-500/50",
+  orange: "bg-gradient-to-r from-orange-500 to-rose-500 hover:shadow-orange-500/50",
+  red: "bg-gradient-to-r from-red-500 to-pink-500 hover:shadow-red-500/50",
+  purple: "bg-gradient-to-r from-purple-500 to-indigo-500 hover:shadow-purple-500/50",
+  amber: "bg-gradient-to-r from-amber-500 to-yellow-500 hover:shadow-amber-500/50",
+  slate: "bg-gradient-to-r from-slate-600 to-slate-700 hover:shadow-slate-500/50",
+  blue: "bg-gradient-to-r from-blue-500 to-indigo-500 hover:shadow-blue-500/50",
+  cyan: "bg-gradient-to-r from-cyan-500 to-blue-500 hover:shadow-cyan-500/50",
+  green: "bg-gradient-to-r from-green-500 to-emerald-500 hover:shadow-green-500/50",
+  rose: "bg-gradient-to-r from-rose-500 to-red-500 hover:shadow-rose-500/50",
+};
 
 export default function FooterLinks() {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
-  const { getFooterGroups } = useMenuData();
+  const { getFooterGroups, getFooterQuickLinks } = useMenuData();
   const footerGroups = getFooterGroups();
+  const quickLinks = getFooterQuickLinks();
 
   return (
     <>
@@ -18,24 +33,46 @@ export default function FooterLinks() {
       <div className="border-b border-white/10 bg-white/5 backdrop-blur-md">
         <div className="container mx-auto px-6 py-6">
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <button onClick={() => navigate("/buying-overview")} className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-emerald-500/50 transition-all hover:scale-105 flex items-center gap-2">
-              <ShoppingCart className="size-5" /> Buying
-            </button>
-            <button onClick={() => navigate("/selling-overview")} className="px-6 py-3 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-orange-500/50 transition-all hover:scale-105 flex items-center gap-2">
-              <DollarSign className="size-5" /> Selling
-            </button>
-            <button onClick={() => navigate("/live-auctions")} className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-red-500/50 transition-all hover:scale-105 flex items-center gap-2 animate-pulse">
-              <Play className="size-5" /> Live Now
-            </button>
-            <button onClick={() => navigate("/contact-us")} className="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-purple-500/50 transition-all hover:scale-105 flex items-center gap-2">
-              <Mail className="size-5" /> Contact Us
-            </button>
-            <button onClick={() => navigate("/register")} className="px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-amber-500/50 transition-all hover:scale-105 flex items-center gap-2">
-              <UserPlus className="size-5" /> Register
-            </button>
-            <button onClick={() => navigate("/login")} className="px-6 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-slate-500/50 transition-all hover:scale-105 flex items-center gap-2">
-              <LogIn className="size-5" /> Sign In
-            </button>
+            {quickLinks.length > 0 ? (
+              quickLinks.map((link: any) => {
+                const icons: any = LucideIcons;
+                const IconComp = link.icon ? icons[link.icon] : null;
+                const style = quickLinkStyles[link.color || "slate"] ||
+                  "bg-gradient-to-r from-slate-600 to-slate-700 hover:shadow-slate-500/50";
+                const isLive = link.url === "/live-auctions";
+                return (
+                  <button
+                    key={link._id}
+                    onClick={() => navigate(link.url)}
+                    className={`px-6 py-3 ${style} text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-105 flex items-center gap-2 ${isLive ? "animate-pulse" : ""}`}
+                  >
+                    {IconComp && <IconComp className="size-5" />}
+                    {link.label}
+                  </button>
+                );
+              })
+            ) : (
+              <>
+                <button onClick={() => navigate("/buying-overview")} className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-emerald-500/50 transition-all hover:scale-105 flex items-center gap-2">
+                  <ShoppingCart className="size-5" /> Buying
+                </button>
+                <button onClick={() => navigate("/selling-overview")} className="px-6 py-3 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-orange-500/50 transition-all hover:scale-105 flex items-center gap-2">
+                  <DollarSign className="size-5" /> Selling
+                </button>
+                <button onClick={() => navigate("/live-auctions")} className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-red-500/50 transition-all hover:scale-105 flex items-center gap-2 animate-pulse">
+                  <Play className="size-5" /> Live Now
+                </button>
+                <button onClick={() => navigate("/contact-us")} className="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-purple-500/50 transition-all hover:scale-105 flex items-center gap-2">
+                  <Mail className="size-5" /> Contact Us
+                </button>
+                <button onClick={() => navigate("/register")} className="px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-amber-500/50 transition-all hover:scale-105 flex items-center gap-2">
+                  <UserPlus className="size-5" /> Register
+                </button>
+                <button onClick={() => navigate("/login")} className="px-6 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-slate-500/50 transition-all hover:scale-105 flex items-center gap-2">
+                  <LogIn className="size-5" /> Sign In
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

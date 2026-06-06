@@ -4,7 +4,7 @@ const notificationSchema = new mongoose.Schema(
   {
     type: {
       type: String,
-      enum: ["bid", "user", "lead", "property", "auction_live", "auction_completed", "property_sold", "bid_won"],
+      enum: ["bid", "user", "lead", "property", "auction_live", "auction_completed", "property_sold", "bid_won", "message", "auction", "system"],
       required: true,
     },
     icon: { type: String, default: "bell" },
@@ -13,6 +13,12 @@ const notificationSchema = new mongoose.Schema(
     color: { type: String, default: "blue" },
     readBy: [{ type: mongoose.Schema.ObjectId, ref: "User" }],
     metadata: { type: mongoose.Schema.Types.Mixed },
+    targetUser: {
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
   },
   { timestamps: true }
 );

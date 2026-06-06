@@ -2,6 +2,7 @@ import { mediaUrl } from "@/lib/mediaUrl";
 import { MapPin, Bed, Bath, CheckCircle, AlertCircle, Gavel, Eye, ChevronDown, Building, Car } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
+import { useAuthStore } from "@/stores/authStore";
 
 interface LotCardProps {
   property: any;
@@ -33,6 +34,14 @@ export default function LotCard({
   isExpanded,
   isLoadingHistory,
 }: LotCardProps) {
+  const { user } = useAuthStore();
+  const isOwnProperty = !!(
+    property?.createdBy &&
+    (user?.id || (user as any)?._id) &&
+    (property.createdBy._id || property.createdBy)?.toString() ===
+      (user?.id || (user as any)?._id)?.toString()
+  );
+
   const currentBid =
     property.currentBid || property.pricing?.startingAuctionPrice || 0;
   const bidIncrement =
@@ -146,12 +155,19 @@ export default function LotCard({
         {/* Action Buttons */}
         <div className="flex gap-3">
           {auction.status === "live" ? (
-            <button
-              onClick={() => onPlaceBid(property)}
-              className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2"
-            >
-              <Gavel className="size-5" /> Place Bid
-            </button>
+            isOwnProperty ? (
+              <div className="flex-1 py-3.5 bg-slate-100 border-2 border-slate-200 rounded-xl text-center">
+                <p className="text-slate-600 font-bold text-sm">🏠 Your Property</p>
+                <p className="text-slate-400 text-xs">Cannot bid on own listing</p>
+              </div>
+            ) : (
+              <button
+                onClick={() => onPlaceBid(property)}
+                className="flex-1 py-3.5 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2"
+              >
+                <Gavel className="size-5" /> Place Bid
+              </button>
+            )
           ) : (
             <div className="flex-1 py-3.5 bg-slate-100 text-slate-500 rounded-xl font-bold text-center">
               {auction.status === "completed" ? "Auction Ended" : "Not Started"}

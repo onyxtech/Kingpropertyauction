@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Plus, Eye, CheckCircle, XCircle, Edit, Trash2, ChevronLeft, ChevronRight, UserCheck } from "lucide-react";
+import { Users, Plus, Eye, CheckCircle, XCircle, Edit, Trash2, ChevronLeft, ChevronRight, UserCheck, Clock } from "lucide-react";
 import FilterBar from "@/features/shared/components/FilterBar";
 
 interface UsersTabProps {
@@ -7,6 +7,7 @@ interface UsersTabProps {
   usersLoading: boolean;
   theme: { primary: string; secondary: string };
   updateUserStatus: { mutate: (args: { id: string; status: string }) => void };
+  reviewRoleRequest: { mutate: (args: { id: string; decision: "approved" | "rejected"; reviewNote?: string }) => void };
   onEditUser: (user: any) => void;
   onDeleteUser: (id: string) => void;
   onAddAgent: () => void;
@@ -15,7 +16,26 @@ interface UsersTabProps {
 
 const PAGE_SIZE = 10;
 
-export default function UsersTab({ users, usersLoading, theme, updateUserStatus, onEditUser, onDeleteUser, onAddAgent, onAddUser }: UsersTabProps) {
+const getUserRoleLabel = (user: any) => {
+  const canBid = user.permissions?.canBid === true;
+  const canList = user.permissions?.canListProperties === true;
+  if (user.role === "admin") return { label: "Admin", color: "bg-red-100 text-red-700" };
+  if (user.role === "agent") {
+    if (canBid && canList) return { label: "Agent & Buyer", color: "bg-purple-100 text-purple-700" };
+    return { label: "Agent", color: "bg-orange-100 text-orange-700" };
+  }
+  if (user.role === "seller") {
+    if (canBid && canList) return { label: "Buyer & Seller", color: "bg-teal-100 text-teal-700" };
+    return { label: "Seller", color: "bg-blue-100 text-blue-700" };
+  }
+  if (user.role === "buyer" || user.role === "user") {
+    if (canBid && canList) return { label: "Buyer & Seller", color: "bg-teal-100 text-teal-700" };
+    return { label: "Buyer", color: "bg-green-100 text-green-700" };
+  }
+  return { label: user.role, color: "bg-slate-100 text-slate-700" };
+};
+
+export default function UsersTab({ users, usersLoading, theme, updateUserStatus, reviewRoleRequest, onEditUser, onDeleteUser, onAddAgent, onAddUser }: UsersTabProps) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -41,7 +61,7 @@ export default function UsersTab({ users, usersLoading, theme, updateUserStatus,
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-3xl font-black text-slate-900 mb-2">User Management</h2>
-          <p className="text-slate-600 font-medium">Manage buyers, sellers, agents, and investors</p>
+          <p className="text-slate-600 font-medium">Manage all registered users by role</p>
         </div>
         <div className="flex items-center gap-3">
           <button onClick={onAddAgent} className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl font-bold shadow-lg hover:scale-105 transition-all flex items-center gap-2"><UserCheck className="size-5" /> Add Agent</button>
@@ -50,12 +70,13 @@ export default function UsersTab({ users, usersLoading, theme, updateUserStatus,
       </div>
 
       {/* User Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
         {[
           { label: "Total Users", value: allUsers.length, color: "from-blue-500 to-indigo-600" },
           { label: "Active Users", value: allUsers.filter((u: any) => u.isActive).length, color: "from-green-500 to-emerald-600" },
           { label: "Buyers", value: allUsers.filter((u: any) => u.role === "user" || u.role === "buyer").length, color: "from-purple-500 to-pink-600" },
           { label: "Agents", value: allUsers.filter((u: any) => u.role === "agent").length, color: "from-orange-500 to-amber-600" },
+          { label: "Role Requests", value: allUsers.filter((u: any) => u.roleRequest?.status === "pending").length, color: "from-amber-500 to-yellow-600" },
         ].map((stat, index) => (
           <div key={index} className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 border-2 border-white/60 shadow-lg">
             <div className={`size-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center mb-3 shadow-md`}><Users className="size-5 text-white" /></div>
@@ -75,8 +96,8 @@ export default function UsersTab({ users, usersLoading, theme, updateUserStatus,
             label: "All Roles", value: roleFilter,
             options: [
               { value: "admin", label: "Admin" }, { value: "agent", label: "Agent" },
-              { value: "user", label: "User" }, { value: "buyer", label: "Buyer" },
-              { value: "seller", label: "Seller" }, { value: "investor", label: "Investor" },
+              { value: "buyer", label: "Buyer" },
+              { value: "seller", label: "Seller" },
             ],
             onChange: (v) => { setRoleFilter(v); setPage(1); },
           },
@@ -123,19 +144,54 @@ export default function UsersTab({ users, usersLoading, theme, updateUserStatus,
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4"><span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold capitalize">{user.role}</span></td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1">
+                        {(() => {
+                          const roleInfo = getUserRoleLabel(user);
+                          return (
+                            <span className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-block w-fit ${roleInfo.color}`}>
+                              {roleInfo.label}
+                            </span>
+                          );
+                        })()}
+                        {user.roleRequest?.status === "pending" && (
+                          <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-lg text-xs font-bold inline-flex items-center gap-1 w-fit">
+                            <Clock className="size-3" />
+                            Wants: {user.roleRequest.requestedRole}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 text-sm font-medium text-slate-700">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}</td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${user.isActive ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>{user.isActive ? "active" : "pending"}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <button className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"><Eye className="size-4" /></button>
                         {!user.isActive && (
                           <button onClick={() => updateUserStatus.mutate({ id: user._id, status: "active" })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"><CheckCircle className="size-4" /></button>
                         )}
                         {user.isActive && user.role !== "admin" && (
                           <button onClick={() => updateUserStatus.mutate({ id: user._id, status: "pending" })} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"><XCircle className="size-4" /></button>
+                        )}
+                        {user.roleRequest?.status === "pending" && (
+                          <>
+                            <button
+                              onClick={() => reviewRoleRequest.mutate({ id: user._id, decision: "approved" })}
+                              className="px-2 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-xs font-bold flex items-center gap-1"
+                              title="Approve role request"
+                            >
+                              <CheckCircle className="size-3" /> Approve
+                            </button>
+                            <button
+                              onClick={() => reviewRoleRequest.mutate({ id: user._id, decision: "rejected" })}
+                              className="px-2 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-xs font-bold flex items-center gap-1"
+                              title="Reject role request"
+                            >
+                              <XCircle className="size-3" /> Reject
+                            </button>
+                          </>
                         )}
                         <button onClick={() => onEditUser(user)} className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200"><Edit className="size-4" /></button>
                         <button onClick={() => onDeleteUser(user._id)} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"><Trash2 className="size-4" /></button>

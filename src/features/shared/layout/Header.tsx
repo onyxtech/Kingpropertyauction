@@ -14,6 +14,8 @@ import {
   Gavel,
   Zap,
   Briefcase,
+  Menu as MenuIcon,
+  X,
 } from "lucide-react";
 
 const dropdownIcons: Record<string, any> = {
@@ -45,13 +47,22 @@ import { useMenuData } from "@/hooks/useMenuData";
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
+
+  const getDashboardPath = () => {
+    if (!user) return "/login";
+    if (user.role === "admin") return "/admin";
+    return "/dashboard";
+  };
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { data: stats } = useAdminStats();
-  const { getHeaderDropdowns, getStandaloneLinks } = useMenuData();
+  const { getHeaderDropdowns, getStandaloneLinks, getMobileMenuItems, getMobileChildren } = useMenuData();
   const headerDropdowns = getHeaderDropdowns();
   const standaloneLinks = getStandaloneLinks();
+  const mobileItems = getMobileMenuItems();
 
   return (
+    <>
     <header className="relative bg-gradient-to-r from-white via-blue-50/50 to-indigo-50/50 backdrop-blur-xl border-b border-white/60 top-0 z-50 shadow-lg">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-indigo-500/3 to-purple-500/5 pointer-events-none" />
       <div className="absolute top-0 right-0 size-96 bg-gradient-to-br from-blue-400/10 to-transparent rounded-full blur-3xl pointer-events-none" />
@@ -259,6 +270,16 @@ export default function Header() {
           </div>
 
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="md:hidden p-2.5 rounded-xl hover:bg-slate-100 transition-all"
+              aria-label="Toggle mobile menu"
+            >
+              {mobileOpen
+                ? <X className="size-6 text-slate-700" />
+                : <MenuIcon className="size-6 text-slate-700" />
+              }
+            </button>
             {isAuthenticated && user ? (
               <div className="flex items-center gap-3">
                 <div className="text-right">
@@ -268,7 +289,7 @@ export default function Header() {
                   <p className="text-xs text-slate-500">{user.email}</p>
                 </div>
                 <button
-                  onClick={() => navigate("/admin")}
+                  onClick={() => navigate(getDashboardPath())}
                   className="px-3 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-all"
                 >
                   Dashboard
@@ -304,5 +325,133 @@ export default function Header() {
         </div>
       </div>
     </header>
+
+    {mobileOpen && (
+      <div className="md:hidden fixed inset-0 z-[200] flex">
+        <div
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        />
+        <div className="relative w-80 bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-left duration-300 overflow-y-auto">
+          <div className="p-6 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg">
+                <Crown className="size-5 text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h2 className="font-black text-white">King Property</h2>
+                <p className="text-xs text-white/60 font-bold">Auction Portal</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all"
+            >
+              <X className="size-5 text-white" />
+            </button>
+          </div>
+
+          <nav className="flex-1 p-4 space-y-1">
+            {mobileItems.map((item: any) => {
+              const icons: any = LucideIcons;
+              const IconComp = item.icon ? icons[item.icon] : null;
+              const children = getMobileChildren(item._id);
+
+              return (
+                <div key={item._id}>
+                  <button
+                    onClick={() => {
+                      if (!children.length && item.url) {
+                        window.location.href = item.url;
+                        setMobileOpen(false);
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-blue-50 hover:text-blue-600 font-bold text-sm transition-all"
+                  >
+                    {IconComp && (
+                      <div className="size-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md flex-shrink-0">
+                        <IconComp className="size-4 text-white" />
+                      </div>
+                    )}
+                    <span className="flex-1 text-left">{item.label}</span>
+                    {item.badge && (
+                      <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] rounded-full animate-pulse font-black">
+                        {item.badgeLabel || "LIVE"}
+                      </span>
+                    )}
+                    {item.highlight && (
+                      <span className="px-2 py-0.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] rounded-full font-black">
+                        {item.highlight}
+                      </span>
+                    )}
+                  </button>
+                  {children.length > 0 && (
+                    <div className="ml-11 space-y-1 border-l-2 border-slate-100 pl-3 mt-1">
+                      {children.map((child: any) => {
+                        const ChildIcon = child.icon ? (LucideIcons as any)[child.icon] : null;
+                        return (
+                          <button
+                            key={child._id}
+                            onClick={() => {
+                              if (child.url) {
+                                window.location.href = child.url;
+                                setMobileOpen(false);
+                              }
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-slate-600 hover:text-blue-600 hover:bg-blue-50 text-sm font-medium transition-all"
+                          >
+                            {ChildIcon && <ChildIcon className="size-4" />}
+                            {child.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+
+          <div className="p-4 border-t-2 border-slate-100 space-y-2 flex-shrink-0">
+            {isAuthenticated && user ? (
+              <>
+                <div className="px-4 py-2">
+                  <p className="text-sm font-black text-slate-900">{user.name}</p>
+                  <p className="text-xs text-slate-500">{user.email}</p>
+                </div>
+                <button
+                  onClick={() => { navigate(getDashboardPath()); setMobileOpen(false); }}
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all"
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={() => { logout(); navigate("/"); setMobileOpen(false); }}
+                  className="w-full px-4 py-3 bg-red-500 text-white rounded-xl font-bold text-sm hover:bg-red-600 transition-all"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => { navigate("/login"); setMobileOpen(false); }}
+                  className="w-full px-4 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => { navigate("/register"); setMobileOpen(false); }}
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all"
+                >
+                  Register
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

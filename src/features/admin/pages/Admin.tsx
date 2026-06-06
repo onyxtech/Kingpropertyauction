@@ -56,6 +56,8 @@ import {
   X,
   Briefcase,
   MapPin,
+  AlertCircle,
+  Award,
 } from "lucide-react";
 import {
   LineChart,
@@ -83,23 +85,14 @@ import EditUserModal from "../components/EditUserModal";
 import AddUserModal from "../components/AddUserModal";
 import AddAgentModal from "../components/AddAgentModal";
 import { useTheme } from "../../../app/hooks/useTheme";
-import PageBuilderWithAPI from "../components/PageBuilderWithAPI";
 import MenuEditor from "../components/MenuEditor";
 import ConfirmModal from "@/features/shared/components/ConfirmModal";
-import {
-  allWebsitePages,
-  pageCategories,
-} from "../../website/data/websitePages";
 import StatsOverview from "../components/dashboard/StatsOverview";
 import AuctionsTab from "../components/dashboard/AuctionsTab";
 import UsersTab from "../components/dashboard/UsersTab";
-import PageBuilderTab from "../components/PageBuilderTab";
 import MenuManagerTab from "../components/MenuManagerTab";
-import AiTab from "../components/AiTab";
-import ComplianceTab from "../components/ComplianceTab";
-import FinancialTab from "../components/FinancialTab";
-import SocialTab from "../components/SocialTab";
-import InvestorsTab from "../components/InvestorsTab";
+import Analytics from "./Analytics";
+
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -108,10 +101,11 @@ export default function Admin() {
   const queryClient = useQueryClient();
 
   const { data: stats, isLoading } = useAdminStats();
-  const { useGetUsers, useUpdateUserStatus, useDeleteUser } = useUserApi();
+  const { useGetUsers, useUpdateUserStatus, useDeleteUser, useReviewRoleRequest } = useUserApi();
   const { data: users, isLoading: usersLoading } = useGetUsers();
   const updateUserStatus = useUpdateUserStatus();
   const deleteUser = useDeleteUser();
+  const reviewRoleRequest = useReviewRoleRequest();
 
   const getInitialTab = () => {
     const path = window.location.pathname
@@ -130,7 +124,6 @@ export default function Admin() {
   const [showCreateAuctionModal, setShowCreateAuctionModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showAddAgentModal, setShowAddAgentModal] = useState(false);
-  const [pages, setPages] = useState(allWebsitePages);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState("");
 
@@ -154,22 +147,6 @@ export default function Admin() {
 
   const modules = [
     {
-      id: "pageBuilder",
-      title: "Page Builder",
-      description: "Create and manage dynamic website pages",
-      icon: FileText,
-      gradient: "from-blue-500 to-indigo-600",
-      stats: { pages: 24, published: 18 },
-    },
-    {
-      id: "menuManager",
-      title: "Menu Manager",
-      description: "Create navigation menus with drag-drop",
-      icon: Menu,
-      gradient: "from-cyan-500 to-blue-600",
-      stats: { menus: 4, items: 32 },
-    },
-    {
       id: "properties",
       title: "Property Management",
       description: "Approve, categorize and manage listings",
@@ -178,6 +155,7 @@ export default function Admin() {
       stats: {
         total: stats?.totalProperties || 0,
         pending: stats?.pendingProperties || 0,
+        approved: stats?.approvedProperties || 0,
       },
     },
     {
@@ -187,108 +165,131 @@ export default function Admin() {
       icon: Gavel,
       gradient: "from-rose-500 to-red-600",
       stats: {
-        active: stats?.liveAuctions || 0,
-        scheduled: (stats?.totalAuctions || 0) - (stats?.liveAuctions || 0),
+        total: stats?.totalAuctions || 0,
+        live: stats?.liveAuctions || 0,
+        bids: stats?.totalBids || 0,
       },
-    },
-    {
-      id: "marketing",
-      title: "Marketing Hub",
-      description: "SMS, Email campaigns & auto alerts",
-      icon: Send,
-      gradient: "from-emerald-500 to-teal-600",
-      stats: { campaigns: 18, sent: "52.4K" },
-    },
-    {
-      id: "social",
-      title: "Social Integration",
-      description: "Share to social media & sync with portals",
-      icon: Share2,
-      gradient: "from-orange-500 to-amber-600",
-      stats: { platforms: 5, synced: 892 },
-    },
-    {
-      id: "investors",
-      title: "Investor Dashboard",
-      description: "ROI estimation & analytics",
-      icon: TrendingUp,
-      gradient: "from-violet-500 to-purple-600",
-      stats: { investors: 342, opportunities: 156 },
-    },
-    {
-      id: "ai",
-      title: "AI Optimization",
-      description: "Valuation, fraud detection & predictions",
-      icon: BrainCircuit,
-      gradient: "from-fuchsia-500 to-pink-600",
-      stats: { valuations: 1024, alerts: 7 },
-    },
-    {
-      id: "compliance",
-      title: "Legal & Compliance",
-      description: "KYC, AML monitoring & contracts",
-      icon: Shield,
-      gradient: "from-indigo-500 to-blue-600",
-      stats: { verified: 1156, pending: 34 },
-    },
-    {
-      id: "financial",
-      title: "Financial Management",
-      description: "Escrow, commissions & invoices",
-      icon: CreditCard,
-      gradient: "from-green-500 to-emerald-600",
-      stats: { escrow: "£2.4M", revenue: "£187K" },
     },
     {
       id: "users",
       title: "User Management",
-      description: "Manage buyers, sellers & agents",
+      description: "Manage buyers, sellers and agents",
       icon: Users,
       gradient: "from-pink-500 to-rose-600",
       stats: {
         total: stats?.totalUsers || 0,
-        active: (stats?.totalUsers || 0) - (stats?.pendingUsers || 0),
+        pending: stats?.pendingUsers || 0,
       },
+    },
+    {
+      id: "leads",
+      title: "Leads & Enquiries",
+      description: "Contact forms and property enquiries",
+      icon: Mail,
+      gradient: "from-amber-500 to-orange-600",
+      stats: {
+        total: stats?.totalLeads || 0,
+      },
+    },
+    {
+      id: "inbox",
+      title: "Inbox & Messages",
+      description: "Customer support conversations",
+      icon: MessageSquare,
+      gradient: "from-blue-500 to-cyan-600",
+      stats: {
+        total: stats?.totalLeads || 0,
+      },
+    },
+    {
+      id: "marketing",
+      title: "Marketing & Campaigns",
+      description: "Email and SMS campaigns",
+      icon: Send,
+      gradient: "from-emerald-500 to-teal-600",
+      stats: { campaigns: 0 },
+    },
+    {
+      id: "menuManager",
+      title: "Menu Manager",
+      description: "Navigation menus with drag and drop",
+      icon: Menu,
+      gradient: "from-cyan-500 to-blue-600",
+      stats: {},
     },
     {
       id: "analytics",
       title: "Analytics & Reports",
-      description: "Performance metrics & insights",
+      description: "Performance metrics and insights",
       icon: BarChart3,
-      gradient: "from-teal-500 to-cyan-600",
-      stats: { reports: 42, insights: 128 },
+      gradient: "from-violet-500 to-purple-600",
+      stats: {},
+    },
+    {
+      id: "settings",
+      title: "Platform Settings",
+      description: "Configure emails, OAuth and integrations",
+      icon: Settings,
+      gradient: "from-slate-500 to-slate-700",
+      stats: {},
     },
   ];
 
-  const recentActivities = (stats?.activities || []).map((a: any) => ({
-    id: a.message,
+  const recentActivities = (stats?.activities || []).map((a: any, idx: number) => ({
+    id: `${a.type}-${idx}`,
     type: a.type,
-    message: a.message,
-    time: a.time,
-    link: a.link,
+    message: a.message || "Activity recorded",
+    time: a.time || "Recently",
+    link: a.link || "",
     icon:
-      a.icon === "building"
-        ? Building2
-        : a.icon === "user"
-          ? Users
-          : a.icon === "gavel"
-            ? Gavel
-            : a.icon === "check"
-              ? CheckCircle
-              : a.icon === "x"
-                ? XCircle
-                : Clock,
+      a.icon === "gavel" ? Gavel :
+      a.icon === "check" ? CheckCircle :
+      a.icon === "user" ? Users :
+      a.icon === "building" ? Building2 :
+      a.icon === "mail" ? Mail :
+      a.icon === "x" ? XCircle :
+      a.icon === "alert-circle" ? AlertCircle :
+      a.icon === "award" ? Award :
+      Bell,
     color: a.color || "blue",
   }));
 
-  const pendingApprovals = (stats?.approvals || []).map((a: any) => ({
-    id: a.id,
-    type: a.type,
-    title: a.title,
-    submittedBy: a.submittedBy,
-    date: a.date,
-    status: a.status,
-  }));
+  const pendingApprovals = [
+    ...(stats?.approvals || []).map((a: any) => ({
+      id: a.id,
+      type: a.type,
+      title: a.title || "Pending review",
+      submittedBy: a.submittedBy,
+      date: a.date,
+      status: a.status,
+    })),
+    ...(users || [])
+      .filter((u: any) => !u.isActive)
+      .slice(0, 5)
+      .map((u: any) => ({
+        id: u._id,
+        type: "user",
+        title: `${u.name} (${u.role})`,
+        submittedBy: u.email,
+        date: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "Recently",
+        status: "pending",
+      })),
+    ...(users || [])
+      .filter((u: any) => u.roleRequest?.status === "pending")
+      .slice(0, 5)
+      .map((u: any) => ({
+        id: u._id + "-role",
+        type: "role",
+        title: `${u.name} wants to become ${u.roleRequest.requestedRole}`,
+        submittedBy: u.email,
+        date: u.roleRequest.requestedAt
+          ? new Date(u.roleRequest.requestedAt).toLocaleDateString()
+          : "Recently",
+        status: "pending",
+      })),
+  ].filter((item, index, self) =>
+    index === self.findIndex((t) => t.id === item.id)
+  );
 
   const quickActions = [
     {
@@ -324,38 +325,33 @@ export default function Admin() {
           modules={modules}
           recentActivities={recentActivities}
           pendingApprovals={pendingApprovals}
-          onModuleClick={(id) => setActiveTab(id)}
+          onModuleClick={(id) => {
+            if (id === "marketing") {
+              navigate("/admin/campaigns");
+            } else if (id === "analytics") {
+              navigate("/admin/analytics");
+            } else if (id === "menuManager") {
+              navigate("/admin/menus");
+            } else if (id === "leads") {
+              navigate("/admin/leads");
+            } else if (id === "inbox") {
+              navigate("/admin/inbox");
+            } else if (id === "settings") {
+              navigate("/admin/settings");
+            } else {
+              setActiveTab(id);
+            }
+          }}
           onNavigate={(path) => navigate(path)}
           onApprovalReview={(type) => {
-            if (type === "Property") {
+            if (type === "property") {
               setActiveTab("properties");
               navigate("/admin/properties");
-            } else if (type === "Users") {
+            } else if (type === "user" || type === "role") {
               setActiveTab("users");
               navigate("/admin/users");
             }
           }}
-        />
-      )}
-
-      {/* Page Builder Tab */}
-      {activeTab === "pageBuilder" && (
-        <PageBuilderTab
-          pages={pages}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-          theme={theme}
-          onCreatePage={() => {
-            setEditingPage(null);
-            setShowPageEditor(true);
-          }}
-          onEditPage={(page) => {
-            setEditingPage(page);
-            setShowPageEditor(true);
-          }}
-          onNavigate={(path) => navigate(path)}
         />
       )}
 
@@ -423,18 +419,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* AI Tools Tab */}
-      {activeTab === "ai" && <AiTab />}
-
-      {/* Compliance Tab */}
-      {activeTab === "compliance" && <ComplianceTab />}
-
-      {/* Financial Management Tab */}
-      {activeTab === "financial" && <FinancialTab />}
-
-      {/* Social Integration Tab */}
-      {activeTab === "social" && <SocialTab />}
-
       {/* Users Tab */}      {/* Users Tab */}
       {activeTab === "users" && (
         <UsersTab
@@ -442,6 +426,7 @@ export default function Admin() {
           usersLoading={usersLoading}
           theme={theme}
           updateUserStatus={updateUserStatus}
+          reviewRoleRequest={reviewRoleRequest}
           onEditUser={setEditingUser}
           onDeleteUser={setUserToDelete}
           onAddAgent={() => setShowAddAgentModal(true)}
@@ -449,41 +434,8 @@ export default function Admin() {
         />
       )}
 
-      {/* Analytics Tab - Now redirects to dedicated page */}
-      {activeTab === "analytics" && (
-        <div className="flex items-center justify-center py-20">
-          <div className="text-center">
-            <BarChart3 className="size-16 text-slate-300 mx-auto mb-4" />
-            <p className="text-xl font-bold text-slate-600 mb-2">
-              Analytics moved to dedicated page
-            </p>
-            <button
-              onClick={() => navigate("/admin/analytics")}
-              className="px-6 py-3 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-xl font-bold hover:scale-105 transition-all"
-            >
-              Open Analytics Dashboard
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Investors Tab */}
-      {activeTab === "investors" && <InvestorsTab />}
-
-      {/* Page Editor Modal */}      {/* Page Editor Modal */}
-      {showPageEditor && (
-        <PageBuilderWithAPI
-          pageId={editingPage?.id}
-          onClose={() => {
-            setShowPageEditor(false);
-            setEditingPage(null);
-          }}
-          onSave={(pageId) => {
-            console.log("Page saved with ID:", pageId);
-            // Refresh pages list if needed
-          }}
-        />
-      )}
+      {/* Analytics Tab */}
+      {activeTab === "analytics" && <Analytics />}
 
       {/* Menu Editor Modal */}
       {showMenuEditor && (

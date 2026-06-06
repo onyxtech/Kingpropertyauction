@@ -1,6 +1,7 @@
 import { useState } from "react";
 import FooterNewsletter from "./FooterNewsletter";
 import FooterLinks from "./FooterLinks";
+import { showSuccess, showError } from "@/lib/toast";
 
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -33,14 +34,17 @@ export default function Footer() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        showSuccess("Subscribed! 🎉", "You'll receive property alerts and auction news.");
         setSubscribed(true);
         setEmail("");
         setTimeout(() => setSubscribed(false), 5000);
       } else {
+        showError("Subscription failed", "Failed to subscribe. Please try again.");
         setNewsletterError("Failed to subscribe. Please try again.");
         setTimeout(() => setNewsletterError(""), 3000);
       }
     } catch {
+      showError("Network error", "Please try again.");
       setNewsletterError("Network error. Please try again.");
       setTimeout(() => setNewsletterError(""), 3000);
     }

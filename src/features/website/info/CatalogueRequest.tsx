@@ -11,10 +11,12 @@ import {
 } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 
 export default function CatalogueRequest() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [upcomingAuctions, setUpcomingAuctions] = useState<any[]>([]);
   const [loadingAuctions, setLoadingAuctions] = useState(true);
 
@@ -55,12 +57,13 @@ export default function CatalogueRequest() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     const form = e.target as HTMLFormElement;
     const fd = new FormData(form);
     const phone = (fd.get("phone") as string) || "";
     const phoneRegex = /^[\+\d\s\-\(\)]{10,15}$/;
     if (phone && !phoneRegex.test(phone)) {
-      alert("Please enter a valid phone number (10–15 digits).");
+      setError("Please enter a valid phone number (10–15 digits).");
       return;
     }
     setLoading(true);
@@ -89,8 +92,11 @@ export default function CatalogueRequest() {
         }),
       });
       setSubmitted(true);
+      showSuccess("Catalogue request sent!", "You'll receive it shortly.");
     } catch (e: any) {
+      showError("Submission failed", "Please try again.");
       console.error('Catalogue submit error:', e?.message || e);
+      setError("Failed to submit. Please try again.");
     }
     setLoading(false);
   };
@@ -274,6 +280,11 @@ export default function CatalogueRequest() {
                   </select>
                 </div>
 
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-sm font-bold text-red-700">{error}</p>
+                  </div>
+                )}
                 <button
                   type="submit"
                   disabled={loading}

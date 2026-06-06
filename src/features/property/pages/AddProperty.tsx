@@ -21,6 +21,7 @@ import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { useTheme } from "@/app/hooks/useTheme";
 import { useAuthStore } from "@/stores/authStore";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
+import { showSuccess, showError } from "@/lib/toast";
 import type { PropertyFormData } from "@/app/types/api";
 import StepBasicInfo from "../components/add-property/StepBasicInfo";
 import StepLocation from "../components/add-property/StepLocation";
@@ -361,9 +362,11 @@ export default function AddProperty() {
         setUploadedFloorPlanUrls([]);
         setUploadedLegalDocUrls([]);
         setCreatedTitle(formData.propertyTitle || "Property");
+        showSuccess("Property submitted! 🏠", "Your listing is under review.");
         setSubmitted(true);
         window.scrollTo({ top: 0, behavior: "instant" });
       } else {
+        showError("Submission failed", response.error || "Unknown error");
         setToastMessage({
           text: `Failed: ${response.error || "Unknown error"}`,
           type: "error",

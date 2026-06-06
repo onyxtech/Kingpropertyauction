@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { showSuccess, showError } from "@/lib/toast";
 import {
   Mail,
   Lock,
@@ -30,13 +31,6 @@ const roles = [
     title: "Seller",
     desc: "I want to list and sell my property",
     gradient: "from-emerald-500 to-teal-600",
-  },
-  {
-    key: "investor",
-    icon: "📈",
-    title: "Investor",
-    desc: "I want to invest in multiple properties",
-    gradient: "from-purple-500 to-violet-600",
   },
   {
     key: "agent",
@@ -101,6 +95,14 @@ export default function RegisterForm() {
       setError("Please fill in all required fields");
       return;
     }
+    if (formData.firstName.trim().length < 2) {
+      setError("First name must be at least 2 characters");
+      return;
+    }
+    if (formData.lastName.trim().length < 2) {
+      setError("Last name must be at least 2 characters");
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       setError("Please enter a valid email address");
       return;
@@ -154,12 +156,15 @@ export default function RegisterForm() {
       const data = await response.json();
 
       if (data.success) {
+        showSuccess("Account created! 🎉", "Please wait for admin approval.");
         setStep("success");
       } else {
         setError(data.message || "Registration failed");
+        showError("Registration failed", data.message || "Registration failed");
       }
     } catch {
       setError("Cannot connect to server");
+      showError("Connection error", "Cannot connect to server");
     } finally {
       setLoading(false);
     }

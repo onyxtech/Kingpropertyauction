@@ -14,6 +14,23 @@ import {
   Menu as MenuIcon,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useTheme } from "../../../app/hooks/useTheme";
 
 interface MenuEditorProps {
@@ -48,6 +65,35 @@ const allIcons = [
 ];
 
 const getDynIcon = (name: string) => (LucideIcons as any)[name] || FileText;
+
+interface SortableItemProps {
+  id: string;
+  children: (listeners: any, attributes: any) => React.ReactNode;
+}
+
+function SortableItem({ id, children }: SortableItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 999 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children(listeners, attributes)}
+    </div>
+  );
+}
 
 export default function MenuEditor({
   onClose,
@@ -108,6 +154,88 @@ export default function MenuEditor({
   };
 
   const countChildren = (parentId: any) => getChildItems(parentId).length;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setMenuItems((items) => {
+      const parentItems = items
+        .filter((item: any) => {
+          const parent = item.parent?._id || item.parent;
+          return !parent || parent === null || parent === "";
+        })
+        .sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+
+      const oldIndex = parentItems.findIndex(
+        (item: any) => (item.id || item._id)?.toString() === active.id
+      );
+      const newIndex = parentItems.findIndex(
+        (item: any) => (item.id || item._id)?.toString() === over.id
+      );
+
+      if (oldIndex === -1 || newIndex === -1) return items;
+
+      const reordered = arrayMove(parentItems, oldIndex, newIndex);
+
+      const updatedParents = reordered.map((item: any, idx: number) => ({
+        ...item,
+        order: idx,
+      }));
+
+      const children = items.filter((item: any) => {
+        const parent = item.parent?._id || item.parent;
+        return parent && parent !== null && parent !== "";
+      });
+
+      return [...updatedParents, ...children];
+    });
+  };
+
+  const handleChildDragEnd = (event: DragEndEvent, parentId: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setMenuItems((items) => {
+      const pid = parentId?._id?.toString() || parentId?.toString();
+
+      const childItems = items
+        .filter((item: any) => {
+          const parent = item.parent?._id?.toString() || item.parent?.toString();
+          return parent === pid;
+        })
+        .sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+
+      const oldIndex = childItems.findIndex(
+        (item: any) => (item.id || item._id)?.toString() === active.id
+      );
+      const newIndex = childItems.findIndex(
+        (item: any) => (item.id || item._id)?.toString() === over.id
+      );
+
+      if (oldIndex === -1 || newIndex === -1) return items;
+
+      const reordered = arrayMove(childItems, oldIndex, newIndex);
+      const updatedChildren = reordered.map((item: any, idx: number) => ({
+        ...item,
+        order: idx,
+      }));
+
+      const otherItems = items.filter((item: any) => {
+        const parent = item.parent?._id?.toString() || item.parent?.toString();
+        return parent !== pid;
+      });
+
+      return [...otherItems, ...updatedChildren];
+    });
+  };
 
   const handleAddItem = () => {
     if (!itemForm.label) return;
@@ -248,11 +376,16 @@ export default function MenuEditor({
                     onChange={(e) => setMenuSettings({ ...menuSettings, location: e.target.value })}
                     className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="Header">Header</option>
-                    <option value="Footer">Footer</option>
-                    <option value="Header Dropdown">Header Dropdown</option>
-                    <option value="Mobile Header">Mobile Header</option>
-                    <option value="Sidebar">Sidebar</option>
+                    <option value="Header">🌐 Header — Main website navigation</option>
+                    <option value="Footer">📋 Footer — Footer link columns</option>
+                    <option value="Footer Quick Links">⚡ Footer Quick Links — Horizontal action buttons</option>
+                    <option value="Mobile Header">📱 Mobile Header — Mobile slide-out menu</option>
+                    <option value="Admin Sidebar">🔧 Admin Sidebar — Admin panel navigation</option>
+                    <option value="Admin TopBar">🔝 Admin TopBar — Admin quick actions bar</option>
+                    <option value="Customer Sidebar">👤 Customer Sidebar — Customer dashboard (coming soon)</option>
+                    <option value="Customer TopBar">👤 Customer TopBar — Customer quick actions (coming soon)</option>
+                    <option value="Landing Page">🚀 Landing Page — Custom landing page nav</option>
+                    <option value="Custom">⚙️ Custom — Developer managed slot</option>
                   </select>
                 </div>
                 <div>
@@ -664,105 +797,153 @@ export default function MenuEditor({
                         <p className="text-slate-600 font-medium text-sm">Click "Add Item" to start building your menu</p>
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        {getParentItems().map((item) => {
-                          const IconComponent = getDynIcon(item.icon);
-                          const childrenCount = countChildren(item.id || item._id);
-                          const children = getChildItems(item.id || item._id);
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={getParentItems().map((item: any) =>
+                            (item.id || item._id)?.toString()
+                          )}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <div className="space-y-2">
+                            {getParentItems().map((item: any) => {
+                              const itemId = (item.id || item._id)?.toString();
+                              const IconComponent = getDynIcon(item.icon || "FileText");
+                              const childrenCount = countChildren(item.id || item._id);
+                              const children = getChildItems(item.id || item._id);
 
-                          return (
-                            <div key={item.id || item._id}>
-                              {/* Parent Item */}
-                              <div className="group bg-gradient-to-r from-slate-50 to-white border-2 border-slate-200 rounded-xl p-4 hover:border-blue-500 transition-all">
-                                <div className="flex items-center gap-3">
-                                  <GripVertical className="size-5 text-slate-400 cursor-move" />
-                                  <div className={`size-10 rounded-lg bg-gradient-to-br ${theme.secondary} flex items-center justify-center shadow-md`}>
-                                    <IconComponent className="size-5 text-white" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <h4 className="font-bold text-slate-900">{item.label}</h4>
-                                      {item.target === "_blank" && <ExternalLink className="size-3 text-slate-400" />}
-                                      {childrenCount > 0 && (
-                                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-bold flex items-center gap-1">
-                                          <Layers className="size-3" />
-                                          {childrenCount} submenu{childrenCount > 1 ? "s" : ""}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <p className="text-xs text-slate-500 font-medium">{item.url}</p>
-                                    {item.subtitle && (
-                                      <p className="text-xs text-slate-400 font-normal mt-0.5">{item.subtitle}</p>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                      onClick={() => handleEditItem(item)}
-                                      className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-all"
-                                    >
-                                      <Edit className="size-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteItem(item.id || item._id)}
-                                      className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
-                                    >
-                                      <Trash2 className="size-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Child Items */}
-                              {children.length > 0 && (
-                                <div className="ml-8 mt-2 space-y-2">
-                                  {children.map((child) => {
-                                    const ChildIconComponent = getDynIcon(child.icon);
-                                    return (
-                                      <div
-                                        key={child.id || child._id}
-                                        className="group bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-3 hover:border-purple-400 transition-all relative"
-                                      >
-                                        <div className="absolute -left-4 top-1/2 w-4 h-px bg-purple-300" />
-                                        <div className="flex items-center gap-2">
-                                          <ChevronRight className="size-4 text-purple-500" />
-                                          <div className={`size-8 rounded-lg bg-gradient-to-br ${theme.secondary} flex items-center justify-center shadow-md`}>
-                                            <ChildIconComponent className="size-4 text-white" />
+                              return (
+                                <SortableItem key={itemId} id={itemId}>
+                                  {(listeners, attributes) => (
+                                    <div>
+                                      {/* Parent Item */}
+                                      <div className="group bg-gradient-to-r from-slate-50 to-white border-2 border-slate-200 rounded-xl p-4 hover:border-blue-500 transition-all">
+                                        <div className="flex items-center gap-3">
+                                          <div
+                                            {...listeners}
+                                            {...attributes}
+                                            className="cursor-grab active:cursor-grabbing p-1 hover:bg-slate-200 rounded-lg transition-all"
+                                            title="Drag to reorder"
+                                          >
+                                            <GripVertical className="size-5 text-slate-400" />
                                           </div>
-                                          <div className="flex-1 min-w-0">
+                                          <div className={`size-10 rounded-lg bg-gradient-to-br ${theme.secondary} flex items-center justify-center shadow-md`}>
+                                            <IconComponent className="size-5 text-white" />
+                                          </div>
+                                          <div className="flex-1">
                                             <div className="flex items-center gap-2">
-                                              <h4 className="font-bold text-slate-800 text-sm">{child.label}</h4>
-                                              {child.target === "_blank" && <ExternalLink className="size-3 text-slate-400" />}
-                                              <span className="px-1.5 py-0.5 bg-purple-200 text-purple-700 rounded text-xs font-bold">Submenu</span>
+                                              <h4 className="font-bold text-slate-900">{item.label}</h4>
+                                              {childrenCount > 0 && (
+                                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-bold flex items-center gap-1">
+                                                  <Layers className="size-3" />
+                                                  {childrenCount} submenu{childrenCount > 1 ? "s" : ""}
+                                                </span>
+                                              )}
                                             </div>
-                                            <p className="text-xs text-slate-500 font-medium">{child.url}</p>
-                                            {child.subtitle && (
-                                              <p className="text-xs text-slate-400 font-normal mt-0.5">{child.subtitle}</p>
+                                            <p className="text-xs text-slate-500 font-medium">{item.url}</p>
+                                            {item.subtitle && (
+                                              <p className="text-xs text-slate-400 font-normal mt-0.5">{item.subtitle}</p>
                                             )}
                                           </div>
-                                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
-                                              onClick={() => handleEditItem(child)}
-                                              className="p-1.5 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-all"
+                                              onClick={() => handleEditItem(item)}
+                                              className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-all"
                                             >
-                                              <Edit className="size-3" />
+                                              <Edit className="size-4" />
                                             </button>
                                             <button
-                                              onClick={() => handleDeleteItem(child.id || child._id)}
-                                              className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
+                                              onClick={() => handleDeleteItem(item.id || item._id)}
+                                              className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                                             >
-                                              <Trash2 className="size-3" />
+                                              <Trash2 className="size-4" />
                                             </button>
                                           </div>
                                         </div>
                                       </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+
+                                      {/* Children with their own DndContext */}
+                                      {children.length > 0 && (
+                                        <div className="ml-8 mt-2 space-y-2">
+                                          <DndContext
+                                            sensors={sensors}
+                                            collisionDetection={closestCenter}
+                                            onDragEnd={(e) => handleChildDragEnd(e, item.id || item._id)}
+                                          >
+                                            <SortableContext
+                                              items={children.map((child: any) =>
+                                                (child.id || child._id)?.toString()
+                                              )}
+                                              strategy={verticalListSortingStrategy}
+                                            >
+                                              {children.map((child: any) => {
+                                                const childId = (child.id || child._id)?.toString();
+                                                const ChildIconComponent = getDynIcon(child.icon || "FileText");
+                                                return (
+                                                  <SortableItem key={childId} id={childId}>
+                                                    {(childListeners, childAttributes) => (
+                                                      <div className="group bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-3 hover:border-purple-400 transition-all relative">
+                                                        <div className="absolute -left-4 top-1/2 w-4 h-px bg-purple-300" />
+                                                        <div className="flex items-center gap-2">
+                                                          <div
+                                                            {...childListeners}
+                                                            {...childAttributes}
+                                                            className="cursor-grab active:cursor-grabbing p-1 hover:bg-purple-200 rounded-lg transition-all"
+                                                            title="Drag to reorder"
+                                                          >
+                                                            <GripVertical className="size-4 text-purple-400" />
+                                                          </div>
+                                                          <ChevronRight className="size-4 text-purple-500" />
+                                                          <div className={`size-8 rounded-lg bg-gradient-to-br ${theme.secondary} flex items-center justify-center shadow-md`}>
+                                                            <ChildIconComponent className="size-4 text-white" />
+                                                          </div>
+                                                          <div className="flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                              <h4 className="font-bold text-slate-800 text-sm">{child.label}</h4>
+                                                              <span className="px-1.5 py-0.5 bg-purple-200 text-purple-700 rounded text-xs font-bold">
+                                                                Submenu
+                                                              </span>
+                                                            </div>
+                                                            <p className="text-xs text-slate-500 font-medium">{child.url}</p>
+                                                            {child.subtitle && (
+                                                              <p className="text-xs text-slate-400 font-normal mt-0.5">{child.subtitle}</p>
+                                                            )}
+                                                          </div>
+                                                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                              onClick={() => handleEditItem(child)}
+                                                              className="p-1.5 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-all"
+                                                            >
+                                                              <Edit className="size-3" />
+                                                            </button>
+                                                            <button
+                                                              onClick={() => handleDeleteItem(child.id || child._id)}
+                                                              className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
+                                                            >
+                                                              <Trash2 className="size-3" />
+                                                            </button>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    )}
+                                                  </SortableItem>
+                                                );
+                                              })}
+                                            </SortableContext>
+                                          </DndContext>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </SortableItem>
+                              );
+                            })}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
                     )}
                   </div>
                 </div>

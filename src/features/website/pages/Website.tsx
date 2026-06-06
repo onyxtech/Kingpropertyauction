@@ -1,6 +1,7 @@
 import { mediaUrl } from "@/lib/mediaUrl";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { showSuccess, showError } from "@/lib/toast";
 import { CheckCircle, AlertCircle, Search } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
@@ -183,15 +184,22 @@ export default function Website() {
       setShowAuthModal(true);
       return;
     }
-    if (
-      user?.role === "admin" ||
-      user?.role === "agent" ||
-      user?.role === "seller"
-    ) {
+    const userPermissions = (user as any)?.permissions;
+    const userCanBid = user?.role !== "admin" && userPermissions?.canBid === true;
+    if (!userCanBid) {
       showNotification(
-        "Bidding is reserved for buyers and investors. Please register as a buyer or investor to place bids.",
-        "error",
+        user?.role === "admin"
+          ? "Administrators cannot place bids."
+          : "You don't have bidding permissions. Apply to become a buyer from your dashboard.",
+        "error"
       );
+      return;
+    }
+    const propertyOwnerId = property?.createdBy?._id || property?.createdBy;
+    const currentUserId = user?.id || (user as any)?._id;
+    if (propertyOwnerId && currentUserId &&
+        propertyOwnerId.toString() === currentUserId.toString()) {
+      showNotification("You cannot bid on your own property.", "error");
       return;
     }
     setSelectedProperty(property);
@@ -246,6 +254,7 @@ export default function Website() {
         amount: newBidValue,
       });
       setBidSuccess(true);
+      showSuccess("Bid placed! 🎉", "Your bid has been submitted successfully.");
       showNotification("Bid placed successfully! 🎉", "success");
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       queryClient.invalidateQueries({ queryKey: ["auctions"] });
@@ -255,6 +264,7 @@ export default function Website() {
         setBidAmount("");
       }, 2000);
     } catch (error: any) {
+      showError("Bid failed", error.message || "Failed to place bid.");
       showNotification(error.message || "Failed to place bid.", "error");
     }
   };

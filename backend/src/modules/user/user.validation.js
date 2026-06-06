@@ -6,7 +6,7 @@ export const registerSchema = Joi.object({
   password: Joi.string().min(6).required(),
   phone: Joi.string().optional(),
   role: Joi.string()
-    .valid("user", "agent", "admin", "buyer", "seller", "investor")
+    .valid("user", "agent", "admin", "buyer", "seller")
     .default("user"),
   isActive: Joi.boolean().optional(),
   agentDetails: Joi.object({

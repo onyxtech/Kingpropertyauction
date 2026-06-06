@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 import AIChatWidget from "@/features/shared/components/AIChatWidget";
 
 export default function ContactUs() {
@@ -53,7 +54,9 @@ export default function ContactUs() {
         }),
       });
       setSubmitted(true);
+      showSuccess("Message sent!", "We'll get back to you within 24 hours.");
     } catch (e: any) {
+      showError("Submission failed", "Please try again.");
       console.error("Contact submit error:", e);
     }
     setLoading(false);

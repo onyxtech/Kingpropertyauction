@@ -4,6 +4,7 @@ import User from "../user/user.model.js";
 import Property from "../property/property.model.js";
 import Auction from "../auction/auction.model.js";
 import Bid from "../bid/bid.model.js";
+import Notification from "./notification.model.js";
 
 // Event types
 export const NotificationEvents = {
@@ -86,6 +87,15 @@ notificationService.on(
         site_url: process.env.CLIENT_URL || 'http://localhost:5173',
       },
     });
+
+    await Notification.create({
+      type: "user",
+      icon: "user",
+      message: `New ${user.role} registered: ${user.name} (${user.email})`,
+      link: "/admin/users",
+      color: "blue",
+      targetUser: null,
+    }).catch(e => console.warn("Admin notification failed:", e.message));
   },
 );
 
@@ -105,6 +115,22 @@ notificationService.on(NotificationEvents.USER_APPROVED, async ({ userId }) => {
       user_name: user.name,
       site_url: process.env.CLIENT_URL || "http://localhost:5173",
     },
+  });
+
+  await Notification.create({
+    type: "user",
+    icon: "check",
+    message: "🎉 Your account has been approved! You can now access all features.",
+    link: "/dashboard",
+    color: "green",
+    targetUser: user._id,
+  }).catch(e => console.warn("User approval notification failed:", e.message));
+
+  const { emitToUser } = await import("../../socket.js");
+  emitToUser(user._id.toString(), "new_notification", {
+    type: "user",
+    message: "Your account has been approved!",
+    link: "/dashboard",
   });
 });
 
@@ -126,6 +152,23 @@ notificationService.on(
         user_name: user.name,
         reason: reason || "Your account was not approved.",
       },
+    });
+
+    await Notification.create({
+      type: "user",
+      icon: "x-circle",
+      message: `Your account application was not approved.${reason ? ' Reason: ' + reason : ''}`,
+      link: "/login",
+      color: "red",
+      targetUser: user._id,
+    }).catch(e => console.warn("User rejection notification failed:", e.message));
+
+    const { emitToUser } = await import("../../socket.js");
+    emitToUser(user._id.toString(), "new_notification", {
+      type: "user",
+      message: "Your account application was not approved.",
+      link: "/login",
+      color: "red",
     });
   },
 );
@@ -155,6 +198,43 @@ notificationService.on(
         property_url: `${process.env.CLIENT_URL || "http://localhost:5173"}/properties/${property.slug || property._id}`,
       },
     });
+
+    // Notify the property SELLER
+    try {
+      const sellerProperty = await Property.findById(propertyId)
+        .populate("createdBy", "name email _id").lean();
+
+      if (sellerProperty?.createdBy &&
+          sellerProperty.createdBy._id.toString() !== userId.toString()) {
+        await Notification.create({
+          type: "bid",
+          icon: "gavel",
+          message: `New bid of £${amount.toLocaleString()} placed on ${sellerProperty.propertyTitle}`,
+          link: "/dashboard/property-bidders",
+          color: "blue",
+          targetUser: sellerProperty.createdBy._id,
+        }).catch(e => console.warn("Seller bid notification failed:", e.message));
+
+        const { emitToUser } = await import("../../socket.js");
+        emitToUser(sellerProperty.createdBy._id.toString(), "new_notification", {
+          type: "bid",
+          message: `New bid of £${amount.toLocaleString()} on ${sellerProperty.propertyTitle}`,
+          link: "/dashboard/property-bidders",
+        });
+      }
+    } catch (e) {
+      console.warn("Seller bid notification failed:", e.message);
+    }
+
+    // Admin notification for new bid
+    await Notification.create({
+      type: "bid",
+      icon: "gavel",
+      message: `New bid of £${amount.toLocaleString()} placed on ${property?.propertyTitle || "property"}`,
+      link: `/admin/bids`,
+      color: "purple",
+      targetUser: null,
+    }).catch(e => console.warn("Admin bid notification failed:", e.message));
   },
 );
 
@@ -163,11 +243,22 @@ notificationService.on(
   NotificationEvents.BID_OUTBID,
   async ({ userId, propertyId, auctionId, newAmount, previousAmount }) => {
     const enabled = await isNotificationEnabled("outbidAlert");
-    if (!enabled) return;
 
     const user = await User.findById(userId);
     const property = await Property.findById(propertyId);
     if (!user || !property) return;
+
+    // Save notification to DB for user dashboard
+    await Notification.create({
+      type: "bid",
+      icon: "alert-circle",
+      message: `You've been outbid on ${property.propertyTitle}. New highest bid: £${newAmount.toLocaleString()}`,
+      link: `/auctions/${auctionId}`,
+      color: "orange",
+      targetUser: userId,
+    }).catch((e) => console.error("[Notification] Failed to save outbid notification:", e.message));
+
+    if (!enabled) return;
 
     await sendEmail({
       to: user.email,
@@ -189,12 +280,23 @@ notificationService.on(
   NotificationEvents.AUCTION_WON,
   async ({ userId, propertyId, auctionId, finalPrice }) => {
     const enabled = await isNotificationEnabled("auctionWon");
-    if (!enabled) return;
 
     const user = await User.findById(userId);
     const property = await Property.findById(propertyId);
     const auction = await Auction.findById(auctionId);
     if (!user || !property) return;
+
+    // Save notification to DB for user dashboard
+    await Notification.create({
+      type: "bid_won",
+      icon: "award",
+      message: `Congratulations! You won the auction for ${property.propertyTitle} at £${finalPrice.toLocaleString()}`,
+      link: `/auctions/${auctionId}`,
+      color: "green",
+      targetUser: userId,
+    }).catch((e) => console.error("[Notification] Failed to save auction_won notification:", e.message));
+
+    if (!enabled) return;
 
     await sendEmail({
       to: user.email,
@@ -215,11 +317,22 @@ notificationService.on(
   NotificationEvents.AUCTION_LOST,
   async ({ userId, propertyId, auctionId, finalPrice }) => {
     const enabled = await isNotificationEnabled("auctionLost");
-    if (!enabled) return;
 
     const user = await User.findById(userId);
     const property = await Property.findById(propertyId);
     if (!user || !property) return;
+
+    // Save notification to DB for user dashboard
+    await Notification.create({
+      type: "bid",
+      icon: "x-circle",
+      message: `Auction ended for ${property.propertyTitle}. Unfortunately you did not win.`,
+      link: `/auctions/${auctionId}`,
+      color: "red",
+      targetUser: userId,
+    }).catch((e) => console.error("[Notification] Failed to save auction_lost notification:", e.message));
+
+    if (!enabled) return;
 
     await sendEmail({
       to: user.email,
@@ -263,6 +376,16 @@ notificationService.on(
         },
       });
     }
+
+    // Admin DB notification for property submission
+    await Notification.create({
+      type: "property",
+      icon: "building",
+      message: `New property submitted for approval: ${property?.propertyTitle || "property"}`,
+      link: `/admin/properties`,
+      color: "blue",
+      targetUser: null,
+    }).catch(e => console.warn("Admin property notification failed:", e.message));
   },
 );
 
@@ -289,6 +412,22 @@ notificationService.on(
         property_url: `${process.env.CLIENT_URL}/properties/${property.slug || property._id}`,
       },
     });
+
+    await Notification.create({
+      type: "property",
+      icon: "building",
+      message: `✅ Your property "${property.propertyTitle}" has been approved and is now live.`,
+      link: `/properties/${property.slug || property._id}`,
+      color: "green",
+      targetUser: property.createdBy._id,
+    }).catch(e => console.warn("Property approved user notification failed:", e.message));
+
+    const { emitToUser } = await import("../../socket.js");
+    emitToUser(property.createdBy._id.toString(), "new_notification", {
+      type: "property",
+      message: `Your property "${property.propertyTitle}" has been approved!`,
+      link: `/properties/${property.slug || property._id}`,
+    });
   },
 );
 
@@ -313,6 +452,15 @@ notificationService.on(
         reason: reason || 'Your property did not meet our current requirements.',
       },
     });
+
+    await Notification.create({
+      type: "property",
+      icon: "x-circle",
+      message: `❌ Your property "${property.propertyTitle}" was not approved.`,
+      link: "/dashboard/my-properties",
+      color: "red",
+      targetUser: property.createdBy._id,
+    }).catch(e => console.warn("Property rejected user notification failed:", e.message));
   },
 );
 
@@ -338,6 +486,24 @@ notificationService.on(
         property_title: property.propertyTitle,
         final_price: `£${(property.soldPrice || property.currentBid || 0).toLocaleString()}`,
       },
+    });
+
+    const { emitToUser } = await import("../../socket.js");
+
+    await Notification.create({
+      type: "property_sold",
+      icon: "check",
+      message: `🎉 Your property "${property.propertyTitle}" has been sold!`,
+      link: "/dashboard/my-properties",
+      color: "green",
+      targetUser: property.createdBy._id,
+    }).catch(e => console.warn("Property sold notification failed:", e.message));
+
+    emitToUser(property.createdBy._id.toString(), "new_notification", {
+      type: "property_sold",
+      message: `🎉 Your property "${property.propertyTitle}" has been sold!`,
+      link: "/dashboard/my-properties",
+      color: "green",
     });
   },
 );
@@ -366,6 +532,24 @@ notificationService.on(
         reserve_price: `£${(property.pricing?.reservePrice || 0).toLocaleString()}`,
       },
     });
+
+    const { emitToUser } = await import("../../socket.js");
+
+    await Notification.create({
+      type: "property",
+      icon: "x-circle",
+      message: `Auction ended: "${property.propertyTitle}" - Reserve not met`,
+      link: "/dashboard/my-properties",
+      color: "orange",
+      targetUser: property.createdBy._id,
+    }).catch(e => console.warn("Property unsold notification failed:", e.message));
+
+    emitToUser(property.createdBy._id.toString(), "new_notification", {
+      type: "property",
+      message: `Auction ended: "${property.propertyTitle}" - Reserve not met`,
+      link: "/dashboard/my-properties",
+      color: "orange",
+    });
   },
 );
 
@@ -382,8 +566,16 @@ notificationService.on(
     );
     if (!auction) return;
 
-    // const users = await User.find({ isActive: true, role: 'user' });
-    const users = await User.find({ isActive: true, role: { $in: ['user', 'investor'] } });
+    const previousBidderIds = await Bid.distinct("bidder", { auction: auction._id });
+    const auctionForOwners = await Auction.findById(auctionId).populate("properties", "createdBy");
+    const propertyOwnerIds = (auctionForOwners?.properties || [])
+      .map(p => p.createdBy?.toString())
+      .filter(Boolean);
+    const relevantIds = [...new Set([
+      ...previousBidderIds.map(id => id.toString()),
+      ...propertyOwnerIds,
+    ])];
+    const users = await User.find({ _id: { $in: relevantIds }, isActive: true });
 
     for (const user of users) {
       await sendEmail({
@@ -412,8 +604,17 @@ notificationService.on(
     const auction = await Auction.findById(auctionId);
     if (!auction) return;
 
-    // Online auctions — notify all active users
-    const users = await User.find({ isActive: true, role: { $in: ['user', 'investor'] } });
+    // Only notify previous bidders and property owners
+    const previousBidderIds = await Bid.distinct("bidder", { auction: auction._id });
+    const auctionForOwners = await Auction.findById(auctionId).populate("properties", "createdBy");
+    const propertyOwnerIds = (auctionForOwners?.properties || [])
+      .map(p => p.createdBy?.toString())
+      .filter(Boolean);
+    const relevantIds = [...new Set([
+      ...previousBidderIds.map(id => id.toString()),
+      ...propertyOwnerIds,
+    ])];
+    const users = await User.find({ _id: { $in: relevantIds }, isActive: true });
 
     for (const user of users) {
       await sendEmail({
@@ -427,6 +628,40 @@ notificationService.on(
           auction_url: `${process.env.CLIENT_URL}/auctions/${auction.slug || auction._id}`,
         },
       });
+    }
+
+    // Admin notification for auction started
+    await Notification.create({
+      type: "auction_live",
+      icon: "gavel",
+      message: `Auction started: ${auction.auctionTitle}`,
+      link: `/admin/auctions`,
+      color: "green",
+      targetUser: null,
+    }).catch(e => console.warn("Admin auction start notification failed:", e.message));
+
+    // Notify all buyers who have previously bid on this auction
+    try {
+      const bidderIds = await Bid.distinct("bidder", { auction: auction._id });
+      const { emitToUser } = await import("../../socket.js");
+      for (const bidderId of bidderIds) {
+        await Notification.create({
+          type: "auction_live",
+          icon: "gavel",
+          message: `Auction is now live: ${auction.auctionTitle}`,
+          link: `/auctions/${auction.slug || auction._id}`,
+          color: "green",
+          targetUser: bidderId,
+        }).catch(e => console.warn("Buyer auction start notification failed:", e.message));
+
+        emitToUser(bidderId.toString(), "new_notification", {
+          type: "auction_live",
+          message: `Auction is now live: ${auction.auctionTitle}`,
+          link: `/auctions/${auction.slug || auction._id}`,
+        });
+      }
+    } catch (e) {
+      console.warn("Buyer auction start notifications failed:", e.message);
     }
   },
 );
@@ -458,6 +693,75 @@ notificationService.on(
           auction_url: `${process.env.CLIENT_URL}/auctions/${auction.slug || auction._id}`,
         },
       });
+
+      await Notification.create({
+        type: "auction_completed",
+        icon: "check",
+        message: `Auction ended: ${auction.auctionTitle}. Check your results.`,
+        link: `/auctions/${auction.slug || auction._id}`,
+        color: "purple",
+        targetUser: bidder._id,
+      }).catch(e => console.warn("Bidder auction end notification failed:", e.message));
+
+      const { emitToUser } = await import("../../socket.js");
+      emitToUser(bidder._id.toString(), "new_notification", {
+        type: "auction_completed",
+        message: `Auction ended: ${auction.auctionTitle}`,
+        link: `/auctions/${auction.slug || auction._id}`,
+        color: "purple",
+      });
+    }
+
+    // Admin notification for auction ended
+    await Notification.create({
+      type: "auction_completed",
+      icon: "check",
+      message: `Auction ended: ${auction?.auctionTitle || "auction"}`,
+      link: `/admin/auctions`,
+      color: "purple",
+      targetUser: null,
+    }).catch(e => console.warn("Admin auction end notification failed:", e.message));
+
+    // Notify property owners (sellers/agents)
+    try {
+      const auctionWithProps = await Auction.findById(auctionId).populate({
+        path: "properties",
+        select: "propertyTitle createdBy currentBid pricing",
+        populate: { path: "createdBy", select: "_id name email" },
+      });
+
+      if (auctionWithProps?.properties?.length) {
+        const { emitToUser } = await import("../../socket.js");
+
+        for (const prop of auctionWithProps.properties) {
+          if (!prop.createdBy?._id) continue;
+
+          const reserveMet = (prop.currentBid || 0) >= (prop.pricing?.reservePrice || 0) &&
+            (prop.pricing?.reservePrice || 0) > 0;
+
+          const msg = reserveMet
+            ? `🎉 Your property "${prop.propertyTitle}" sold for £${(prop.currentBid || 0).toLocaleString()}!`
+            : `Auction ended: "${prop.propertyTitle}" — Reserve not met (Highest: £${(prop.currentBid || 0).toLocaleString()})`;
+
+          await Notification.create({
+            type: reserveMet ? "property_sold" : "property",
+            icon: reserveMet ? "check" : "x-circle",
+            message: msg,
+            link: "/dashboard/my-properties",
+            color: reserveMet ? "green" : "orange",
+            targetUser: prop.createdBy._id,
+          }).catch(e => console.warn("Seller auction end notification failed:", e.message));
+
+          emitToUser(prop.createdBy._id.toString(), "new_notification", {
+            type: reserveMet ? "property_sold" : "property",
+            message: msg,
+            link: "/dashboard/my-properties",
+            color: reserveMet ? "green" : "orange",
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Seller auction end notifications failed:", e.message);
     }
   },
 );

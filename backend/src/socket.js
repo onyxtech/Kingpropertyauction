@@ -66,7 +66,7 @@ export const initSocket = (httpServer) => {
     );
 
     // ─── Auto-join admins room so backend can emit agent_requested notifications ───
-    if (user.role === "admin" || user.role === "agent") {
+    if (user.role === "admin" || user.role === "agent" || user.role === "seller") {
       socket.join("admins");
     }
 

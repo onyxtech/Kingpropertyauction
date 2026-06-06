@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -26,12 +27,15 @@ export default function ForgotPassword() {
         body: JSON.stringify({ email }),
       });
       if (data.success) {
+        showSuccess("Email sent! ✅", "Check your inbox for the reset link.");
         setSent(true);
       } else {
         setError(data.message);
+        showError("Failed to send", data.message);
       }
     } catch (err: any) {
       setError(err?.message || "Cannot connect to server");
+      showError("Connection error", err?.message || "Cannot connect to server");
     }
     setLoading(false);
   };

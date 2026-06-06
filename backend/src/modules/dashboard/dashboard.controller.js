@@ -3,6 +3,8 @@ import Auction from "../auction/auction.model.js";
 import Bid from "../bid/bid.model.js";
 import User from "../user/user.model.js";
 import Lead from "../lead/lead.model.js";
+import Conversation from "../message/conversation.model.js";
+import Notification from "../notifications/notification.model.js";
 
 export const getStats = async (req, res) => {
   try {
@@ -47,7 +49,7 @@ export const getStats = async (req, res) => {
         .sort("-createdAt")
         .limit(3)
         .select("propertyTitle createdAt"),
-      User.find().sort("-createdAt").limit(3).select("name email createdAt"),
+      User.find().sort("-createdAt").limit(3).select("name email role createdAt"),
       Property.find({ propertyStatus: "sold" })
         .sort("-updatedAt")
         .limit(5)
@@ -61,51 +63,140 @@ export const getStats = async (req, res) => {
     ]);
 
     const activities = [];
+
     recentBids.forEach((b) => {
       activities.push({
         type: "bid",
         message: `${b.bidder?.name || "Someone"} bid £${b.amount?.toLocaleString()} on ${b.property?.propertyTitle || "a property"}`,
-        time: b.createdAt
-          ? new Date(b.createdAt).toLocaleTimeString()
-          : "Recently",
+        time: b.createdAt,
         icon: "gavel",
         color: "purple",
-        link: `/properties/${b.property?.slug || b.property?._id || ""}`,
+        link: "/admin/bids",
       });
     });
+
     soldProperties.forEach((p) => {
       activities.push({
         type: "sold",
         message: `🎉 SOLD: ${p.propertyTitle} for £${(p.soldPrice || p.currentBid || 0).toLocaleString()}`,
-        time: p.updatedAt
-          ? new Date(p.updatedAt).toLocaleTimeString()
-          : "Recently",
+        time: p.updatedAt,
         icon: "check",
-        color: "emerald",
-        link: `/properties/${p.slug || p._id}`,
+        color: "green",
+        link: "/admin/properties",
       });
     });
+
     unsoldProperties.forEach((p) => {
       activities.push({
         type: "unsold",
         message: `📉 Unsold: ${p.propertyTitle} (highest bid: £${(p.currentBid || 0).toLocaleString()})`,
-        time: p.updatedAt
-          ? new Date(p.updatedAt).toLocaleTimeString()
-          : "Recently",
+        time: p.updatedAt,
         icon: "x",
         color: "red",
-        link: `/properties/${p.slug || p._id}`,
+        link: "/admin/properties",
       });
     });
 
-    const approvals = pendingProps.map((p) => ({
+    const propertyApprovals = pendingProps.map((p) => ({
       id: p._id,
       type: "property",
-      title: p.propertyTitle,
+      title: p.propertyTitle || "Untitled Property",
       submittedBy: p.createdBy?.toString() || "Unknown",
       date: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "N/A",
       status: "pending",
     }));
+
+    const pendingUsersList = await User.find({ isActive: false })
+      .sort("-createdAt")
+      .limit(5)
+      .select("name email role createdAt")
+      .lean();
+
+    const userApprovals = pendingUsersList.map((u) => ({
+      id: u._id,
+      type: "user",
+      title: `${u.name} (${u.role})`,
+      submittedBy: u.email,
+      date: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "N/A",
+      status: "pending",
+    }));
+
+    const roleRequestUsers = await User.find({ "roleRequest.status": "pending" })
+      .sort("-roleRequest.requestedAt")
+      .limit(5)
+      .select("name email role roleRequest")
+      .lean();
+
+    const roleApprovals = roleRequestUsers.map((u) => ({
+      id: u._id + "-role",
+      type: "role",
+      title: `${u.name} → ${u.roleRequest.requestedRole}`,
+      submittedBy: u.email,
+      date: u.roleRequest.requestedAt
+        ? new Date(u.roleRequest.requestedAt).toLocaleDateString()
+        : "N/A",
+      status: "pending",
+    }));
+
+    const approvals = [...propertyApprovals, ...userApprovals, ...roleApprovals].slice(0, 10);
+
+    recentUsers.forEach((u) => {
+      const roleLabel =
+        u.role === "buyer" || u.role === "user" ? "Buyer" :
+        u.role === "seller" ? "Seller" :
+        u.role === "agent" ? "Agent" :
+        u.role === "admin" ? "Admin" : "Member";
+      activities.push({
+        type: "user",
+        message: `${u.name} registered as ${roleLabel}`,
+        time: u.createdAt,
+        icon: "user",
+        color: "blue",
+        link: "/admin/users",
+      });
+    });
+
+    const recentLeads = await Lead.find()
+      .sort("-createdAt")
+      .limit(3)
+      .select("name email leadType createdAt")
+      .lean();
+
+    recentLeads.forEach((l) => {
+      activities.push({
+        type: "lead",
+        message: `New ${l.leadType || "enquiry"} from ${l.name} (${l.email})`,
+        time: l.createdAt,
+        icon: "mail",
+        color: "amber",
+        link: "/admin/leads",
+      });
+    });
+
+    const recentPropertyNotifs = await Notification.find({
+      targetUser: null,
+      type: "property",
+    })
+      .sort("-createdAt")
+      .limit(3)
+      .lean();
+
+    recentPropertyNotifs.forEach((n) => {
+      activities.push({
+        type: "property",
+        message: n.message,
+        time: n.createdAt,
+        icon: "building",
+        color: "blue",
+        link: n.link || "/admin/properties",
+      });
+    });
+
+    activities.sort((a, b) => {
+      const timeA = new Date(a.time).getTime();
+      const timeB = new Date(b.time).getTime();
+      return timeB - timeA;
+    });
 
     res.json({
       success: true,
@@ -120,10 +211,8 @@ export const getStats = async (req, res) => {
         totalLeads,
         pendingUsers,
         soldCount,
-        activities: activities
-          .sort((a, b) => b.time.localeCompare(a.time))
-          .slice(0, 10),
-        approvals: approvals.slice(0, 8),
+        activities: activities.slice(0, 10),
+        approvals,
       },
     });
   } catch (error) {
@@ -426,11 +515,16 @@ export const getNotifications = async (req, res) => {
       }
     }
 
+    const unreadConversations = await Conversation.countDocuments({
+      "unreadCount.admin": { $gt: 0 },
+    });
+
     res.json({
       success: true,
       data: {
         notifications: savedNotifications.slice(0, 25),
         unreadCount: notifications.length,
+        unreadConversations,
       },
     });
   } catch (error) {

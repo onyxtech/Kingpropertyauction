@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { Lock, CheckCircle, AlertCircle } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -37,12 +38,15 @@ export default function ResetPassword() {
         body: JSON.stringify({ password }),
       });
       if (data.success) {
+        showSuccess("Password reset! ✅", "You can now login with your new password.");
         setDone(true);
       } else {
         setError(data.message);
+        showError("Reset failed", data.message);
       }
     } catch (err: any) {
       setError(err?.message || "Cannot connect to server");
+      showError("Connection error", err?.message || "Cannot connect to server");
     }
     setLoading(false);
   };

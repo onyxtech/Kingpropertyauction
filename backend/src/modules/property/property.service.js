@@ -44,7 +44,9 @@ export const getProperties = async (query = {}) => {
 
   const filter = {};
 
-  if (status) filter.propertyStatus = status;
+  if (status) filter.propertyStatus = status.includes(",")
+  ? { $in: status.split(",").map(s => s.trim()) }
+  : status;
   if (type) filter.propertyType = type;
 
   // If approvalStatus is 'all', don't add filter → shows all statuses

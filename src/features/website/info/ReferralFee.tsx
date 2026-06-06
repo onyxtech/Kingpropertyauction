@@ -2,6 +2,7 @@ import { Gift, DollarSign, Users, TrendingUp, Sparkles, CheckCircle, Award, Targ
 import { useState } from "react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 
 export default function ReferralFee() {
   const [showReferralForm, setShowReferralForm] = useState(false);
@@ -44,12 +45,15 @@ export default function ReferralFee() {
       });
       if (data.success) {
         setSubmitted(true);
+        showSuccess("Application submitted!", "Our team will be in touch shortly.");
         setFormData({ fullName: "", email: "", phone: "", company: "", role: "", address: "", city: "", postcode: "", message: "" });
       } else {
         setError(data.message || 'Something went wrong. Please try again.');
+        showError("Submission failed", "Please try again.");
       }
     } catch (e: any) {
       setError(e?.message || 'Network error. Please try again.');
+      showError("Submission failed", "Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }

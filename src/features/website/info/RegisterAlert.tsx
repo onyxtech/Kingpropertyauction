@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Bell, Mail, MapPin, DollarSign, Home, Sparkles, CheckCircle, Zap, TrendingUp, Target } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 
 export default function RegisterAlert() {
   const [submitted, setSubmitted] = useState(false);
@@ -51,7 +52,9 @@ export default function RegisterAlert() {
         }),
       });
       setSubmitted(true);
+      showSuccess("Alert registered!", "You'll be notified about matching properties.");
     } catch (e: any) {
+      showError("Submission failed", "Please try again.");
       console.error("Alert registration error:", e);
       setError(e?.message || "Something went wrong. Please try again.");
     }

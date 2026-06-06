@@ -10,6 +10,7 @@ export default function ProfileDropdown() {
   const theme = useTheme();
   const { user, logout } = useAuthStore();
   const [show, setShow] = useState(false);
+  const isAdmin = user?.role === "admin";
 
   const initials = user?.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase() || "AD";
 
@@ -35,14 +36,16 @@ export default function ProfileDropdown() {
           <div className="fixed z-[99999] w-56 bg-white rounded-2xl shadow-2xl border-2 border-slate-100"
             style={{ top: "72px", right: "24px" }}>
             <div className="p-2">
-              <button onClick={() => { navigate("/admin/profile"); setShow(false); }}
+              <button onClick={() => { navigate(isAdmin ? "/admin/profile" : "/dashboard/profile"); setShow(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl">
                 <User className="size-5 text-slate-500" /> Profile
               </button>
-              <button onClick={() => { navigate("/admin/settings"); setShow(false); }}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl">
-                <Settings className="size-5 text-slate-500" /> Settings
-              </button>
+              {isAdmin && (
+                <button onClick={() => { navigate("/admin/settings"); setShow(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl">
+                  <Settings className="size-5 text-slate-500" /> Settings
+                </button>
+              )}
               <hr className="my-2 border-slate-100" />
               <button onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl">

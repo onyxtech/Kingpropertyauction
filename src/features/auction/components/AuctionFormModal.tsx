@@ -3,6 +3,7 @@ import { X, Save, Gavel, Search } from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
 import { useAuctionApi } from "@/features/auction/api/useAuctionApi";
+import { showSuccess, showError } from "@/lib/toast";
 
 interface AuctionFormModalProps {
   onClose: () => void;
@@ -127,13 +128,16 @@ export default function AuctionFormModal({
       }
 
       if (result.success) {
+        showSuccess(editData ? "Auction saved! ✅" : "Auction created! 🔨");
         if (onSave) onSave(result.data);
         onClose();
       } else {
         setError(result.message || "Failed to save auction");
+        showError("Save failed", result.message || "Failed to save auction");
       }
     } catch (err: any) {
       setError(err.message || "Error saving auction");
+      showError("Error", err.message || "Error saving auction");
     } finally {
       setLoading(false);
     }

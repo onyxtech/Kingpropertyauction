@@ -5,39 +5,61 @@ import {
   Users,
   Gavel,
   Send,
-  Share2,
   TrendingUp,
-  BrainCircuit,
-  Shield,
-  CreditCard,
   BarChart3,
   Settings,
   LogOut,
-  FileText,
   Menu,
   Mail,
   InboxIcon,
+  Handshake,
+  CheckCircle,
 } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 import { useAuthStore } from "@/stores/authStore";
+import { useMenuData } from "@/hooks/useMenuData";
 
 const menuItems = [
   { id: "overview", icon: LayoutDashboard, label: "Overview" },
-  { id: "pageBuilder", icon: FileText, label: "Page Builder" },
-    { id: "menuManager", icon: Menu, label: "Menu Manager", path: "/admin/menus" },
+  {
+    id: "menuManager",
+    icon: Menu,
+    label: "Menu Manager",
+    path: "/admin/menus",
+  },
   { id: "properties", icon: Building2, label: "Properties" },
   { id: "auctions", icon: Gavel, label: "Auctions" },
   { id: "bids", icon: TrendingUp, label: "Bids" },
-    { id: "marketing", icon: Send, label: "Marketing", path: "/admin/campaigns" },
+  {
+    id: "offers",
+    icon: Handshake,
+    label: "Offers & Negotiations",
+    path: "/admin/offers",
+  },
+  {
+    id: "auction-bids",
+    icon: BarChart3,
+    label: "Auction Report",
+    path: "/admin/auction-bids",
+  },
+  { id: "marketing", icon: Send, label: "Marketing", path: "/admin/campaigns" },
   { id: "leads", icon: Mail, label: "Leads", path: "/admin/leads" },
   { id: "inbox", icon: InboxIcon, label: "Inbox", path: "/admin/inbox" },
-  { id: "social", icon: Share2, label: "Social & Sync" },
-  { id: "investors", icon: TrendingUp, label: "Investors" },
-  { id: "ai", icon: BrainCircuit, label: "AI Tools" },
-  { id: "compliance", icon: Shield, label: "Compliance" },
-  { id: "financial", icon: CreditCard, label: "Financial" },
-  { id: "users", icon: Users, label: "Users" },
-  { id: "analytics", icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
+  { id: "users", icon: Users, label: "Users", path: "/admin/users" },
+  {
+    id: "approvals",
+    icon: CheckCircle,
+    label: "Approvals",
+    path: "/admin/approvals",
+  },
+
+  {
+    id: "analytics",
+    icon: BarChart3,
+    label: "Analytics",
+    path: "/admin/analytics",
+  },
   {
     id: "settings",
     icon: Settings,
@@ -55,6 +77,8 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const navigate = useNavigate();
   const theme = useTheme();
   const { logout } = useAuthStore();
+  const { getAdminSidebarItems } = useMenuData();
+  const dbItems = getAdminSidebarItems();
 
   const handleLogout = () => {
     logout();
@@ -73,7 +97,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   };
 
   return (
-    <aside className="w-72 bg-white/80 backdrop-blur-xl border-r-2 border-white/60 flex flex-col shadow-xl">
+    <aside className="w-72 bg-white/80 backdrop-blur-xl border-r-2 border-white/60 flex flex-col shadow-xl h-screen sticky top-0 overflow-y-auto flex-shrink-0">
       <div className="p-6 border-b-2 border-slate-100">
         <button
           onClick={() => navigate("/")}
@@ -96,20 +120,54 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           <p className="text-xs font-black text-slate-500 uppercase tracking-wider px-4 mb-3">
             Main Navigation
           </p>
-          {menuItems.map((item) => {
-            const Icon = item.icon;
+          {(() => {
+            if (dbItems.length === 0) return menuItems;
+            // Match by URL so new hardcoded items not yet in DB still appear
+            const dbUrls = new Set(
+              dbItems.map((i: any) => i.url || `/admin/${i.id}`),
+            );
+            const hardcodedNotInDb = menuItems.filter((m) => {
+              const url = m.path || `/admin/${m.id}`;
+              return !dbUrls.has(url);
+            });
+            return [...dbItems, ...hardcodedNotInDb];
+          })().map((item: any) => {
+            const isDbItem = !!item._id;
+            const icons: any = LucideIcons;
+            const Icon = isDbItem
+              ? icons[item.icon] || icons.FileText
+              : item.icon;
+
+            const itemPath = isDbItem
+              ? item.url
+              : (item.path || `/admin/${item.id}`);
+            const isActive =
+              window.location.pathname === itemPath ||
+              window.location.pathname.startsWith(itemPath + "/");
+
             return (
               <button
-                key={item.id}
-                onClick={() => handleNavigation(item)}
+                key={item.id || item._id}
+                onClick={() => {
+                  if (isDbItem && item.url) {
+                    navigate(item.url);
+                  } else {
+                    handleNavigation(item);
+                  }
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                  activeTab === item.id
+                  isActive
                     ? `bg-gradient-to-r ${theme.secondary} text-white shadow-lg`
                     : "text-slate-700 hover:bg-slate-100"
                 }`}
               >
                 <Icon className="size-5" />
                 {item.label}
+                {item.badge && (
+                  <span className="ml-auto px-2 py-0.5 bg-red-500 text-white text-[10px] rounded-full font-black">
+                    {item.badgeLabel || "NEW"}
+                  </span>
+                )}
               </button>
             );
           })}

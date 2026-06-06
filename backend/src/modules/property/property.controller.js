@@ -4,6 +4,7 @@ import {
 } from "./property.validation.js";
 import * as propertyService from "./property.service.js";
 import Property from "./property.model.js";
+import Auction from "../auction/auction.model.js";
 import notificationService, {
   NotificationEvents,
 } from "../notifications/trigger.service.js";
@@ -216,6 +217,163 @@ export const remove = async (req, res) => {
   }
 };
 
+export const getMyProperties = async (req, res) => {
+  try {
+    const properties = await Property.find({ createdBy: req.user._id })
+      .select("propertyTitle slug propertyType propertyStatus approvalStatus location pricing media currentBid totalBids createdAt")
+      .sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: properties });
+  } catch (error) {
+    console.error("[Property] getMyProperties error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const toggleWatchlist = async (req, res) => {
+  try {
+    const property = await Property.findById(req.params.id);
+    if (!property) {
+      return res.status(404).json({ success: false, message: "Property not found" });
+    }
+
+    const userId = req.user._id;
+    const isSaved = property.savedBy?.some((id) => id.toString() === userId.toString());
+
+    if (isSaved) {
+      await Property.findByIdAndUpdate(req.params.id, { $pull: { savedBy: userId } });
+    } else {
+      await Property.findByIdAndUpdate(req.params.id, { $addToSet: { savedBy: userId } });
+    }
+
+    res.json({
+      success: true,
+      data: { saved: !isSaved },
+      message: isSaved ? "Removed from watchlist" : "Added to watchlist",
+    });
+  } catch (error) {
+    console.error("[Property] toggleWatchlist error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getWatchlist = async (req, res) => {
+  try {
+    const properties = await Property.find({ savedBy: req.user._id })
+      .select("propertyTitle slug propertyType location pricing media currentBid totalBids propertyStatus approvalStatus createdAt")
+      .sort({ createdAt: -1 });
+    res.json({ success: true, data: properties });
+  } catch (error) {
+    console.error("[Property] getWatchlist error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getMyPropertyAuctionStats = async (req, res) => {
+  try {
+    const myProperties = await Property.find({ createdBy: req.user._id }).select("_id propertyTitle approvalStatus");
+    const propertyIds = myProperties.map((p) => p._id);
+
+    const auctions = await Auction.find({ properties: { $in: propertyIds } })
+      .select("auctionTitle slug status currentBid totalBids startDateTime endDateTime properties")
+      .sort({ createdAt: -1 });
+
+    const totalProperties = myProperties.length;
+    const approvedProperties = myProperties.filter((p) => p.approvalStatus === "approved").length;
+    const pendingProperties = myProperties.filter((p) => p.approvalStatus === "pending").length;
+    const liveAuctions = auctions.filter((a) => a.status === "live").length;
+    const completedAuctions = auctions.filter((a) => a.status === "completed").length;
+    const totalRevenue = auctions
+      .filter((a) => a.status === "completed")
+      .reduce((sum, a) => sum + (a.currentBid || 0), 0);
+
+    const BidModel = (await import("../bid/bid.model.js")).default;
+    const totalBidsReceived = await BidModel.countDocuments({
+      property: { $in: propertyIds },
+      status: { $ne: "retracted" },
+    });
+
+    const enrichedAuctions = await Promise.all(
+      auctions.slice(0, 5).map(async (auction) => {
+        const Bid = (await import("../bid/bid.model.js")).default;
+        const auctionObj = auction.toObject ? auction.toObject() : auction;
+
+        // Bid stats per property (exclude retracted)
+        const propertyBids = await Bid.aggregate([
+          { $match: {
+            auction: auction._id,
+            property: { $in: propertyIds },
+            status: { $ne: "retracted" },
+          }},
+          { $group: {
+            _id: "$property",
+            totalBids: { $sum: 1 },
+            highestBid: { $max: "$amount" },
+          }},
+        ]);
+
+        // Seller's own properties in this specific auction
+        const sellerPropsInAuction = myProperties.filter((p) =>
+          auctionObj.properties?.some(
+            (ap) => ap.toString() === p._id.toString()
+          )
+        );
+
+        // Fetch full details only for this seller's properties
+        const propertyDetails = await Property.find({
+          _id: { $in: sellerPropsInAuction.map((p) => p._id) },
+        })
+          .select("_id propertyTitle pricing currentBid totalBids media location propertyStatus")
+          .lean();
+
+        // Merge bid stats into property details
+        auctionObj.propertyBreakdown = propertyDetails.map((prop) => {
+          const bidStats = propertyBids.find(
+            (b) => b._id.toString() === prop._id.toString()
+          );
+          return {
+            _id: prop._id,
+            propertyTitle: prop.propertyTitle,
+            location: prop.location,
+            startingPrice: prop.pricing?.startingAuctionPrice || 0,
+            reservePrice: prop.pricing?.reservePrice || 0,
+            currentBid: prop.currentBid || 0,
+            totalBids: bidStats?.totalBids || 0,
+            highestBid: bidStats?.highestBid || 0,
+            auctionStatus: auction.status,
+            isSoldInThisAuction:
+              auction.status === "completed" &&
+              (bidStats?.highestBid || 0) > 0 &&
+              (bidStats?.highestBid || 0) >= (prop.pricing?.reservePrice || 0),
+            image: prop.media?.propertyImages?.[0] || null,
+            reserveMet:
+              (bidStats?.highestBid || 0) > 0 &&
+              (bidStats?.highestBid || 0) >= (prop.pricing?.reservePrice || 0),
+          };
+        });
+
+        return auctionObj;
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalProperties,
+        approvedProperties,
+        pendingProperties,
+        liveAuctions,
+        completedAuctions,
+        totalRevenue,
+        totalBidsReceived,
+        recentAuctions: enrichedAuctions,
+      },
+    });
+  } catch (error) {
+    console.error("[Property] getMyPropertyAuctionStats error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const getByIds = async (req, res) => {
   try {
     const { ids } = req.body;
@@ -223,6 +381,72 @@ export const getByIds = async (req, res) => {
     res.status(200).json({ success: true, data: properties });
   } catch (error) {
     console.error("[Property] getByIds error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getMyPropertyBidders = async (req, res) => {
+  try {
+    const myProperties = await Property.find({
+      createdBy: req.user._id
+    }).select("_id propertyTitle media pricing currentBid").lean();
+
+    const propertyIds = myProperties.map(p => p._id);
+
+    const Bid = (await import("../bid/bid.model.js")).default;
+    const bids = await Bid.find({
+      property: { $in: propertyIds },
+      status: { $ne: "retracted" }
+    })
+      .populate("bidder", "name email")
+      .populate("property", "propertyTitle media currentBid pricing")
+      .populate("auction", "auctionTitle slug status")
+      .sort("-amount")
+      .lean();
+
+    const byProperty = {};
+    for (const bid of bids) {
+      const pid = bid.property?._id?.toString();
+      if (!pid) continue;
+      if (!byProperty[pid]) {
+        byProperty[pid] = {
+          property: bid.property,
+          bids: [],
+          highestBid: 0,
+          totalBids: 0,
+          uniqueBidders: new Set(),
+        };
+      }
+      byProperty[pid].bids.push({
+        _id: bid._id,
+        amount: bid.amount,
+        status: bid.status,
+        bidder: {
+          name: bid.bidder?.name || "Anonymous",
+          email: bid.bidder?.email || "",
+          initial: (bid.bidder?.name || "A").charAt(0).toUpperCase(),
+        },
+        auction: bid.auction,
+        createdAt: bid.createdAt,
+      });
+      byProperty[pid].totalBids++;
+      byProperty[pid].uniqueBidders.add(bid.bidder?._id?.toString());
+      if (bid.amount > byProperty[pid].highestBid) {
+        byProperty[pid].highestBid = bid.amount;
+      }
+    }
+
+    const result = Object.values(byProperty).map(item => ({
+      property: item.property,
+      bids: item.bids.slice(0, 5),
+      highestBid: item.highestBid,
+      totalBids: item.totalBids,
+      uniqueBidders: item.uniqueBidders.size,
+    }));
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error("[Property] getMyPropertyBidders error:", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };

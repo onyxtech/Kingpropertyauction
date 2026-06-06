@@ -45,7 +45,15 @@ export const registerUser = async (userData) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      phone: user.phone,
       isActive: user.isActive,
+      activeView: user.activeView,
+      permissions: user.permissions,
+      roleRequest: user.roleRequest,
+      agentDetails: user.agentDetails,
+      bankDetails: user.bankDetails,
+      notificationSettings: user.notificationSettings,
+      createdAt: user.createdAt,
     },
     accessToken,
     refreshToken,
@@ -75,13 +83,29 @@ export const loginUser = async (email, password) => {
   user.refreshToken = refreshToken;
   await user.save({ validateBeforeSave: false });
 
+  const correctActiveView =
+    (user.role === "seller" || user.role === "agent") &&
+    user.activeView === "buyer" &&
+    !user.permissions?.canBid
+      ? "seller"
+      : user.activeView ||
+        ((user.role === "seller" || user.role === "agent") ? "seller" : "buyer");
+
   return {
     user: {
       id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
+      phone: user.phone,
       isActive: user.isActive,
+      activeView: correctActiveView,
+      permissions: user.permissions,
+      roleRequest: user.roleRequest,
+      agentDetails: user.agentDetails,
+      bankDetails: user.bankDetails,
+      notificationSettings: user.notificationSettings,
+      createdAt: user.createdAt,
     },
     accessToken,
     refreshToken,

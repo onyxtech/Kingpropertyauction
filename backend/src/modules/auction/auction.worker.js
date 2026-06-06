@@ -52,6 +52,11 @@ export const startAuctionWorker = () => {
         if (auction && auction.status === 'live') {
           await checkAndCompleteEndedAuctions();
           emitAuctionUpdate(auctionId, { status: 'completed' });
+
+          notificationService
+            .emit(NotificationEvents.AUCTION_ENDED, { auctionId: auction._id })
+            .catch(e => console.warn('Auction ended event failed:', e.message));
+
           console.log(`✅ Auction completed: ${auctionTitle}`);
         }
       }

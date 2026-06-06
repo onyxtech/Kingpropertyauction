@@ -20,6 +20,7 @@ import AdminLayout from "../components/AdminLayout";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 
 import StepBasic from "../components/edit-property/StepBasic";
 import StepLocation from "../components/edit-property/StepLocation";
@@ -334,13 +335,16 @@ export default function EditProperty() {
         updateField("existingImages", allImages);
         queryClient.invalidateQueries({ queryKey: ["properties"] });
         setSaved(true);
+        showSuccess("Property saved!", "All changes have been saved.");
         setTimeout(() => setSaved(false), 3000);
       } else {
         setError(result.message || "Save failed");
+        showError("Save failed", result.message || "Please try again.");
         setTimeout(() => setError(""), 5000);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error saving");
+      showError("Save failed", err instanceof Error ? err.message : "Error saving");
       setTimeout(() => setError(""), 5000);
     } finally {
       setSaving(false);

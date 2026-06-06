@@ -12,6 +12,8 @@ import {
   getStats,
   convertLeadToConversation,
   getUserConversations,
+  createUserConversation,
+  updateUserConversation,
 } from './message.controller.js';
 
 const router = express.Router();
@@ -20,9 +22,11 @@ const router = express.Router();
 router.get('/stats', protect, authorize('admin'), getStats);
 
 // ─── User routes (must be before /:id) ───
+router.post('/my/new',          protect, createUserConversation);
 router.get('/my/list',          protect, getUserConversations);
 router.get('/my/:id/messages',  protect, getUserMessages);
 router.post('/my/:id/messages', protect, sendUserMessage);
+router.put('/my/:id/update',    protect, updateUserConversation);
 
 // ─── Convert lead (must be before /:id) ───
 router.post('/convert/:leadId', protect, authorize('admin'), convertLeadToConversation);

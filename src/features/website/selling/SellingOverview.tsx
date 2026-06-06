@@ -2,6 +2,7 @@ import { Briefcase, TrendingUp, Clock, Award, Users, CheckCircle, Sparkles, Doll
 import { preventMinus } from "@/utils/validation";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -53,6 +54,7 @@ export default function SellingOverview() {
       });
       if (data.success) {
         setSubmitted(true);
+        showSuccess("Valuation request sent!", "We'll contact you within 24 hours.");
         setFormData({
           propertyType: '', address: '', postcode: '',
           bedrooms: '', bathrooms: '', firstName: '',
@@ -60,9 +62,11 @@ export default function SellingOverview() {
         });
       } else {
         setSubmitError(data.message || 'Something went wrong. Please try again.');
+        showError("Submission failed", "Please try again.");
       }
     } catch (e: any) {
       setSubmitError(e?.message || 'Network error. Please try again.');
+      showError("Submission failed", "Network error. Please try again.");
     }
     setSubmitting(false);
   };

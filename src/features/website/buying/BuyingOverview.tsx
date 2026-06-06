@@ -2,6 +2,7 @@ import { Zap, CheckCircle, Home, TrendingUp, Shield, Award, Sparkles, Target, Us
 import { useState } from "react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 
 export default function BuyingOverview() {
   const [showGetStartedModal, setShowGetStartedModal] = useState(false);
@@ -50,6 +51,7 @@ export default function BuyingOverview() {
       });
       if (data.success) {
         setSubmitted(true);
+        showSuccess("Enquiry sent!", "Our buying team will contact you shortly.");
         setFormData({
           fullName: '', email: '', phone: '',
           propertyType: '', budget: '', location: '',
@@ -57,9 +59,11 @@ export default function BuyingOverview() {
         });
       } else {
         setSubmitError(data.message || 'Something went wrong. Please try again.');
+        showError("Submission failed", data.message || "Something went wrong.");
       }
     } catch (e: any) {
       setSubmitError(e?.message || 'Network error. Please try again.');
+      showError("Submission failed", "Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }

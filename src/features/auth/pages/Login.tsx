@@ -1,6 +1,7 @@
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { useAuthStore } from "@/stores/authStore";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 import {
@@ -23,7 +24,7 @@ export default function Login() {
 
   // Redirect BEFORE render — no flash!
   if (isAuthenticated && authUser) {
-    return <Navigate to={authUser.role === "admin" ? "/admin" : "/"} replace />;
+    return <Navigate to={authUser.role === "admin" ? "/admin" : "/dashboard"} replace />;
   }
 
   const [showPassword, setShowPassword] = useState(false);
@@ -66,12 +67,15 @@ export default function Login() {
       });
       if (data.success) {
         useAuthStore.getState().login(data.accessToken, data.user);
-        navigate(data.user.role === "admin" ? "/admin" : "/");
+        showSuccess("Welcome back! 👋", "You are now logged in.");
+        navigate(data.user.role === "admin" ? "/admin" : "/dashboard");
       } else {
         setError(data.message || "Login failed");
+        showError("Login failed", data.message);
       }
     } catch (err: any) {
       setError(err?.message || "Cannot connect to server");
+      showError("Connection error", err?.message || "Cannot connect to server");
     } finally {
       setLoading(false);
     }

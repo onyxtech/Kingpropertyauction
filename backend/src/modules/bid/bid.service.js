@@ -14,6 +14,19 @@ export const placeBid = async (data, userId) => {
     throw new Error("Bid amount cannot exceed £100,000,000");
   }
 
+  // Check user permissions
+  const User = (await import("../user/user.model.js")).default;
+  const bidder = await User.findById(userId).select("permissions role").lean();
+  if (!bidder) throw new Error("User not found");
+  if (bidder.role === "admin") {
+    throw new Error("Administrators cannot place bids");
+  }
+  if (bidder.permissions?.canBid === false) {
+    throw new Error(
+      "You do not have bidding permissions. Apply to become a buyer from your dashboard."
+    );
+  }
+
   // 1. Check auction exists and is live
   const auction = await Auction.findById(data.auction);
   if (!auction) throw new Error("Auction not found");
@@ -24,6 +37,11 @@ export const placeBid = async (data, userId) => {
   if (!property) throw new Error("Property not found");
   if (!auction.properties.includes(property._id)) {
     throw new Error("Property does not belong to this auction");
+  }
+
+  // Check not bidding on own property
+  if (property.createdBy?.toString() === userId.toString()) {
+    throw new Error("You cannot bid on your own property");
   }
 
   // 3. Check property listing type
@@ -301,8 +319,8 @@ export const getBidHistory = async (auctionId, propertyId) => {
 // ─── Get My Bids ───
 export const getMyBids = async (userId) => {
   return Bid.find({ bidder: userId })
-    .populate("auction", "auctionTitle status")
-    .populate("property", "propertyTitle")
+    .populate("auction", "auctionTitle slug status startDateTime endDateTime currentBid totalBids auctionType reservePrice")
+    .populate("property", "propertyTitle slug media pricing location currentBid totalBids propertyStatus")
     .sort("-createdAt");
 };
 
@@ -388,6 +406,7 @@ export const getAllBids = async (query = {}) => {
     bidderId,
     status,
     sortBy = "-createdAt",
+    search,
   } = query;
 
   const filter = {};
@@ -396,11 +415,24 @@ export const getAllBids = async (query = {}) => {
   if (bidderId) filter.bidder = bidderId;
   if (status) filter.status = status;
 
+  if (search) {
+    const User = (await import('../user/user.model.js')).default;
+    const searchRegex = new RegExp(search, 'i');
+    const [matchingUsers, matchingProperties] = await Promise.all([
+      User.find({ $or: [{ name: searchRegex }, { email: searchRegex }] }).select('_id').lean(),
+      Property.find({ propertyTitle: searchRegex }).select('_id').lean(),
+    ]);
+    filter.$or = [
+      { bidder: { $in: matchingUsers.map(u => u._id) } },
+      { property: { $in: matchingProperties.map(p => p._id) } },
+    ];
+  }
+
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const [bids, total] = await Promise.all([
     Bid.find(filter)
-      .populate("bidder", "name email")
+      .populate("bidder", "name email phone bankDetails")
       .populate("auction", "auctionTitle slug status")
       .populate("property", "propertyTitle slug currentBid")
       .sort(sortBy)

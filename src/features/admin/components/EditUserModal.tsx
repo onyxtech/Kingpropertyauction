@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, Save, Mail, User, Shield } from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 import { useUserApi } from "../api/useUserApi";
+import { showSuccess, showError } from "@/lib/toast";
 
 interface EditUserModalProps {
   user: any;
@@ -39,9 +40,11 @@ export default function EditUserModal({ user, onClose }: EditUserModalProps) {
         id: user._id,
         status: formData.isActive ? "active" : "pending",
       });
+      showSuccess("User updated! ✅");
       onClose();
     } catch (err: any) {
       setError(err.message || "Failed to update user");
+      showError("Update failed", err.message || "Failed to update user");
     } finally {
       setLoading(false);
     }
@@ -126,7 +129,6 @@ export default function EditUserModal({ user, onClose }: EditUserModalProps) {
               >
                 <option value="buyer">Buyer</option>
                 <option value="seller">Seller</option>
-                <option value="investor">Investor</option>
                 <option value="agent">Agent</option>
                 <option value="admin">Administrator</option>
               </select>

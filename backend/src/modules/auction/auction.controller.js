@@ -99,6 +99,9 @@ export const update = async (req, res) => {
         try {
           console.log('[Auction] Running manual completion notifications for:', req.params.id);
           await completeAuction(req.params.id);
+          notificationService
+            .emit(NotificationEvents.AUCTION_ENDED, { auctionId: req.params.id })
+            .catch(e => console.warn('Auction ended event failed:', e.message));
           console.log('[Auction] Manual completion notifications sent');
         } catch (err) {
           console.error('[Auction] Manual completion notification failed:', err.message);

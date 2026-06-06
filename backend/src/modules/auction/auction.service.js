@@ -4,6 +4,7 @@ import notificationService, {
 } from "../notifications/trigger.service.js";
 import Bid from "../bid/bid.model.js";
 import Property from "../property/property.model.js";
+import Notification from "../notifications/notification.model.js";
 import { emitAuctionUpdate } from '../../socket.js';
 import cache from '../../utils/cache.js';
 
@@ -40,6 +41,79 @@ export const createAuction = async (data, userId) => {
       { _id: { $in: data.properties } },
       [{ $set: { propertyStatus: "available", "auctionDetails.auctionStatus": "upcoming", currentBid: "$pricing.startingAuctionPrice", totalBids: 0, winningBidder: null } }]
     );
+
+    try {
+      const { emitToUser } = await import("../../socket.js");
+      const propertiesWithOwners = await Property.find({
+        _id: { $in: data.properties }
+      }).select("propertyTitle slug createdBy").populate("createdBy", "_id name").lean();
+
+      for (const prop of propertiesWithOwners) {
+        if (!prop.createdBy) continue;
+
+        const msg = auction.status === "live"
+          ? `🔴 Your property "${prop.propertyTitle}" is now in a LIVE auction: ${auction.auctionTitle}`
+          : `📅 Your property "${prop.propertyTitle}" has been added to auction: ${auction.auctionTitle}`;
+
+        await Notification.create({
+          type: "auction_live",
+          icon: "gavel",
+          message: msg,
+          link: `/auctions/${auction.slug || auction._id}`,
+          color: auction.status === "live" ? "green" : "blue",
+          targetUser: prop.createdBy._id,
+        }).catch(e => console.warn("Property owner auction notification failed:", e.message));
+
+        emitToUser(prop.createdBy._id.toString(), "new_notification", {
+          type: "auction_live",
+          message: msg,
+          link: `/auctions/${auction.slug || auction._id}`,
+        });
+      }
+    } catch (e) {
+      console.warn("Property owner notifications failed:", e.message);
+    }
+
+    // Email property owners when added to auction
+    try {
+      const { sendEmail } = await import("../notifications/email.service.js");
+      const { isNotificationEnabled } = await import("../settings/settings.service.js");
+      const emailEnabled = await isNotificationEnabled("propertyAddedToAuction");
+      if (emailEnabled) {
+        const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
+        const formatDate = (date) => {
+          if (!date) return "TBD";
+          return new Date(date).toLocaleString("en-GB", {
+            day: "2-digit", month: "short", year: "numeric",
+            hour: "2-digit", minute: "2-digit",
+          });
+        };
+        const propsForEmail = await Property.find({
+          _id: { $in: data.properties }
+        }).select("propertyTitle createdBy").populate("createdBy", "name email").lean();
+
+        for (const prop of propsForEmail) {
+          if (!prop.createdBy?.email) continue;
+          await sendEmail({
+            to: prop.createdBy.email,
+            subject: `Your property added to auction: ${auction.auctionTitle}`,
+            templateKey: "propertyAddedToAuction",
+            variables: {
+              owner_name: prop.createdBy.name || "Property Owner",
+              property_title: prop.propertyTitle,
+              auction_title: auction.auctionTitle,
+              auction_type: auction.auctionType || "online",
+              start_date: formatDate(auction.startDateTime),
+              end_date: formatDate(auction.endDateTime),
+              auction_url: `${siteUrl}/auctions/${auction.slug || auction._id}`,
+              dashboard_url: `${siteUrl}/dashboard`,
+            },
+          }).catch(e => console.warn("Property added to auction email failed:", e.message));
+        }
+      }
+    } catch (emailErr) {
+      console.warn("Property added to auction emails failed:", emailErr.message);
+    }
   }
 
   emitAuctionUpdate(auction._id.toString(), { status: auction.status, type: 'auction_created' });
@@ -147,6 +221,11 @@ export const updateAuction = async (id, data) => {
     }
   }
 
+  // Snapshot existing properties before update so we can find newly added ones
+  const existingBeforeUpdate = data.properties?.length > 0
+    ? await Auction.findById(id).select("properties").lean()
+    : null;
+
   const auction = await Auction.findByIdAndUpdate(id, data, {
     new: true,
     runValidators: true,
@@ -159,6 +238,86 @@ export const updateAuction = async (id, data) => {
       { _id: { $in: data.properties } },
       [{ $set: { propertyStatus: "available", "auctionDetails.auctionStatus": "upcoming", currentBid: "$pricing.startingAuctionPrice", totalBids: 0, winningBidder: null } }]
     );
+
+    try {
+      const { emitToUser } = await import("../../socket.js");
+      const propertiesWithOwners = await Property.find({
+        _id: { $in: data.properties }
+      }).select("propertyTitle slug createdBy").populate("createdBy", "_id name").lean();
+
+      for (const prop of propertiesWithOwners) {
+        if (!prop.createdBy) continue;
+
+        const msg = auction.status === "live"
+          ? `🔴 Your property "${prop.propertyTitle}" is now in a LIVE auction: ${auction.auctionTitle}`
+          : `📅 Your property "${prop.propertyTitle}" has been added to auction: ${auction.auctionTitle}`;
+
+        await Notification.create({
+          type: "auction_live",
+          icon: "gavel",
+          message: msg,
+          link: `/auctions/${auction.slug || auction._id}`,
+          color: auction.status === "live" ? "green" : "blue",
+          targetUser: prop.createdBy._id,
+        }).catch(e => console.warn("Property owner auction notification failed:", e.message));
+
+        emitToUser(prop.createdBy._id.toString(), "new_notification", {
+          type: "auction_live",
+          message: msg,
+          link: `/auctions/${auction.slug || auction._id}`,
+        });
+      }
+    } catch (e) {
+      console.warn("Property owner notifications failed:", e.message);
+    }
+
+    // Email only newly added property owners (not those already in auction)
+    try {
+      const { sendEmail } = await import("../notifications/email.service.js");
+      const { isNotificationEnabled } = await import("../settings/settings.service.js");
+      const emailEnabled = await isNotificationEnabled("propertyAddedToAuction");
+      if (emailEnabled) {
+        const previousPropertyIds = (existingBeforeUpdate?.properties || []).map(p => p.toString());
+        const newPropertyIds = data.properties.filter(
+          pid => !previousPropertyIds.includes(pid.toString())
+        );
+
+        if (newPropertyIds.length > 0) {
+          const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
+          const formatDate = (date) => {
+            if (!date) return "TBD";
+            return new Date(date).toLocaleString("en-GB", {
+              day: "2-digit", month: "short", year: "numeric",
+              hour: "2-digit", minute: "2-digit",
+            });
+          };
+          const newPropsForEmail = await Property.find({
+            _id: { $in: newPropertyIds }
+          }).select("propertyTitle createdBy").populate("createdBy", "name email").lean();
+
+          for (const prop of newPropsForEmail) {
+            if (!prop.createdBy?.email) continue;
+            await sendEmail({
+              to: prop.createdBy.email,
+              subject: `Your property added to auction: ${auction.auctionTitle}`,
+              templateKey: "propertyAddedToAuction",
+              variables: {
+                owner_name: prop.createdBy.name || "Property Owner",
+                property_title: prop.propertyTitle,
+                auction_title: auction.auctionTitle,
+                auction_type: auction.auctionType || "online",
+                start_date: formatDate(auction.startDateTime),
+                end_date: formatDate(auction.endDateTime),
+                auction_url: `${siteUrl}/auctions/${auction.slug || auction._id}`,
+                dashboard_url: `${siteUrl}/dashboard`,
+              },
+            }).catch(e => console.warn("Property added to auction email failed:", e.message));
+          }
+        }
+      }
+    } catch (emailErr) {
+      console.warn("Property added to auction emails failed:", emailErr.message);
+    }
   }
 
   // Reschedule BullMQ jobs whenever an auction is updated

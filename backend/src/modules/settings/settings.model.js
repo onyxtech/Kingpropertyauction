@@ -46,6 +46,10 @@ export const NotificationRulesSchema = z.object({
   catalogueRequest: z.boolean().default(true),
   adminLeadAlert: z.boolean().default(true),
   adminReply: z.boolean().default(true),
+  newSupportTicket: z.boolean().default(true),
+  supportReply: z.boolean().default(true),
+  roleRequestAdmin: z.boolean().default(true),
+  roleRequestApproved: z.boolean().default(true),
   registerAlert: z.boolean().default(true),
   solicitorEnquiry: z.boolean().default(true),
   homeReport: z.boolean().default(true),
@@ -56,6 +60,14 @@ export const NotificationRulesSchema = z.object({
   faqSupport: z.boolean().default(true),
   legalEnquiry: z.boolean().default(true),
   newsletterSignup: z.boolean().default(true),
+  propertyInquiry: z.boolean().default(true),
+  propertyInquiryReply: z.boolean().default(true),
+  buyerToOwnerMessage: z.boolean().default(true),
+  ownerToBuyerReply: z.boolean().default(true),
+  adminInquiryCC: z.boolean().default(true),
+  propertyAddedToAuction: z.boolean().default(true),
+  propertyInquiryConfirmation: z.boolean().default(true),
+  offerNotification: z.boolean().default(true),
 });
 
 // ─── API Integrations Schema ───

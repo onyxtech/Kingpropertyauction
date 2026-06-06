@@ -15,7 +15,7 @@ import { startBidWorker, stopBidWorker } from "./modules/bid/bid.worker.js";
 import { seedDefaultKnowledge, fixKnowledgeURLs } from "./modules/knowledge/knowledge.service.js";
 import { resetAllTemplatesToDefault } from "./modules/notifications/template.service.js";
 import { startCampaignWorker, stopCampaignWorker } from "./modules/campaign/campaign.worker.js";
-import { seedDefaultMenus } from "./modules/menu/menu.service.js";
+import { seedDefaultMenus, patchAdminSidebarItems } from "./modules/menu/menu.service.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -41,6 +41,7 @@ console.log("📧 Campaign worker started");
 
 // ─── Menu Editor Seeds ───
 await seedDefaultMenus();
+patchAdminSidebarItems().catch(e => console.warn("Sidebar patch failed:", e.message));
 // ─── On startup: reschedule all pending auctions (handles server restarts) ───
 const rescheduleAllPendingAuctions = async () => {
   try {

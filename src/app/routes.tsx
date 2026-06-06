@@ -48,6 +48,14 @@ import PropertyDetails from "@/features/property/pages/PropertyDetails";
 import SystemArchitecture from "@/features/website/info/SystemArchitecture";
 import AddProperty from "@/features/property/pages/AddProperty";
 const EditProperty = lazy(() => import("../features/admin/pages/EditProperty"));
+const CustomerEditProperty = lazy(() => import("../features/customer/pages/CustomerEditProperty"));
+const Offers = lazy(() => import("../features/admin/pages/Offers"));
+const AuctionBids = lazy(() => import("../features/admin/pages/AuctionBids"));
+const AdminUsers = lazy(() => import("../features/admin/pages/Users"));
+const Approvals = lazy(() => import("../features/admin/pages/Approvals"));
+const Revenue = lazy(() => import("../features/admin/pages/Revenue"));
+const AdminCommissions = lazy(() => import("../features/admin/pages/Commissions"));
+const UserProfile = lazy(() => import("../features/admin/pages/UserProfile"));
 import ProtectedRoute from "@/features/shared/layout/ProtectedRoute";
 import NotFound from "@/features/shared/pages/NotFound";
 
@@ -55,6 +63,7 @@ const AdminProfile = lazy(() => import("../features/admin/pages/AdminProfile"));
 import Analytics from "@/features/admin/pages/Analytics";
 import Campaigns from "@/features/admin/pages/Campaigns";
 import MenuManager from "@/features/admin/pages/MenuManager";
+const CustomerDashboard = lazy(() => import("../features/customer/pages/CustomerDashboard"));
 
 const eb = (node: React.ReactNode) => <ErrorBoundary>{node}</ErrorBoundary>;
 const lazy_eb = (node: React.ReactNode) => (
@@ -147,6 +156,22 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/admin/offers",
+    element: lazy_eb(
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <Offers />
+      </ProtectedRoute>,
+    ),
+  },
+  {
+    path: "/admin/auction-bids",
+    element: lazy_eb(
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <AuctionBids />
+      </ProtectedRoute>,
+    ),
+  },
+  {
     path: "/admin/auctions/:id/edit",
     element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
@@ -158,7 +183,39 @@ export const router = createBrowserRouter([
     path: "/admin/users",
     element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
-        <Admin />
+        <AdminUsers />
+      </ProtectedRoute>,
+    ),
+  },
+  {
+    path: "/admin/users/:id",
+    element: lazy_eb(
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <UserProfile />
+      </ProtectedRoute>,
+    ),
+  },
+  {
+    path: "/admin/approvals",
+    element: lazy_eb(
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <Approvals />
+      </ProtectedRoute>,
+    ),
+  },
+  {
+    path: "/admin/revenue",
+    element: lazy_eb(
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <Revenue />
+      </ProtectedRoute>,
+    ),
+  },
+  {
+    path: "/admin/commissions",
+    element: lazy_eb(
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <AdminCommissions />
       </ProtectedRoute>,
     ),
   },
@@ -188,14 +245,6 @@ export const router = createBrowserRouter([
   },
   {
     path: "/admin/social",
-    element: lazy_eb(
-      <ProtectedRoute allowedRoles={["admin"]}>
-        <Admin />
-      </ProtectedRoute>,
-    ),
-  },
-  {
-    path: "/admin/investors",
     element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Admin />
@@ -276,6 +325,7 @@ export const router = createBrowserRouter([
       <ProtectedRoute
         allowedRoles={["admin", "agent", "seller"]}
         redirectTo="/register?reason=seller"
+        allowCanListProperties={true}
       >
         <AddProperty />
       </ProtectedRoute>,
@@ -284,7 +334,7 @@ export const router = createBrowserRouter([
   {
     path: "/admin/properties/:id/edit",
     element: lazy_eb(
-      <ProtectedRoute allowedRoles={["admin"]}>
+      <ProtectedRoute allowedRoles={["admin", "agent", "seller"]}>
         <EditProperty />
       </ProtectedRoute>,
     ),
@@ -292,6 +342,30 @@ export const router = createBrowserRouter([
   {
     path: "/admin/properties/new",
     element: <Navigate to="/add-property" replace />,
+  },
+  {
+    path: "/dashboard",
+    element: lazy_eb(
+      <ProtectedRoute allowedRoles={["buyer", "seller", "agent", "admin", "user"]}>
+        <CustomerDashboard />
+      </ProtectedRoute>,
+    ),
+  },
+  {
+    path: "/dashboard/:tab",
+    element: lazy_eb(
+      <ProtectedRoute allowedRoles={["buyer", "seller", "agent", "admin", "user"]}>
+        <CustomerDashboard />
+      </ProtectedRoute>,
+    ),
+  },
+  {
+    path: "/dashboard/edit-property/:id",
+    element: lazy_eb(
+      <ProtectedRoute allowedRoles={["admin", "agent", "seller", "buyer"]}>
+        <CustomerEditProperty />
+      </ProtectedRoute>,
+    ),
   },
   { path: "/admin/*", element: eb(<NotFound />) },
   { path: "*", element: eb(<NotFound />) },

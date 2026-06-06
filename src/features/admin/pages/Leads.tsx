@@ -7,6 +7,7 @@ import {
 import AdminLayout from "../components/AdminLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
+import { showSuccess, showError } from "@/lib/toast";
 
 export default function Leads() {
   const queryClient = useQueryClient();
@@ -115,14 +116,17 @@ export default function Leads() {
         }),
       });
       if (result.success) {
+        showSuccess("Reply sent! ✅", "Customer has been notified.");
         setReplyResult({ success: true, message: 'Email sent successfully to ' + selectedLead.email });
         setReplyMessage('');
         setShowReplyBox(false);
         fetchLeadDetail(selectedLead._id);
       } else {
+        showError("Failed to send reply", result.message || "Failed to send email");
         setReplyResult({ success: false, message: result.message || 'Failed to send email' });
       }
     } catch (e: any) {
+      showError("Failed to send reply", e.message);
       setReplyResult({ success: false, message: e.message });
     }
     setIsSendingReply(false);
@@ -144,6 +148,26 @@ export default function Leads() {
     "home-report": "bg-emerald-100 text-emerald-700",
     buying: "bg-sky-100 text-sky-700",
     selling: "bg-fuchsia-100 text-fuchsia-700",
+    property_inquiry: "bg-blue-100 text-blue-700",
+  };
+
+  const typeLabels: Record<string, string> = {
+    contact: "Contact",
+    valuation: "Valuation",
+    finance: "Finance",
+    catalogue: "Catalogue",
+    referral: "Referral",
+    general: "General",
+    faq: "FAQ Support",
+    legal: "Legal Enquiry",
+    newsletter: "Newsletter",
+    chat: "Chat",
+    alert: "Register Alert",
+    solicitor: "Solicitor",
+    "home-report": "Home Report",
+    buying: "Buying Enquiry",
+    selling: "Selling Enquiry",
+    property_inquiry: "Property Enquiry",
   };
 
   const statusColors: Record<string, string> = {
@@ -233,6 +257,7 @@ export default function Leads() {
             <option value="legal">Legal Enquiry</option>
             <option value="faq">FAQ Support</option>
             <option value="newsletter">Newsletter</option>
+            <option value="property_inquiry">Property Enquiry</option>
           </select>
         </div>
 
@@ -270,7 +295,7 @@ export default function Leads() {
                     <td className="px-6 py-4 text-sm text-slate-600">{lead.phone || "-"}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${typeColors[lead.leadType] || "bg-slate-100 text-slate-700"}`}>
-                        {lead.leadType}
+                        {typeLabels[lead.leadType] || lead.leadType}
                       </span>
                     </td>
                     <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
@@ -329,7 +354,7 @@ export default function Leads() {
                     <div>
                       <h3 className="text-2xl font-black">{selectedLead.name}</h3>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${typeColors[selectedLead.leadType]}`}>{selectedLead.leadType}</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${typeColors[selectedLead.leadType] || "bg-slate-100 text-slate-700"}`}>{typeLabels[selectedLead.leadType] || selectedLead.leadType}</span>
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${statusColors[selectedLead.status]}`}>{selectedLead.status}</span>
                       </div>
                     </div>

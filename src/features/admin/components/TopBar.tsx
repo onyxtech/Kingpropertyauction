@@ -1,13 +1,17 @@
 import { useNavigate } from "react-router";
 import { ArrowLeft, Plus, Gavel, Mail, FileText } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 import GlobalSearchBar from "./topbar/GlobalSearchBar";
 import NotificationBell from "./topbar/NotificationBell";
 import ProfileDropdown from "./topbar/ProfileDropdown";
+import { useMenuData } from "@/hooks/useMenuData";
 
 export default function TopBar() {
   const navigate = useNavigate();
   const theme = useTheme();
+  const { getAdminTopBarItems } = useMenuData();
+  const dbTopBarItems = getAdminTopBarItems();
 
   const quickActions = [
     { id: "newProperty", label: "Add Property", icon: Plus, action: () => navigate("/admin/properties/new") },
@@ -15,6 +19,18 @@ export default function TopBar() {
     { id: "sendCampaign", label: "Campaigns", icon: Mail, action: () => navigate("/admin/campaigns") },
     { id: "generateReport", label: "Reports", icon: FileText, action: () => navigate("/admin/analytics") },
   ];
+
+  const actions = dbTopBarItems.length > 0
+    ? dbTopBarItems.map((item: any) => {
+        const icons: any = LucideIcons;
+        return {
+          id: item._id,
+          label: item.label,
+          icon: icons[item.icon] || icons.Plus,
+          action: () => navigate(item.url),
+        };
+      })
+    : quickActions;
 
   return (
     <header className="bg-white/80 backdrop-blur-xl border-b-2 border-white/60 shadow-sm sticky top-0 z-40">
@@ -29,7 +45,7 @@ export default function TopBar() {
 
         {/* Right */}
         <div className="flex items-center gap-3">
-          {quickActions.map((action) => {
+          {actions.map((action) => {
             const Icon = action.icon;
             return (
               <button key={action.id} onClick={action.action}
