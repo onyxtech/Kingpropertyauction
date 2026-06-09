@@ -36,51 +36,50 @@ export default function PropertyActionCard({
   isOwnProperty = false,
 }: PropertyActionCardProps) {
   const handleDownloadBrochure = () => {
-    const lines = [
+    const content = [
       `PROPERTY BROCHURE`,
-      `=================`,
+      `================`,
       ``,
-      `Title: ${property.propertyTitle || "N/A"}`,
-      `Type: ${property.propertyType || "N/A"}`,
-      `Category: ${property.propertyCategory || "N/A"}`,
+      `Title: ${property?.propertyTitle || 'N/A'}`,
+      `Type: ${property?.propertyType || 'N/A'}`,
+      `Category: ${property?.propertyCategory || 'N/A'}`,
+      `Status: ${property?.propertyStatus || 'N/A'}`,
       ``,
       `LOCATION`,
       `--------`,
-      `Address: ${property.location?.streetAddress || "N/A"}`,
-      `City: ${property.location?.city || "N/A"}`,
-      `State: ${property.location?.state || "N/A"}`,
-      `Postcode: ${property.location?.postalCode || "N/A"}`,
-      `Country: ${property.location?.country || "United Kingdom"}`,
-      ``,
-      `SPECIFICATIONS`,
-      `--------------`,
-      `Bedrooms: ${property.specifications?.bedrooms ?? "N/A"}`,
-      `Bathrooms: ${property.specifications?.bathrooms ?? "N/A"}`,
-      `Floors: ${property.specifications?.floors ?? "N/A"}`,
-      `Year Built: ${property.specifications?.yearBuilt ?? "N/A"}`,
-      `Parking Spaces: ${property.specifications?.parkingSpaces ?? "N/A"}`,
-      `Furnished: ${property.specifications?.furnishedStatus || "N/A"}`,
+      `Address: ${property?.location?.streetAddress || 'N/A'}`,
+      `City: ${property?.location?.city || 'N/A'}`,
+      `State: ${property?.location?.state || 'N/A'}`,
+      `Country: ${property?.location?.country || 'N/A'}`,
+      `Postcode: ${property?.location?.postcode || 'N/A'}`,
       ``,
       `PRICING`,
       `-------`,
-      `Starting Price: £${(startingPrice || 0).toLocaleString()}`,
-      `Current Bid: £${(currentBid || 0).toLocaleString()}`,
-      buyNowPrice > 0 ? `Buy Now Price: £${buyNowPrice.toLocaleString()}` : "",
+      `Starting Price: £${(property?.pricing?.startingAuctionPrice || 0).toLocaleString()}`,
+      `Reserve Price: £${(property?.pricing?.reservePrice || 0).toLocaleString()}`,
       ``,
-      `LEGAL`,
-      `-----`,
-      `Ownership Type: ${property.legalInfo?.ownershipType || "N/A"}`,
+      `SPECIFICATIONS`,
+      `--------------`,
+      `Bedrooms: ${property?.specifications?.bedrooms || 'N/A'}`,
+      `Bathrooms: ${property?.specifications?.bathrooms || 'N/A'}`,
+      `Square Feet: ${property?.specifications?.squareFeet || 'N/A'}`,
       ``,
       `DESCRIPTION`,
       `-----------`,
-      property.propertyDescription || "N/A",
-    ].filter((l) => l !== undefined).join("\n");
+      `${property?.propertyDescription || 'N/A'}`,
+      ``,
+      `================`,
+      `King Property Auction`,
+      `kingpropertyauction.com`,
+    ].join('\n');
 
-    const blob = new Blob([lines], { type: "text/plain" });
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `${(property.propertyTitle || "property").replace(/\s+/g, "-").toLowerCase()}-brochure.txt`;
+    a.download = `${(property?.propertyTitle || 'property')
+      .replace(/\s+/g, '-')
+      .toLowerCase()}-brochure.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

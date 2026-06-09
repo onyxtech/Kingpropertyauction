@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
-  Save, ArrowLeft, ChevronRight, ChevronLeft, CheckCircle, AlertCircle,
+  Save, ArrowLeft, ChevronRight, ChevronLeft, CheckCircle, AlertCircle, Loader2,
   Building2, MapPin, Home, DollarSign, Gavel, Star, Scale, UserCheck, Camera,
 } from "lucide-react";
 import CustomerLayout from "../components/CustomerLayout";
@@ -40,9 +40,8 @@ export default function CustomerEditProperty() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const { canAddProperty } = useCustomerRole();
-  const { useGetPropertyById, useUploadPropertyImages } = usePropertyApi();
+  const { useGetPropertyById } = usePropertyApi();
   const { data: property, isLoading } = useGetPropertyById(id || "");
-  const { mutateAsync: uploadImages } = useUploadPropertyImages();
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -57,6 +56,8 @@ export default function CustomerEditProperty() {
   const [existingFloorPlans, setExistingFloorPlans] = useState<string[]>([]);
   const [existingLegalDocs, setExistingLegalDocs] = useState<string[]>([]);
   const [legalDocFiles, setLegalDocFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState({ step: '', percent: 0 });
+  const [uploadStatus, setUploadStatus] = useState('');
 
   const defaultForm = {
     propertyTitle: "",
@@ -91,9 +92,12 @@ export default function CustomerEditProperty() {
     features: {},
     ownershipType: "",
     titleDeedNumber: "",
+    solicitorDetails: {},
+    newPrivateDocs: [],
     agentName: "",
     agentContact: "",
     existingImages: [],
+    existingPrivateDocs: [],
   };
 
   const [form, setForm] = useState<any>(defaultForm);
@@ -146,9 +150,12 @@ export default function CustomerEditProperty() {
         features: p.features || {},
         ownershipType: p.legalInfo?.ownershipType || "",
         titleDeedNumber: p.legalInfo?.titleDeedNumber || "",
+        solicitorDetails: p.legalInfo?.solicitorDetails || {},
+        newPrivateDocs: [],
         agentName: p.sellerInfo?.agentName || "",
         agentContact: p.sellerInfo?.agentContact || "",
         existingImages: p.media?.propertyImages || [],
+        existingPrivateDocs: p.legalInfo?.privateDocuments || [],
       });
       setExistingVideos(p.media?.propertyVideos || (p.media?.propertyVideo ? [p.media.propertyVideo] : []));
       setExistingFloorPlans(p.media?.floorPlans || (p.media?.floorPlan ? [p.media.floorPlan] : []));
@@ -194,72 +201,140 @@ export default function CustomerEditProperty() {
       setLegalDocFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
   };
 
+  const uploadWithProgress = (url: string, formData: FormData, token: string): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          setUploadProgress(prev => ({ ...prev, percent }));
+        }
+      };
+      xhr.onload = () => {
+        try { resolve(JSON.parse(xhr.responseText)); }
+        catch { reject(new Error('Upload failed')); }
+      };
+      xhr.onerror = () => reject(new Error('Upload failed'));
+      xhr.send(formData);
+    });
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setError("");
+    setUploadProgress({ step: '', percent: 0 });
+    setUploadStatus('');
+    const token = localStorage.getItem("token") || "";
+
     try {
       let uploadedUrls: string[] = [];
       if (newImages.length > 0) {
         setUploading(true);
-        const uploadResult = await uploadImages(newImages);
+        setUploadStatus('Uploading images...');
+        setUploadProgress({ step: 'images', percent: 0 });
+        const fd = new FormData();
+        newImages.forEach(img => fd.append('propertyImages', img));
+        const uploadResult = await uploadWithProgress('/api/upload/images', fd, token);
         if (uploadResult?.success && uploadResult.data) {
           uploadedUrls = uploadResult.data.map((f: any) => f.fileUrl);
         }
+        setUploadProgress({ step: 'images', percent: 100 });
         setUploading(false);
       }
       const allImages = [...(form.existingImages || []), ...uploadedUrls];
 
       let videoUrls: string[] = [...existingVideos];
-      for (const vid of videoFiles) {
-        try {
-          const vfd = new FormData();
-          vfd.append("propertyVideos", vid);
-          const vd = await fetch("/api/upload/video", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-            body: vfd,
-          });
-          const vdData = await vd.json();
-          if (vdData?.success && vdData.data) {
-            const urls = Array.isArray(vdData.data) ? vdData.data.map((f: any) => f.fileUrl) : [vdData.data.fileUrl];
-            videoUrls = [...videoUrls, ...urls];
-          }
-        } catch (e) { console.error("Video upload failed:", e); }
+      if (videoFiles.length > 0) {
+        setUploadStatus('Uploading videos...');
+        setUploadProgress({ step: 'video', percent: 0 });
+        for (const vid of videoFiles) {
+          try {
+            const vfd = new FormData();
+            vfd.append("propertyVideos", vid);
+            const vd = await fetch("/api/upload/video", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+              body: vfd,
+            });
+            const vdData = await vd.json();
+            if (vdData?.success && vdData.data) {
+              const urls = Array.isArray(vdData.data) ? vdData.data.map((f: any) => f.fileUrl) : [vdData.data.fileUrl];
+              videoUrls = [...videoUrls, ...urls];
+            }
+          } catch (e) { console.error("Video upload failed:", e); }
+        }
+        setUploadProgress({ step: 'video', percent: 100 });
       }
 
       let floorPlanUrls: string[] = [...existingFloorPlans];
-      for (const fp of floorPlanFiles) {
-        try {
-          const ffd = new FormData();
-          ffd.append("floorPlans", fp);
-          const fd = await fetch("/api/upload/floorplan", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-            body: ffd,
-          });
-          const fdData = await fd.json();
-          if (fdData?.success && fdData.data) {
-            const urls = Array.isArray(fdData.data) ? fdData.data.map((f: any) => f.fileUrl) : [fdData.data.fileUrl];
-            floorPlanUrls = [...floorPlanUrls, ...urls];
-          }
-        } catch (e) { console.error("Floor plan upload failed:", e); }
+      if (floorPlanFiles.length > 0) {
+        setUploadStatus('Uploading floor plans...');
+        setUploadProgress({ step: 'floorplans', percent: 0 });
+        for (const fp of floorPlanFiles) {
+          try {
+            const ffd = new FormData();
+            ffd.append("floorPlans", fp);
+            const fpRes = await fetch("/api/upload/floorplan", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+              body: ffd,
+            });
+            const fdData = await fpRes.json();
+            if (fdData?.success && fdData.data) {
+              const urls = Array.isArray(fdData.data) ? fdData.data.map((f: any) => f.fileUrl) : [fdData.data.fileUrl];
+              floorPlanUrls = [...floorPlanUrls, ...urls];
+            }
+          } catch (e) { console.error("Floor plan upload failed:", e); }
+        }
+        setUploadProgress({ step: 'floorplans', percent: 100 });
       }
 
       let legalDocUrls: string[] = [...existingLegalDocs];
       if (legalDocFiles.length > 0) {
+        setUploadStatus('Uploading documents...');
+        setUploadProgress({ step: 'documents', percent: 0 });
         const lfd = new FormData();
         legalDocFiles.forEach((doc) => lfd.append("legalDocuments", doc));
         try {
           const lr = await fetch("/api/upload/documents", {
             method: "POST",
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+            headers: { Authorization: `Bearer ${token}` },
             body: lfd,
           });
           const ld = await lr.json();
           if (ld.success)
             legalDocUrls = [...legalDocUrls, ...(ld.data?.map((d: any) => d.fileUrl) || [])];
         } catch {}
+        setUploadProgress({ step: 'documents', percent: 100 });
       }
+
+      // Upload private documents (newPrivateDocs)
+      let privateDocUrls: any[] = [...(form.existingPrivateDocs || [])];
+      if (form.newPrivateDocs?.length > 0) {
+        for (let i = 0; i < form.newPrivateDocs.length; i++) {
+          const doc = form.newPrivateDocs[i];
+          if (!doc.file) continue;
+          try {
+            setUploadStatus(`Uploading document ${i + 1} of ${form.newPrivateDocs.length}...`);
+            const pfd = new FormData();
+            pfd.append('privateDocuments', doc.file);
+            pfd.append('docType', doc.docType || 'other');
+            if (doc.customLabel) pfd.append('customLabel', doc.customLabel);
+            const pr = await fetch('/api/upload/private-documents', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` },
+              body: pfd,
+            });
+            const prData = await pr.json();
+            if (prData?.success) privateDocUrls = [...privateDocUrls, ...prData.data];
+          } catch (e) { console.error('Private doc upload failed:', e); }
+        }
+      }
+
+      setUploadStatus('Saving property...');
+      setUploadProgress({ step: 'saving', percent: 90 });
 
       const body: any = {
         propertyTitle: form.propertyTitle,
@@ -303,6 +378,8 @@ export default function CustomerEditProperty() {
         legalInfo: {
           ownershipType: form.ownershipType || "",
           titleDeedNumber: form.titleDeedNumber || "",
+          solicitorDetails: form.solicitorDetails || {},
+          privateDocuments: privateDocUrls,
         },
         sellerInfo: {
           agentName: form.agentName || "",
@@ -331,6 +408,8 @@ export default function CustomerEditProperty() {
         setExistingFloorPlans(floorPlanUrls);
         setExistingLegalDocs(legalDocUrls);
         updateField("existingImages", allImages);
+        updateField("newPrivateDocs", []);
+        updateField("existingPrivateDocs", privateDocUrls);
         queryClient.invalidateQueries({ queryKey: ["properties"] });
         queryClient.invalidateQueries({ queryKey: ["my-properties"] });
         setSaved(true);
@@ -341,12 +420,14 @@ export default function CustomerEditProperty() {
         showError("Save failed", result.message || "Please try again.");
         setTimeout(() => setError(""), 5000);
       }
-    } catch (err) {
+    } catch (err: any) {
       setError(err instanceof Error ? err.message : "Error saving property");
       showError("Save failed", err instanceof Error ? err.message : "Error saving property");
       setTimeout(() => setError(""), 5000);
     } finally {
       setSaving(false);
+      setUploadStatus('');
+      setUploadProgress({ step: '', percent: 0 });
     }
   };
 
@@ -431,7 +512,7 @@ export default function CustomerEditProperty() {
           {step === 4 && <StepPricing form={form} updateField={updateField} />}
           {step === 5 && <StepAuction form={form} updateField={updateField} />}
           {step === 6 && <StepFeatures form={form} updateField={updateField} />}
-          {step === 7 && <StepLegal form={form} updateField={updateField} />}
+          {step === 7 && <StepLegal form={form} updateField={updateField} propertyId={id} />}
           {step === 8 && <StepSeller form={form} updateField={updateField} />}
           {step === 9 && (
             <StepMedia
@@ -469,6 +550,25 @@ export default function CustomerEditProperty() {
             </button>
             <span className="text-sm font-bold text-slate-500">Step {step} of 9</span>
             <div className="flex items-center gap-2">
+              {(saving || uploading) && (
+                <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 rounded-xl border border-blue-200">
+                  <svg className="animate-spin size-5 text-blue-600" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-bold text-blue-700">{uploadStatus || 'Processing...'}</p>
+                    {uploadProgress.percent > 0 && uploadProgress.percent < 100 && (
+                      <div className="w-32 h-2 bg-blue-200 rounded-full mt-1">
+                        <div
+                          className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress.percent}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               {step < 9 && (
                 <button
                   onClick={() => setStep(Math.min(9, step + 1))}
@@ -480,10 +580,19 @@ export default function CustomerEditProperty() {
               <button
                 onClick={handleSave}
                 disabled={saving || uploading}
-                className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold hover:scale-105 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:scale-100"
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-3 shadow-lg"
               >
-                <Save className="size-4" />
-                {uploading ? "Uploading..." : saving ? "Saving..." : "Save Changes"}
+                {saving || uploading ? (
+                  <>
+                    <Loader2 className="size-5 animate-spin" />
+                    {uploadStatus || 'Saving...'}
+                  </>
+                ) : (
+                  <>
+                    <Save className="size-5" />
+                    Save Changes
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -16,6 +16,7 @@ import { seedDefaultKnowledge, fixKnowledgeURLs } from "./modules/knowledge/know
 import { resetAllTemplatesToDefault } from "./modules/notifications/template.service.js";
 import { startCampaignWorker, stopCampaignWorker } from "./modules/campaign/campaign.worker.js";
 import { seedDefaultMenus, patchAdminSidebarItems } from "./modules/menu/menu.service.js";
+import User from "./modules/user/user.model.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -100,6 +101,20 @@ const fixSoldProperties = async () => {
   }
 };
 await fixSoldProperties();
+
+// ─── Set oldest admin as super admin if none set yet ───
+try {
+  const alreadySet = await User.findOne({ role: "admin", isSuperAdmin: true });
+  if (!alreadySet) {
+    const admins = await User.find({ role: "admin" }).sort({ createdAt: 1 }).limit(1);
+    if (admins.length > 0) {
+      await User.findByIdAndUpdate(admins[0]._id, { isSuperAdmin: true });
+      console.log("✅ Super admin flag set for oldest admin");
+    }
+  }
+} catch (e) {
+  console.warn("Super admin seed failed:", e.message);
+}
 
 // ─── Graceful shutdown ───
 process.on('SIGTERM', async () => {

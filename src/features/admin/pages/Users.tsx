@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Users as UsersIcon, Search, Shield, CheckCircle, XCircle, Clock, Edit, Ban, Eye } from "lucide-react";
+import { Users as UsersIcon, Search, Shield, CheckCircle, XCircle, Clock, Edit, Ban, Eye, UserPlus, Crown, Loader2 } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 import { useUserApi } from "../api/useUserApi";
 import AddUserModal from "../components/AddUserModal";
+import AddAgentModal from "../components/AddAgentModal";
 import EditUserModal from "../components/EditUserModal";
 import { showSuccess, showError } from "@/lib/toast";
 
@@ -24,15 +25,18 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function Users() {
   const navigate = useNavigate();
-  const { useGetUsers, useUpdateUserStatus } = useUserApi();
+  const { useGetUsers, useUpdateUserStatus, useReviewRoleRequest } = useUserApi();
   const { data: users = [], isLoading } = useGetUsers();
   const updateStatus = useUpdateUserStatus();
+  const reviewRole = useReviewRoleRequest();
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddAgentModal, setShowAddAgentModal] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
+  const [processingRoleId, setProcessingRoleId] = useState<string | null>(null);
 
   const filtered = users.filter((u: any) => {
     const matchSearch =
@@ -43,6 +47,18 @@ export default function Users() {
     const matchStatus = !statusFilter || u.status === statusFilter;
     return matchSearch && matchRole && matchStatus;
   });
+
+  const handleReviewRole = async (userId: string, decision: "approved" | "rejected") => {
+    setProcessingRoleId(userId);
+    try {
+      await reviewRole.mutateAsync({ id: userId, decision });
+      showSuccess(decision === "approved" ? "Role request approved! ✅" : "Role request rejected");
+    } catch (err: any) {
+      showError("Failed", err.message);
+    } finally {
+      setProcessingRoleId(null);
+    }
+  };
 
   const handleToggleStatus = async (user: any) => {
     const newStatus = user.status === "active" ? "suspended" : "active";
@@ -71,12 +87,22 @@ export default function Users() {
             </h1>
             <p className="text-slate-500 text-sm mt-1">{users.length} registered users</p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors"
-          >
-            + Add User
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowAddAgentModal(true)}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors flex items-center gap-2"
+            >
+              <UserPlus className="size-4" />
+              Add Agent
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <UserPlus className="size-4" />
+              Add User
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -112,8 +138,13 @@ export default function Users() {
             className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none"
           >
             <option value="">All Roles</option>
-            {["admin", "agent", "seller", "buyer", "user"].map(r => (
-              <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+            {["admin", "agent", "seller", "buyer"].map(r => (
+              <option key={r} value={r}>
+                {r === "admin" ? "Administrator" :
+                 r === "agent" ? "Agent" :
+                 r === "seller" ? "Seller" :
+                 "Buyer"}
+              </option>
             ))}
           </select>
           <select
@@ -164,9 +195,50 @@ export default function Users() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-lg text-xs font-bold ${ROLE_COLORS[user.role] || "bg-slate-100 text-slate-700"}`}>
-                          {user.role}
-                        </span>
+                        <div className="flex items-center flex-wrap gap-1">
+                          <span className={`px-2 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1 ${ROLE_COLORS[user.role] || "bg-slate-100 text-slate-700"}`}>
+                            {user.role === "admin" && <Crown className="size-3" />}
+                            {user.isSuperAdmin
+                              ? "Super Admin"
+                              : user.role === "admin"
+                              ? "Administrator"
+                              : user.role === "agent"
+                              ? (user.permissions?.canBid ? "Agent & Buyer" : "Agent")
+                              : user.role === "seller"
+                              ? (user.permissions?.canBid ? "Seller & Buyer" : "Seller")
+                              : user.role === "buyer"
+                              ? (user.permissions?.canListProperties ? "Buyer & Seller" : "Buyer")
+                              : user.role}
+                          </span>
+                          {user.roleRequest?.status === "pending" && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-bold rounded-lg flex items-center gap-1">
+                                <Shield className="size-3" />
+                                Wants: {user.roleRequest.requestedRole}
+                              </span>
+                              <button
+                                onClick={() => handleReviewRole(user._id, "approved")}
+                                disabled={processingRoleId === user._id}
+                                className="p-1 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors disabled:opacity-50"
+                                title="Approve role request"
+                              >
+                                {processingRoleId === user._id ? (
+                                  <Loader2 className="size-3.5 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="size-3.5" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleReviewRole(user._id, "rejected")}
+                                disabled={processingRoleId === user._id}
+                                className="p-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors disabled:opacity-50"
+                                title="Reject role request"
+                              >
+                                <XCircle className="size-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-lg text-xs font-bold ${STATUS_COLORS[user.status] || "bg-slate-100 text-slate-700"}`}>
@@ -211,6 +283,7 @@ export default function Users() {
       </div>
 
       {showAddModal && <AddUserModal onClose={() => setShowAddModal(false)} />}
+      {showAddAgentModal && <AddAgentModal onClose={() => setShowAddAgentModal(false)} />}
       {editUser && <EditUserModal user={editUser} onClose={() => setEditUser(null)} />}
     </AdminLayout>
   );

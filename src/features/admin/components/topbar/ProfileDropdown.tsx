@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
-import { ChevronDown, User, Settings, LogOut } from "lucide-react";
+import { ChevronDown, User, LogOut, Crown } from "lucide-react";
 import { useTheme } from "../../../../app/hooks/useTheme";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -11,6 +11,19 @@ export default function ProfileDropdown() {
   const { user, logout } = useAuthStore();
   const [show, setShow] = useState(false);
   const isAdmin = user?.role === "admin";
+  const isSuperAdmin = user?.isSuperAdmin;
+
+  const roleLabel = isSuperAdmin
+    ? "Super Admin"
+    : user?.role === "admin"
+    ? "Administrator"
+    : user?.role === "agent"
+    ? (user?.permissions?.canBid ? "Agent & Buyer" : "Agent")
+    : user?.role === "seller"
+    ? (user?.permissions?.canBid ? "Seller & Buyer" : "Seller")
+    : user?.role === "buyer"
+    ? (user?.permissions?.canListProperties ? "Buyer & Seller" : "Buyer")
+    : "User";
 
   const initials = user?.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase() || "AD";
 
@@ -26,6 +39,10 @@ export default function ProfileDropdown() {
         <div className="text-left hidden sm:block">
           <p className="text-sm font-bold text-slate-900">{user?.name || "Admin User"}</p>
           <p className="text-xs text-slate-600 font-medium">{user?.email || ""}</p>
+          <p className="text-xs font-bold text-purple-600 flex items-center gap-1">
+            {isSuperAdmin && <Crown className="size-3" />}
+            {roleLabel}
+          </p>
         </div>
         <ChevronDown className={`size-4 text-slate-400 transition-transform ${show ? "rotate-180" : ""}`} />
       </button>
@@ -40,12 +57,6 @@ export default function ProfileDropdown() {
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl">
                 <User className="size-5 text-slate-500" /> Profile
               </button>
-              {isAdmin && (
-                <button onClick={() => { navigate("/admin/settings"); setShow(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl">
-                  <Settings className="size-5 text-slate-500" /> Settings
-                </button>
-              )}
               <hr className="my-2 border-slate-100" />
               <button onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl">

@@ -19,6 +19,7 @@ import {
   TrendingUp,
   AlertCircle,
   Percent,
+  Crown,
 } from "lucide-react";
 
 export default function UserProfile() {
@@ -158,14 +159,65 @@ export default function UserProfile() {
 
   const stats = userData.stats || {};
 
-  const roleTabs = [
-    { id: "profile", label: "Profile", icon: User },
-    { id: "agent", label: "Agent Details", icon: Building2 },
-    { id: "bank", label: "Bank Details", icon: CreditCard },
-    { id: "activity", label: "Activity", icon: TrendingUp },
-    { id: "commissions", label: "Commissions", icon: Percent },
-    { id: "payments", label: "Payments", icon: DollarSign },
-  ];
+  const role = userData.role;
+  const isSuperAdmin = userData.isSuperAdmin;
+  const canBid = userData.permissions?.canBid;
+  const canList = userData.permissions?.canListProperties;
+
+  const roleTabs = (() => {
+    const tabs: { id: string; label: string; icon: any }[] = [
+      { id: "profile", label: "Profile", icon: User },
+    ];
+
+    if (role === "admin") return tabs;
+
+    if (role === "agent") {
+      tabs.push(
+        { id: "agent", label: "Agent Details", icon: Building2 },
+        { id: "bank", label: "Bank Details", icon: CreditCard },
+        { id: "activity", label: "Activity", icon: TrendingUp },
+        { id: "commissions", label: "Commissions", icon: Percent },
+        { id: "payments", label: "Payments Received", icon: DollarSign },
+      );
+      return tabs;
+    }
+
+    if (role === "seller") {
+      tabs.push(
+        { id: "agent", label: "Seller Details", icon: Building2 },
+        { id: "bank", label: "Bank Details", icon: CreditCard },
+        { id: "activity", label: "Activity", icon: TrendingUp },
+        { id: "commissions", label: "Commissions", icon: Percent },
+        { id: "payments", label: "Payments Received", icon: DollarSign },
+      );
+      return tabs;
+    }
+
+    if (role === "buyer") {
+      tabs.push(
+        { id: "activity", label: "Activity", icon: TrendingUp },
+        { id: "payments", label: "Payments Made", icon: DollarSign },
+      );
+      if (canList) {
+        tabs.push(
+          { id: "agent", label: "Seller Details", icon: Building2 },
+          { id: "bank", label: "Bank Details", icon: CreditCard },
+          { id: "commissions", label: "Commissions", icon: Percent },
+        );
+      }
+      return tabs;
+    }
+
+    // fallback — show all
+    tabs.push(
+      { id: "agent", label: "Details", icon: Building2 },
+      { id: "bank", label: "Bank Details", icon: CreditCard },
+      { id: "activity", label: "Activity", icon: TrendingUp },
+      { id: "commissions", label: "Commissions", icon: Percent },
+      { id: "payments", label: "Payments", icon: DollarSign },
+    );
+    return tabs;
+  })();
 
   const inputClass =
     "w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
@@ -191,13 +243,24 @@ export default function UserProfile() {
               <div>
                 <h2 className="text-2xl font-black text-slate-900">{userData.name}</h2>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
                     userData.role === "admin" ? "bg-purple-100 text-purple-700" :
                     userData.role === "agent" ? "bg-blue-100 text-blue-700" :
                     userData.role === "seller" ? "bg-emerald-100 text-emerald-700" :
                     "bg-green-100 text-green-700"
                   }`}>
-                    {userData.role}
+                    {userData.role === "admin" && <Crown className="size-3" />}
+                    {isSuperAdmin
+                      ? "Super Admin"
+                      : role === "admin"
+                      ? "Administrator"
+                      : role === "agent"
+                      ? (canBid ? "Agent & Buyer" : "Agent")
+                      : role === "seller"
+                      ? (canBid ? "Seller & Buyer" : "Seller")
+                      : role === "buyer"
+                      ? (canList ? "Buyer & Seller" : "Buyer")
+                      : role}
                   </span>
                   <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
                     userData.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
@@ -222,20 +285,38 @@ export default function UserProfile() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Properties", value: stats.totalProperties ?? 0, gradient: "from-blue-500 to-indigo-600", Icon: Home },
-            { label: "Total Bids", value: stats.totalBids ?? 0, gradient: "from-purple-500 to-violet-600", Icon: Gavel },
-            { label: "Auctions Won", value: stats.wonBids ?? 0, gradient: "from-amber-500 to-orange-500", Icon: CheckCircle },
-            { label: "Commission Due", value: `£${(stats.pendingCommission ?? 0).toLocaleString()}`, gradient: "from-emerald-500 to-teal-600", Icon: DollarSign },
-          ].map(({ label, value, gradient, Icon }) => (
-            <div key={label} className={`bg-gradient-to-br ${gradient} rounded-2xl p-4 text-white shadow-lg`}>
-              <Icon className="size-6 text-white/80 mb-2" />
-              <p className="text-2xl font-black">{value}</p>
-              <p className="text-xs text-white/80 font-bold">{label}</p>
+        {(() => {
+          const cards: { label: string; value: any; gradient: string; Icon: any }[] = [];
+
+          if (role === "admin") {
+            cards.push({ label: "Properties", value: stats.totalProperties ?? 0, gradient: "from-blue-500 to-indigo-600", Icon: Home });
+          } else {
+            if (canList || role === "seller" || role === "agent") {
+              cards.push({ label: "Properties Listed", value: stats.totalProperties ?? 0, gradient: "from-blue-500 to-indigo-600", Icon: Home });
+            }
+            if (canBid || role === "buyer") {
+              cards.push(
+                { label: "Total Bids", value: stats.totalBids ?? 0, gradient: "from-purple-500 to-violet-600", Icon: Gavel },
+                { label: "Auctions Won", value: stats.wonBids ?? 0, gradient: "from-amber-500 to-orange-500", Icon: CheckCircle },
+              );
+            }
+            if (role === "agent" || role === "seller" || canList) {
+              cards.push({ label: "Commission Due", value: `£${(stats.pendingCommission ?? 0).toLocaleString()}`, gradient: "from-emerald-500 to-teal-600", Icon: DollarSign });
+            }
+          }
+
+          return (
+            <div className={`grid gap-4 ${cards.length === 1 ? "grid-cols-1 max-w-xs" : cards.length <= 3 ? "grid-cols-2 md:grid-cols-3" : "grid-cols-2 md:grid-cols-4"}`}>
+              {cards.map(({ label, value, gradient, Icon }) => (
+                <div key={label} className={`bg-gradient-to-br ${gradient} rounded-2xl p-4 text-white shadow-lg`}>
+                  <Icon className="size-6 text-white/80 mb-2" />
+                  <p className="text-2xl font-black">{value}</p>
+                  <p className="text-xs text-white/80 font-bold">{label}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
 
         {/* Tab Nav */}
         <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
@@ -287,15 +368,28 @@ export default function UserProfile() {
               </div>
               <div>
                 <label className={labelClass}>Role</label>
-                <select
-                  className={inputClass}
-                  value={profileForm.role}
-                  onChange={(e) => setProfileForm((f: any) => ({ ...f, role: e.target.value }))}
-                >
-                  {["buyer", "seller", "agent", "admin", "user"].map((r) => (
-                    <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
-                  ))}
-                </select>
+                {userData.isSuperAdmin ? (
+                  <div className="flex items-center gap-2 px-4 py-3 bg-purple-50 border-2 border-purple-200 rounded-xl">
+                    <Crown className="size-4 text-purple-600" />
+                    <span className="font-bold text-purple-700">Super Admin</span>
+                    <span className="text-xs text-purple-500 ml-1">(cannot be changed)</span>
+                  </div>
+                ) : (
+                  <select
+                    className={inputClass}
+                    value={profileForm.role}
+                    onChange={(e) => setProfileForm((f: any) => ({ ...f, role: e.target.value }))}
+                  >
+                    {["buyer", "seller", "agent", "admin"].map((r) => (
+                      <option key={r} value={r}>
+                        {r === "admin" ? "Administrator" :
+                         r === "agent" ? "Agent" :
+                         r === "seller" ? "Seller" :
+                         "Buyer"}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div>
                 <label className={labelClass}>Account Status</label>
@@ -467,14 +561,26 @@ export default function UserProfile() {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
             <h3 className="font-black text-slate-900 text-lg">User Activity Summary</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {[
-                { label: "Properties Listed", value: stats.totalProperties ?? 0, color: "text-blue-600" },
-                { label: "Total Bids Placed", value: stats.totalBids ?? 0, color: "text-purple-600" },
-                { label: "Auctions Won", value: stats.wonBids ?? 0, color: "text-amber-600" },
-                { label: "Total Commissions", value: stats.totalCommissions ?? 0, color: "text-emerald-600" },
-                { label: "Commission Paid", value: `£${(stats.paidCommission ?? 0).toLocaleString()}`, color: "text-green-600" },
-                { label: "Commission Pending", value: `£${(stats.pendingCommission ?? 0).toLocaleString()}`, color: "text-orange-600" },
-              ].map((s) => (
+              {(() => {
+                const items: { label: string; value: any; color: string }[] = [];
+                if (canList || role === "agent" || role === "seller") {
+                  items.push({ label: "Properties Listed", value: stats.totalProperties ?? 0, color: "text-blue-600" });
+                }
+                if (canBid || role === "buyer") {
+                  items.push(
+                    { label: "Total Bids Placed", value: stats.totalBids ?? 0, color: "text-purple-600" },
+                    { label: "Auctions Won", value: stats.wonBids ?? 0, color: "text-amber-600" },
+                  );
+                }
+                if (role === "agent" || role === "seller" || canList) {
+                  items.push(
+                    { label: "Total Commissions", value: stats.totalCommissions ?? 0, color: "text-emerald-600" },
+                    { label: "Commission Paid", value: `£${(stats.paidCommission ?? 0).toLocaleString()}`, color: "text-green-600" },
+                    { label: "Commission Pending", value: `£${(stats.pendingCommission ?? 0).toLocaleString()}`, color: "text-orange-600" },
+                  );
+                }
+                return items;
+              })().map((s) => (
                 <div key={s.label} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                   <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
                   <p className="text-xs text-slate-500 font-bold mt-1">{s.label}</p>
@@ -493,7 +599,14 @@ export default function UserProfile() {
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-2">
                   <Phone className="size-3.5" /> Role & Permissions
                 </p>
-                <p className="font-bold text-slate-900 capitalize">{userData.role}</p>
+                <p className="font-bold text-slate-900">
+                  {isSuperAdmin ? "Super Admin" :
+                   role === "admin" ? "Administrator" :
+                   role === "agent" ? (canBid ? "Agent & Buyer" : "Agent") :
+                   role === "seller" ? (canBid ? "Seller & Buyer" : "Seller") :
+                   role === "buyer" ? (canList ? "Buyer & Seller" : "Buyer") :
+                   role}
+                </p>
                 <p className="text-slate-500 text-xs mt-1">
                   {userData.permissions?.canBid ? "✅ Can bid" : "❌ Cannot bid"} ·{" "}
                   {userData.permissions?.canListProperties ? "✅ Can list" : "❌ Cannot list"}
@@ -559,7 +672,9 @@ export default function UserProfile() {
         {activeTab === "payments" && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-5 border-b border-slate-100">
-              <h3 className="font-black text-slate-900">Payment History</h3>
+              <h3 className="font-black text-slate-900">
+                {role === "buyer" && !canList ? "Payments Made" : role === "buyer" && canList ? "Payment History" : "Payments Received"}
+              </h3>
             </div>
             {(userData.payments || []).length === 0 ? (
               <div className="text-center py-12">

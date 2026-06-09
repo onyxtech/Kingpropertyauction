@@ -131,6 +131,21 @@ const propertySchema = new mongoose.Schema(
         enum: ["freehold", "leasehold", "shared"],
       },
       titleDeedNumber: { type: String },
+      solicitorDetails: {
+        name: { type: String },
+        firmName: { type: String },
+        address: { type: String },
+        postcode: { type: String },
+        phone: { type: String },
+        email: { type: String },
+      },
+      privateDocuments: [{
+        docType: { type: String },
+        customLabel: { type: String },
+        url: { type: String },
+        originalName: { type: String },
+        uploadedAt: { type: Date, default: Date.now },
+      }],
     },
 
     // 8. Agent Information

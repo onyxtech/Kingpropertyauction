@@ -2,6 +2,7 @@ import { useNavigate } from "react-router";
 import { Heart, Building2, Eye, Gavel } from "lucide-react";
 import { useTheme } from "@/app/hooks/useTheme";
 import { useCustomerApi } from "../api/useCustomerApi";
+import { mediaUrl } from "@/lib/mediaUrl";
 
 export default function WatchlistTab() {
   const navigate = useNavigate();
@@ -42,9 +43,9 @@ export default function WatchlistTab() {
               key={property._id}
               className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
             >
-              {property.media?.[0] ? (
+              {property.media?.propertyImages?.[0] ? (
                 <img
-                  src={property.media[0]}
+                  src={mediaUrl(property.media.propertyImages[0])}
                   alt={property.propertyTitle}
                   className="w-full h-40 object-cover"
                 />
@@ -55,7 +56,11 @@ export default function WatchlistTab() {
               )}
               <div className="p-4">
                 <h3 className="font-black text-slate-900 line-clamp-1">{property.propertyTitle}</h3>
-                <p className="text-sm text-slate-500 mt-0.5">{property.location || "Location TBC"}</p>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  {property.location?.city
+                    ? `${property.location.city}${property.location.state ? ', ' + property.location.state : ''}`
+                    : "Location TBC"}
+                </p>
                 {property.startingPrice && (
                   <p className="text-sm font-black text-green-700 mt-1">
                     From £{Number(property.startingPrice).toLocaleString()}

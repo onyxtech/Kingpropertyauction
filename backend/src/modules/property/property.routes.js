@@ -1,6 +1,6 @@
 import express from 'express';
-import { create, getAll, getById, update, remove, approve, getByIds, getMyProperties, getMyPropertyAuctionStats, toggleWatchlist, getWatchlist, getMyPropertyBidders } from './property.controller.js';
-import { protect } from '../../middlewares/auth.middleware.js';
+import { create, getAll, getById, update, remove, approve, getByIds, getMyProperties, getMyPropertyAuctionStats, toggleWatchlist, getWatchlist, getMyPropertyBidders, deletePrivateDocument } from './property.controller.js';
+import { protect, optionalProtect } from '../../middlewares/auth.middleware.js';
 import { authorize } from '../../middlewares/role.middleware.js';
 
 const router = express.Router();
@@ -24,7 +24,7 @@ router.post('/batch', getByIds);
 
 // Public routes
 router.get('/', getAll);
-router.get('/:id', getById);
+router.get('/:id', optionalProtect, getById);
 
 // Protected routes
 router.post('/', protect, canManageProperty, create);
@@ -32,5 +32,6 @@ router.put('/:id', protect, canManageProperty, update);
 router.delete('/:id', protect, authorize('admin'), remove);
 router.patch('/:id/approve', protect, authorize('admin'), approve);
 router.post('/:id/watchlist', protect, toggleWatchlist);
+router.delete('/:propertyId/private-documents/:docIndex', protect, deletePrivateDocument);
 
 export default router;

@@ -80,7 +80,25 @@ export const createPropertySchema = Joi.object({
     ownershipType: Joi.string()
       .valid("freehold", "leasehold", "shared")
       .required(),
-    titleDeedNumber: optionalString(),
+    titleDeedNumber: Joi.string().allow("").optional(),
+    solicitorDetails: Joi.object({
+      name: Joi.string().allow("").optional(),
+      firmName: Joi.string().allow("").optional(),
+      address: Joi.string().allow("").optional(),
+      postcode: Joi.string().allow("").optional(),
+      phone: Joi.string().allow("").optional(),
+      email: Joi.string().allow("").optional(),
+    }).optional(),
+    privateDocuments: Joi.array().items(
+      Joi.object({
+        _id: Joi.any().optional(),
+        docType: Joi.string().allow("").optional(),
+        customLabel: Joi.string().allow("").optional(),
+        url: Joi.string().allow("").optional(),
+        originalName: Joi.string().allow("").optional(),
+        uploadedAt: Joi.date().optional(),
+      })
+    ).optional().default([]),
   }).required(),
 
   sellerInfo: Joi.object({

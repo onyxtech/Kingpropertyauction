@@ -355,12 +355,63 @@ export default function PropertyInfo({
           </h2>
           <div className="space-y-4">
             {(property.media?.propertyVideos || (property.media?.propertyVideo ? [property.media.propertyVideo] : [])).map((vid: string, i: number) => (
-              <video
+              <div
                 key={i}
-                src={mediaUrl(vid)}
-                controls
-                className="w-full rounded-2xl border-2 border-slate-200"
-              />
+                className="relative w-full rounded-2xl overflow-hidden border-2 border-slate-200"
+              >
+                {/* Video player */}
+                <video
+                  src={mediaUrl(vid)}
+                  controls
+                  className="w-full"
+                />
+
+                {/* Watermark overlay - bottom right */}
+                {/* Pointer events none so video controls work */}
+                <div
+                  className="absolute bottom-12 right-4 pointer-events-none select-none z-10"
+                >
+                  <div
+                    className="flex flex-col items-end"
+                    style={{ opacity: 0.75 }}
+                  >
+                    {/* Main text with dark shadow for readability */}
+                    <span
+                      style={{
+                        fontFamily: "'Arial Black', Arial, sans-serif",
+                        fontWeight: 900,
+                        fontSize: "clamp(10px, 1.8vw, 18px)",
+                        color: "rgba(255,255,255,0.90)",
+                        letterSpacing: "2px",
+                        textShadow:
+                          "1px 1px 3px rgba(0,0,0,0.8), " +
+                          "-1px -1px 3px rgba(0,0,0,0.8), " +
+                          "1px -1px 3px rgba(0,0,0,0.8), " +
+                          "-1px 1px 3px rgba(0,0,0,0.8)",
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      ♛ KING PROPERTY AUCTION
+                    </span>
+                    {/* Website URL below */}
+                    <span
+                      style={{
+                        fontFamily: "Arial, sans-serif",
+                        fontWeight: 700,
+                        fontSize: "clamp(8px, 1.2vw, 13px)",
+                        color: "rgba(255,215,0,0.90)",
+                        letterSpacing: "1px",
+                        textShadow:
+                          "1px 1px 2px rgba(0,0,0,0.8), " +
+                          "-1px -1px 2px rgba(0,0,0,0.8)",
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      kingpropertyauction.com
+                    </span>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </div>

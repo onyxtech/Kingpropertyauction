@@ -27,6 +27,10 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "agent", "admin", "buyer", "seller"],
       default: "user",
     },
+    isSuperAdmin: {
+      type: Boolean,
+      default: false,
+    },
     phone: {
       type: String,
       trim: true,

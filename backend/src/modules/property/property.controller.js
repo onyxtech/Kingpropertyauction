@@ -65,8 +65,10 @@ export const create = async (req, res) => {
       features: req.body.features || {},
 
       legalInfo: {
-        ownershipType: req.body.ownershipType || "freehold",
-        titleDeedNumber: req.body.titleDeedNumber,
+        ownershipType: req.body.legalInfo?.ownershipType || req.body.ownershipType || "freehold",
+        titleDeedNumber: req.body.legalInfo?.titleDeedNumber || req.body.titleDeedNumber,
+        solicitorDetails: req.body.legalInfo?.solicitorDetails || {},
+        privateDocuments: req.body.legalInfo?.privateDocuments || [],
       },
 
       sellerInfo: {
@@ -167,7 +169,25 @@ export const getById = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Property not found" });
     }
-    res.status(200).json({ success: true, data: property });
+
+    const propertyObj = property.toObject();
+
+    // Strip private docs unless caller is admin or property owner
+    const isAdmin = req.user?.role === 'admin' || req.user?.role === 'superadmin';
+    const ownerId = property.createdBy?._id?.toString() || property.createdBy?.toString();
+    const userId = req.user?._id?.toString() || req.user?.id?.toString();
+    const isOwner = ownerId && userId && ownerId === userId;
+
+    console.log('[getById] user role:', req.user?.role);
+    console.log('[getById] isAdmin:', isAdmin);
+    console.log('[getById] isOwner:', isOwner);
+    console.log('[getById] privateDocuments:', propertyObj.legalInfo?.privateDocuments?.length);
+
+    if (!isAdmin && !isOwner && propertyObj.legalInfo) {
+      delete propertyObj.legalInfo.privateDocuments;
+    }
+
+    res.status(200).json({ success: true, data: propertyObj });
   } catch (error) {
     console.error("[Property] getById error:", error.message);
     res.status(404).json({ success: false, message: error.message });
@@ -176,12 +196,25 @@ export const getById = async (req, res) => {
 
 export const update = async (req, res) => {
   try {
-    const { error, value } = updatePropertySchema.validate(req.body);
+    const { error, value } = updatePropertySchema.validate(req.body, {
+      stripUnknown: true,
+      abortEarly: false,
+    });
     if (error) {
       return res.status(400).json({
         success: false,
-        message: error.details[0].message,
+        message: error.details.map(d => d.message).join("; "),
       });
+    }
+
+    // Preserve privateDocuments — Joi strips unknown keys, ensure these pass through
+    if (req.body.legalInfo?.privateDocuments !== undefined) {
+      if (!value.legalInfo) value.legalInfo = {};
+      value.legalInfo.privateDocuments = req.body.legalInfo.privateDocuments;
+    }
+    if (req.body.legalInfo?.solicitorDetails !== undefined) {
+      if (!value.legalInfo) value.legalInfo = {};
+      value.legalInfo.solicitorDetails = req.body.legalInfo.solicitorDetails;
     }
 
     const property = await propertyService.updateProperty(req.params.id, value);
@@ -447,6 +480,49 @@ export const getMyPropertyBidders = async (req, res) => {
     res.json({ success: true, data: result });
   } catch (error) {
     console.error("[Property] getMyPropertyBidders error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const deletePrivateDocument = async (req, res) => {
+  try {
+    const { propertyId, docIndex } = req.params;
+    const property = await Property.findById(propertyId);
+    if (!property) {
+      return res.status(404).json({ success: false, message: 'Property not found' });
+    }
+
+    const isAdmin = req.user?.role === 'admin' || req.user?.role === 'superadmin';
+    const isOwner = property.createdBy?.toString() === req.user?._id?.toString();
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const docs = property.legalInfo?.privateDocuments || [];
+    const idx = parseInt(docIndex);
+    const docToDelete = docs[idx];
+    if (!docToDelete) {
+      return res.status(404).json({ success: false, message: 'Document not found' });
+    }
+
+    try {
+      const { default: fs } = await import('fs');
+      const { default: path } = await import('path');
+      const filePath = path.join(process.cwd(), docToDelete.url);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    } catch (e) {
+      console.warn('File delete failed:', e.message);
+    }
+
+    docs.splice(idx, 1);
+    property.legalInfo.privateDocuments = docs;
+    await property.save();
+
+    await cache.del(`property:${propertyId}`);
+
+    res.json({ success: true, message: 'Document deleted', data: docs });
+  } catch (error) {
+    console.error('[Property] deletePrivateDocument error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };

@@ -11,9 +11,7 @@ export const getAllUsers = async (req, res) => {
     const users = await User.find(filter).select("-password -refreshToken").lean();
     const usersWithStatus = users.map(u => ({
       ...u,
-      status: !u.isActive ? "suspended"
-        : u.roleRequest?.status === "pending" ? "pending"
-        : "active",
+      status: !u.isActive ? "pending" : "active",
     }));
     res.status(200).json({ success: true, data: usersWithStatus });
   } catch (error) {
@@ -275,7 +273,7 @@ export const reviewRoleRequest = async (req, res) => {
 // Update user profile (name, email, role, agentDetails, bankDetails)
 export const updateUser = async (req, res) => {
   try {
-    const allowedFields = ["name", "email", "phone", "role", "isActive"];
+    const allowedFields = ["name", "email", "phone", "role", "isActive", "isSuperAdmin"];
     const updates = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) updates[field] = req.body[field];

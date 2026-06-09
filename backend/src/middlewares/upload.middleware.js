@@ -1,6 +1,12 @@
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
+
+// Ensure private-legal upload folder exists on startup
+if (!fs.existsSync('uploads/private-legal')) {
+  fs.mkdirSync('uploads/private-legal', { recursive: true });
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +24,8 @@ const storage = multer.diskStorage({
       uploadPath += 'floorplans/';
     } else if (file.fieldname === 'legalDocuments') {
       uploadPath += 'documents/';
+    } else if (file.fieldname === 'privateDocuments') {
+      uploadPath += 'private-legal/';
     } else {
       uploadPath += 'others/';
     }
@@ -98,6 +106,29 @@ export const uploadLegalDocs = multer({
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 },
 }).array('legalDocuments', 10);
+
+export const uploadPrivateDocs = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, 'uploads/private-legal/');
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const ext = path.extname(file.originalname);
+      cb(null, 'private-' + uniqueSuffix + ext);
+    },
+  }),
+  fileFilter: (req, file, cb) => {
+    const allowed = /pdf|jpg|jpeg|png|doc|docx/;
+    const ext = path.extname(file.originalname).toLowerCase().slice(1);
+    if (allowed.test(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF, images and documents allowed'));
+    }
+  },
+  limits: { fileSize: 20 * 1024 * 1024 },
+}).array('privateDocuments', 10);
 
 export const uploadSingleImage = multer({
   storage,

@@ -1,6 +1,30 @@
 import jwt from 'jsonwebtoken';
 import User from '../modules/user/user.model.js';
 
+export const optionalProtect = async (req, res, next) => {
+  try {
+    let token;
+    if (req.headers.authorization?.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies?.accessToken) {
+      token = req.cookies.accessToken;
+    }
+
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    const user = await User.findById(decoded.id).select('-password -refreshToken');
+    req.user = user || null;
+    next();
+  } catch {
+    req.user = null;
+    next();
+  }
+};
+
 export const protect = async (req, res, next) => {
   try {
     let token;

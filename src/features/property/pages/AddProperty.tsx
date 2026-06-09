@@ -42,6 +42,8 @@ type LocalPropertyFormData = Omit<
   propertyVideos: File[];
   floorPlans: File[];
   legalDocuments: File[];
+  solicitorDetails?: any;
+  newPrivateDocs?: any[];
   [key: string]: any;
 };
 
@@ -111,6 +113,8 @@ export default function AddProperty() {
     },
     ownershipType: "",
     titleDeedNumber: "",
+    solicitorDetails: { name: "", firmName: "", address: "", postcode: "", phone: "", email: "" },
+    newPrivateDocs: [] as any[],
     agentName: "",
     agentContact: "",
     propertyImages: [] as File[],
@@ -250,6 +254,7 @@ export default function AddProperty() {
     // Step 2: Only upload files AFTER validation passes
     setIsSubmitting(true);
     const token = localStorage.getItem("token") || "";
+    let privateDocUrls: any[] = [];
     try {
       // Images - with progress
       let imageUrls: string[] = uploadedImageUrls;
@@ -331,6 +336,29 @@ export default function AddProperty() {
         }
       }
 
+      // Upload private documents (newPrivateDocs)
+      if (formData.newPrivateDocs && formData.newPrivateDocs.length > 0) {
+        for (let i = 0; i < formData.newPrivateDocs.length; i++) {
+          const doc = formData.newPrivateDocs[i];
+          if (!doc.file) continue;
+          try {
+            setUploadStatus(`Uploading document ${i + 1} of ${formData.newPrivateDocs.length}...`);
+            setUploadProgress({ step: 'private-docs', percent: 0 });
+            const pfd = new FormData();
+            pfd.append('privateDocuments', doc.file);
+            pfd.append('docType', doc.docType || 'other');
+            if (doc.customLabel) pfd.append('customLabel', doc.customLabel);
+            const pr = await uploadWithProgress('/api/upload/private-documents', pfd, token);
+            if (pr?.success && pr.data) {
+              privateDocUrls = [...privateDocUrls, ...pr.data];
+            }
+            setUploadProgress({ step: 'private-docs', percent: 100 });
+          } catch (e) {
+            console.error('Private doc upload failed:', e);
+          }
+        }
+      }
+
       // Create property
       setUploadStatus('Creating property...');
       setUploadProgress({ step: 'create', percent: 0 });
@@ -348,11 +376,18 @@ export default function AddProperty() {
           floorPlans: floorPlanUrls,
           legalDocuments: legalDocUrls,
         },
+        legalInfo: {
+          ownershipType: formData.ownershipType,
+          titleDeedNumber: formData.titleDeedNumber,
+          solicitorDetails: formData.solicitorDetails || {},
+          privateDocuments: privateDocUrls,
+        },
       };
       delete propertyData.propertyImages;
       delete propertyData.propertyVideos;
       delete propertyData.floorPlans;
       delete propertyData.legalDocuments;
+      delete propertyData.newPrivateDocs;
 
       const response = await createProperty(propertyData);
       if (response.success) {
@@ -362,7 +397,13 @@ export default function AddProperty() {
         setUploadedFloorPlanUrls([]);
         setUploadedLegalDocUrls([]);
         setCreatedTitle(formData.propertyTitle || "Property");
-        showSuccess("Property submitted! 🏠", "Your listing is under review.");
+        const isAdminUser = user?.role === "admin";
+        showSuccess(
+          isAdminUser ? "Property created! 🏠" : "Property submitted! 🏠",
+          isAdminUser
+            ? "Your property has been published successfully."
+            : "Your listing is under review by our team."
+        );
         setSubmitted(true);
         window.scrollTo({ top: 0, behavior: "instant" });
       } else {
@@ -405,7 +446,72 @@ export default function AddProperty() {
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const validateCurrentStep = (): string[] => {
+    const errors: string[] = [];
+    const s = currentStep;
+
+    if (s === 1) {
+      if (!formData.propertyTitle?.trim())
+        errors.push("Property title is required");
+      if (!formData.propertyDescription?.trim())
+        errors.push("Property description is required");
+      if (!formData.propertyType)
+        errors.push("Property type is required");
+      if (!formData.propertyCategory)
+        errors.push("Property category is required");
+      if (!formData.listingType)
+        errors.push("Listing type is required");
+    }
+    if (s === 2) {
+      if (!formData.country?.trim())
+        errors.push("Country is required");
+      if (!formData.state?.trim())
+        errors.push("State/County is required");
+      if (!formData.city?.trim())
+        errors.push("City is required");
+      if (!formData.area?.trim())
+        errors.push("Area is required");
+      if (!formData.streetAddress?.trim())
+        errors.push("Street address is required");
+      if (!formData.postalCode?.trim())
+        errors.push("Postcode is required");
+    }
+    if (s === 3) {
+      if (formData.bedrooms === undefined || formData.bedrooms === "" || formData.bedrooms === null)
+        errors.push("Number of bedrooms is required");
+      if (formData.bathrooms === undefined || formData.bathrooms === "" || formData.bathrooms === null)
+        errors.push("Number of bathrooms is required");
+    }
+    if (s === 4) {
+      if (!formData.startingAuctionPrice || Number(formData.startingAuctionPrice) <= 0)
+        errors.push("Starting auction price is required");
+      if (!formData.reservePrice || Number(formData.reservePrice) <= 0)
+        errors.push("Reserve price is required");
+      if (!formData.minimumBidIncrement || Number(formData.minimumBidIncrement) <= 0)
+        errors.push("Minimum bid increment is required");
+    }
+    if (s === 7) {
+      if (!formData.ownershipType)
+        errors.push("Ownership type is required");
+    }
+
+    const mediaStep = isAdmin ? 9 : 8;
+    if (s === mediaStep) {
+      if (!formData.propertyImages?.length)
+        errors.push("At least one property image is required");
+    }
+
+    return errors;
+  };
+
   const nextStep = () => {
+    const errors = validateCurrentStep();
+    if (errors.length > 0) {
+      setToastMessage({ text: errors.join(" • "), type: "error" });
+      setTimeout(() => setToastMessage(null), 6000);
+      scrollToForm();
+      return;
+    }
     const next = currentStep + 1;
     if (next <= totalSteps) {
       setCurrentStep(next);
@@ -450,7 +556,12 @@ export default function AddProperty() {
             <h2 className="text-3xl font-black text-slate-900 mb-3">
               Property Created Successfully!
             </h2>
-            <p className="text-slate-600 font-medium mb-8">{createdTitle}</p>
+            <p className="text-slate-600 font-medium mb-3">{createdTitle}</p>
+            <p className="text-slate-500 font-medium mb-8">
+              {user?.role === "admin"
+                ? "Your property is now live and visible to buyers."
+                : "Your listing is under review. We'll notify you once approved."}
+            </p>
             <div className="flex gap-4 justify-center">
               <button
                 onClick={() => navigate("/admin/properties")}
@@ -506,6 +617,8 @@ export default function AddProperty() {
                     },
                     ownershipType: "",
                     titleDeedNumber: "",
+                    solicitorDetails: { name: "", firmName: "", address: "", postcode: "", phone: "", email: "" },
+                    newPrivateDocs: [] as any[],
                     agentName: "",
                     agentContact: "",
                     propertyImages: [] as File[],
@@ -659,6 +772,7 @@ export default function AddProperty() {
                 formData={formData}
                 theme={theme}
                 onEditStep={goToStep}
+                isAdmin={isAdmin}
               />
             )}
             <div className="flex items-center justify-end gap-3 pt-8 border-t-2 border-slate-200">
