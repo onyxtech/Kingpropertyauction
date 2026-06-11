@@ -26,7 +26,7 @@ const PAYMENT_STATUS_STYLES: Record<string, string> = {
 export default function PaymentsTab() {
   const navigate = useNavigate();
   const theme = useTheme();
-  const { canListProperties, canBid } = useCustomerRole();
+  const { canListProperties, canBid, showBuyerView, showSellerView } = useCustomerRole();
   const queryClient = useQueryClient();
   const [requestingId, setRequestingId] =
     useState<string | null>(null);
@@ -123,15 +123,15 @@ export default function PaymentsTab() {
       {/* Header */}
       <div>
         <h2 className="text-3xl font-black text-slate-900">
-          Payments & Earnings
+          {showSellerView ? "Commission & Earnings" : "My Payments"}
         </h2>
         <p className="text-slate-600 font-medium mt-1">
-          Track your auction payments and commission earnings
+          {showSellerView ? "Track your commission earnings" : "Track your auction payments"}
         </p>
       </div>
 
       {/* BUYER - Payments Section */}
-      {canBid && (
+      {showBuyerView && (
         <div className="space-y-4">
           <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
             <CreditCard className="size-5 text-blue-600" />
@@ -399,7 +399,7 @@ export default function PaymentsTab() {
       )}
 
       {/* SELLER/AGENT - Commissions Section */}
-      {canListProperties && (
+      {showSellerView && (
         <div className="space-y-4">
           <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
             <PoundSterling className="size-5 text-emerald-600" />

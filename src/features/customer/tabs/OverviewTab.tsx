@@ -481,7 +481,19 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                 });
               }
 
-              notifications.slice(0, 3).forEach((notif: any) => {
+              const buyerNotifTypes = ["bid", "bid_won", "offer", "auction", "auction_live"];
+              const sellerNotifTypes = ["property_sold", "system", "property"];
+              const isNeutralType = (t: string) =>
+                !buyerNotifTypes.includes(t) && !sellerNotifTypes.includes(t);
+              const viewFilteredNotifs = notifications.filter((notif: any) => {
+                const t = notif.type;
+                if (isNeutralType(t)) return true;
+                if (showBuyerView && buyerNotifTypes.includes(t)) return true;
+                if (showSellerView && sellerNotifTypes.includes(t)) return true;
+                return false;
+              });
+
+              viewFilteredNotifs.slice(0, 3).forEach((notif: any) => {
                 activities.push({
                   id: notif._id + "-notif",
                   icon: notif.type === "bid_won" ? Trophy :

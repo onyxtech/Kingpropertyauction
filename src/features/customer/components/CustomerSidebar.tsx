@@ -91,7 +91,7 @@ export default function CustomerSidebar({ activeTab, onTabChange }: CustomerSide
       id: "my-bids",
       icon: ShoppingBag,
       label: "My Bids & Auctions",
-      show: showBuyerView || (canBid && !canListProperties),
+      show: showBuyerView,
     },
     {
       id: "payments",
@@ -103,13 +103,13 @@ export default function CustomerSidebar({ activeTab, onTabChange }: CustomerSide
       id: "offers",
       icon: Handshake,
       label: "Offers & Negotiations",
-      show: canBid,
+      show: showBuyerView,
     },
     {
       id: "won-auctions",
       icon: Trophy,
       label: "Won Auctions",
-      show: canBid,
+      show: showBuyerView,
     },
     {
       id: "watchlist",
