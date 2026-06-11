@@ -80,6 +80,11 @@ const userSchema = new mongoose.Schema(
       messageReceived: { type: Boolean, default: true },
       auctionEnded: { type: Boolean, default: true },
       offerReceived: { type: Boolean, default: true },
+      paymentDue: { type: Boolean, default: true },
+      paymentOverdue: { type: Boolean, default: true },
+      commissionEarned: { type: Boolean, default: true },
+      withdrawalUpdate: { type: Boolean, default: true },
+      fundsTransferred: { type: Boolean, default: true },
     },
     permissions: {
       canBid: { type: Boolean, default: true },

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { mediaUrl } from "@/lib/mediaUrl";
 import { Building2, Gavel, MessageSquare, TrendingUp, Plus, ArrowRight, MapPin, Trophy, Clock, Eye, User } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useTheme } from "@/app/hooks/useTheme";
@@ -273,7 +274,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                 {myProperties.slice(0, 3).map((p: any) => (
                   <div key={p._id} className="flex items-center gap-3 p-4 hover:bg-slate-50 transition-all">
                     {p.media?.propertyImages?.[0] ? (
-                      <img src={p.media.propertyImages[0]} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" alt="" />
+                      <img src={mediaUrl(p.media.propertyImages[0])} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" alt="" />
                     ) : (
                       <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
                         <Building2 className="size-5 text-slate-400" />

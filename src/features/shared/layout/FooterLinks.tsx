@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import {
   Crown, Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, Youtube,
   ArrowRight, Award, Clock, Heart, UserPlus, LogIn,
-  Play, ShoppingCart, DollarSign, Shield, Gavel, Home, FileText,
+  Play, ShoppingCart, PoundSterling, Shield, Gavel, Home, FileText,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { useMenuData } from "@/hooks/useMenuData";
@@ -57,7 +57,7 @@ export default function FooterLinks() {
                   <ShoppingCart className="size-5" /> Buying
                 </button>
                 <button onClick={() => navigate("/selling-overview")} className="px-6 py-3 bg-gradient-to-r from-orange-500 to-rose-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-orange-500/50 transition-all hover:scale-105 flex items-center gap-2">
-                  <DollarSign className="size-5" /> Selling
+                  <PoundSterling className="size-5" /> Selling
                 </button>
                 <button onClick={() => navigate("/live-auctions")} className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-red-500/50 transition-all hover:scale-105 flex items-center gap-2 animate-pulse">
                   <Play className="size-5" /> Live Now

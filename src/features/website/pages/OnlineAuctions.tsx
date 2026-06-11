@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router";
+import { mediaUrl } from "@/lib/mediaUrl";
 import {
   Globe,
   Users,
@@ -229,8 +230,9 @@ export default function OnlineAuctions() {
                   timeZone: 'Europe/London',
                 }) || '';
                 const lotCount = auction.totalLots || auction.properties?.length || 0;
-                const auctionImage = auction.auctionImage ||
+                const rawAuctionImage = auction.auctionImage ||
                   auction.properties?.[0]?.media?.propertyImages?.[0] || null;
+                const auctionImage = rawAuctionImage ? mediaUrl(rawAuctionImage) : null;
                 return (
                   <div key={auction._id} className="bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden shadow-xl border-2 border-white/60 hover:shadow-2xl transition-all hover:scale-105">
                     <div className="relative h-64">

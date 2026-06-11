@@ -15,7 +15,7 @@ import {
   CheckCircle,
   Gavel,
   Home,
-  DollarSign,
+  PoundSterling,
   TrendingUp,
   AlertCircle,
   Percent,
@@ -177,7 +177,7 @@ export default function UserProfile() {
         { id: "bank", label: "Bank Details", icon: CreditCard },
         { id: "activity", label: "Activity", icon: TrendingUp },
         { id: "commissions", label: "Commissions", icon: Percent },
-        { id: "payments", label: "Payments Received", icon: DollarSign },
+        { id: "payments", label: "Payments Received", icon: PoundSterling },
       );
       return tabs;
     }
@@ -188,7 +188,7 @@ export default function UserProfile() {
         { id: "bank", label: "Bank Details", icon: CreditCard },
         { id: "activity", label: "Activity", icon: TrendingUp },
         { id: "commissions", label: "Commissions", icon: Percent },
-        { id: "payments", label: "Payments Received", icon: DollarSign },
+        { id: "payments", label: "Payments Received", icon: PoundSterling },
       );
       return tabs;
     }
@@ -196,7 +196,7 @@ export default function UserProfile() {
     if (role === "buyer") {
       tabs.push(
         { id: "activity", label: "Activity", icon: TrendingUp },
-        { id: "payments", label: "Payments Made", icon: DollarSign },
+        { id: "payments", label: "Payments Made", icon: PoundSterling },
       );
       if (canList) {
         tabs.push(
@@ -214,7 +214,7 @@ export default function UserProfile() {
       { id: "bank", label: "Bank Details", icon: CreditCard },
       { id: "activity", label: "Activity", icon: TrendingUp },
       { id: "commissions", label: "Commissions", icon: Percent },
-      { id: "payments", label: "Payments", icon: DollarSign },
+      { id: "payments", label: "Payments", icon: PoundSterling },
     );
     return tabs;
   })();
@@ -301,7 +301,7 @@ export default function UserProfile() {
               );
             }
             if (role === "agent" || role === "seller" || canList) {
-              cards.push({ label: "Commission Due", value: `£${(stats.pendingCommission ?? 0).toLocaleString()}`, gradient: "from-emerald-500 to-teal-600", Icon: DollarSign });
+              cards.push({ label: "Commission Due", value: `£${(stats.pendingCommission ?? 0).toLocaleString()}`, gradient: "from-emerald-500 to-teal-600", Icon: PoundSterling });
             }
           }
 
@@ -635,7 +635,7 @@ export default function UserProfile() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 border-b border-slate-100">
                     <tr>
-                      {["Property", "Sale Price", "Rate", "Amount", "Status", "Date"].map((h) => (
+                      {["Property", "Sale Price", "Rate", "Amount", "Status", "Withdrawal", "Date"].map((h) => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase">{h}</th>
                       ))}
                     </tr>
@@ -655,6 +655,15 @@ export default function UserProfile() {
                           }`}>
                             {c.status}
                           </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {c.withdrawalRequest?.requested ? (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-lg">
+                              Requested
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-slate-400 text-xs">
                           {new Date(c.createdAt).toLocaleDateString("en-GB")}
@@ -678,7 +687,7 @@ export default function UserProfile() {
             </div>
             {(userData.payments || []).length === 0 ? (
               <div className="text-center py-12">
-                <DollarSign className="size-10 text-slate-300 mx-auto mb-3" />
+                <PoundSterling className="size-10 text-slate-300 mx-auto mb-3" />
                 <p className="text-slate-500 font-bold">No payments recorded</p>
               </div>
             ) : (
@@ -686,7 +695,7 @@ export default function UserProfile() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 border-b border-slate-100">
                     <tr>
-                      {["Property", "Amount", "Method", "Reference", "Status", "Date"].map((h) => (
+                      {["Property", "Amount", "Method", "Status", "Due Date", "Date"].map((h) => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase">{h}</th>
                       ))}
                     </tr>
@@ -697,15 +706,18 @@ export default function UserProfile() {
                         <td className="px-4 py-3 font-bold text-slate-900">{p.property?.propertyTitle || "—"}</td>
                         <td className="px-4 py-3 font-black text-slate-900">£{p.amount?.toLocaleString()}</td>
                         <td className="px-4 py-3 text-slate-500 capitalize">{p.method?.replace("_", " ") || "—"}</td>
-                        <td className="px-4 py-3 text-slate-400 text-xs">{p.reference || "—"}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                             p.status === "paid" ? "bg-green-100 text-green-700" :
                             p.status === "overdue" ? "bg-red-100 text-red-700" :
+                            p.status === "withdrawn" ? "bg-orange-100 text-orange-700" :
                             "bg-amber-100 text-amber-700"
                           }`}>
                             {p.status}
                           </span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-400 text-xs">
+                          {p.dueDate ? new Date(p.dueDate).toLocaleDateString("en-GB") : "—"}
                         </td>
                         <td className="px-4 py-3 text-slate-400 text-xs">
                           {new Date(p.createdAt).toLocaleDateString("en-GB")}

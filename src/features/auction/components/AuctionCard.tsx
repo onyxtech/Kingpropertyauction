@@ -208,6 +208,9 @@ export default function AuctionCard({ auction }: any) {
                 const isSold = isCompleted
                   ? (bidStats.isSold ?? false)
                   : false;
+                const outcome = bidStats.outcome || null;
+                const soldPrice = bidStats.soldPrice || null;
+                const displayPrice = (isCompleted && isSold && soldPrice) ? soldPrice : highestBid;
                 const isUnsold = isCompleted && !isSold && (bidStats.highestBid !== undefined || latestData?.propertyStatus === "unsold");
                 const pReserve =
                   bidStats.reservePrice || latestData?.pricing?.reservePrice || property.pricing?.reservePrice || 0;
@@ -239,9 +242,14 @@ export default function AuctionCard({ auction }: any) {
                         {title}
                       </p>
                       {isCompleted ? (
-                        isSold ? (
+                        outcome?.status === "withdrawn" ? (
+                          <div className="ml-2 text-right">
+                            <span className="text-xs font-bold text-orange-600 block">⚠️ Winner Withdrew</span>
+                            <span className="text-xs text-slate-500">Was: £{(outcome.salePrice || highestBid).toLocaleString()}</span>
+                          </div>
+                        ) : isSold ? (
                           <span className="text-xs font-bold text-green-600 ml-2">
-                            🎉 Sold £{highestBid.toLocaleString()}
+                            🎉 Sold £{displayPrice.toLocaleString()}
                           </span>
                         ) : highestBid > 0 ? (
                           <span className="text-xs font-bold text-red-600 ml-2">
@@ -269,19 +277,22 @@ export default function AuctionCard({ auction }: any) {
                                   setSelectedWinner({
                                     ...winner,
                                     propertyTitle: title,
-                                    bidAmount: highestBid,
+                                    bidAmount: displayPrice,
                                     auctionTitle: auction.auctionTitle,
                                     propertyId: propId,
                                     auctionId: auction._id,
+                                    isWithdrawn: bidStats.isWithdrawn === true,
                                   });
                                   setShowWinnerModal(true);
                                   setNotifyResult(null);
                                   setNextBidders([]);
-                                  setLoadingNextBidders(true);
-                                  apiClient.fetch(`/bids/auction/${auction._id}/next-bidders?propertyId=${propId}`)
-                                    .then(r => { if (r.success) setNextBidders(r.data || []); })
-                                    .catch(() => {})
-                                    .finally(() => setLoadingNextBidders(false));
+                                  if (bidStats.isWithdrawn === true) {
+                                    setLoadingNextBidders(true);
+                                    apiClient.fetch(`/bids/auction/${auction._id}/next-bidders?propertyId=${propId}`)
+                                      .then(r => { if (r.success) setNextBidders(r.data || []); })
+                                      .catch(() => {})
+                                      .finally(() => setLoadingNextBidders(false));
+                                  }
                                 }}
                                 className="font-bold text-blue-600 hover:underline cursor-pointer"
                               >
@@ -408,7 +419,7 @@ export default function AuctionCard({ auction }: any) {
               <p className="text-sm text-slate-500">{selectedWinner.auctionTitle}</p>
             </div>
 
-            {selectedWinner.bankDetails?.accountNumber ? (
+            {selectedWinner.bankDetails?.accountNumber && (
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
                 <p className="text-xs font-bold text-amber-700 mb-2">🏦 BANK DETAILS</p>
                 <table className="w-full text-sm">
@@ -428,90 +439,96 @@ export default function AuctionCard({ auction }: any) {
                   </tbody>
                 </table>
               </div>
-            ) : (
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4">
-                <p className="text-xs text-slate-500 font-bold">ℹ️ No bank details on file for this winner</p>
-              </div>
             )}
 
-            {/* Next Bidders */}
-            <div className="mb-4">
-              <p className="text-xs font-bold text-slate-700 mb-2">📋 Next Highest Bidders</p>
-              {loadingNextBidders ? (
-                <div className="flex items-center gap-2 py-3">
-                  <Loader2 className="size-4 animate-spin text-slate-400" />
-                  <span className="text-xs text-slate-400">Loading next bidders...</span>
-                </div>
-              ) : nextBidders.length > 0 ? (
-                <div className="space-y-2">
-                  {nextBidders.map((b: any, idx: number) => (
-                    <div key={b._id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
-                      <div className="flex items-center gap-3">
-                        <div className={`size-7 rounded-full flex items-center justify-center text-xs font-black text-white ${
-                          idx === 0 ? "bg-amber-500" : idx === 1 ? "bg-slate-400" : "bg-orange-400"
-                        }`}>{idx + 1}</div>
-                        <div>
-                          <p className="font-bold text-slate-900 text-sm">{b.name}</p>
-                          <p className="text-xs text-slate-500">{b.email}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-black text-slate-900 text-sm">£{b.bidAmount?.toLocaleString()}</p>
-                        <p className="text-xs text-slate-400">Bid amount</p>
-                      </div>
+            {selectedWinner.isWithdrawn && (
+              <>
+                {/* Next Bidders */}
+                <div className="mb-4">
+                  <p className="text-xs font-bold text-slate-700 mb-2">📋 Next Highest Bidders</p>
+                  {loadingNextBidders ? (
+                    <div className="flex items-center gap-2 py-3">
+                      <Loader2 className="size-4 animate-spin text-slate-400" />
+                      <span className="text-xs text-slate-400">Loading next bidders...</span>
                     </div>
-                  ))}
+                  ) : nextBidders.length > 0 ? (
+                    <div className="space-y-2">
+                      {nextBidders.map((b: any, idx: number) => (
+                        <div key={b._id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                          <div className="flex items-center gap-3">
+                            <div className={`size-7 rounded-full flex items-center justify-center text-xs font-black text-white ${
+                              idx === 0 ? "bg-amber-500" : idx === 1 ? "bg-slate-400" : "bg-orange-400"
+                            }`}>{idx + 1}</div>
+                            <div>
+                              <p className="font-bold text-slate-900 text-sm">{b.name}</p>
+                              <p className="text-xs text-slate-500">{b.email}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-black text-slate-900 text-sm">£{b.bidAmount?.toLocaleString()}</p>
+                            <p className="text-xs text-slate-400">Bid amount</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-50 rounded-xl">
+                      <p className="text-xs text-slate-400 text-center">No other bidders found</p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <p className="text-xs text-slate-400 text-center">No other bidders found</p>
-                </div>
-              )}
-            </div>
 
-            <div className="border-t-2 border-slate-100 pt-4">
-              <p className="font-black text-slate-900 mb-1">📨 Notify Next Bidder</p>
-              <p className="text-xs text-slate-500 mb-3">If winner withdraws, notify next highest bidders</p>
-              <textarea
-                value={notifyMessage}
-                onChange={e => setNotifyMessage(e.target.value)}
-                placeholder="Optional custom message..."
-                rows={2}
-                className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
-              />
-              <button
-                onClick={async () => {
-                  setNotifyingNextBidder(true);
-                  try {
-                    const result = await apiClient.fetch("/bids/notify-next-bidder", {
-                      method: "POST",
-                      body: JSON.stringify({
-                        propertyId: selectedWinner.propertyId,
-                        auctionId: selectedWinner.auctionId,
-                        message: notifyMessage || undefined,
-                      }),
-                    });
-                    setNotifyResult(result);
-                  } catch {
-                    setNotifyResult({ success: false, message: "Failed to send" });
-                  } finally {
-                    setNotifyingNextBidder(false);
-                  }
-                }}
-                disabled={notifyingNextBidder}
-                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold hover:scale-105 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {notifyingNextBidder ? "Sending..." : "🔔 Notify Next Bidders"}
-              </button>
-              {notifyResult && (
-                <div className={`mt-3 p-3 rounded-xl text-sm font-bold ${notifyResult.success ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
-                  {notifyResult.success ? `✅ ${notifyResult.message}` : `❌ ${notifyResult.message}`}
-                  {notifyResult.notified?.map((b: any) => (
-                    <p key={b.email} className="text-xs mt-1">→ {b.name} (£{b.bidAmount?.toLocaleString()})</p>
-                  ))}
+                <div className="border-t-2 border-slate-100 pt-4">
+                  <p className="font-black text-slate-900 mb-1">📨 Notify Next Bidder</p>
+                  <p className="text-xs text-slate-500 mb-3">Winner withdrew — notify next highest bidders</p>
+                  <textarea
+                    value={notifyMessage}
+                    onChange={e => setNotifyMessage(e.target.value)}
+                    placeholder="Optional custom message..."
+                    rows={2}
+                    className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+                  />
+                  {nextBidders.length > 0 ? (
+                    <button
+                      onClick={async () => {
+                        setNotifyingNextBidder(true);
+                        try {
+                          const result = await apiClient.fetch("/bids/notify-next-bidder", {
+                            method: "POST",
+                            body: JSON.stringify({
+                              propertyId: selectedWinner.propertyId,
+                              auctionId: selectedWinner.auctionId,
+                              message: notifyMessage || undefined,
+                            }),
+                          });
+                          setNotifyResult(result);
+                        } catch {
+                          setNotifyResult({ success: false, message: "Failed to send" });
+                        } finally {
+                          setNotifyingNextBidder(false);
+                        }
+                      }}
+                      disabled={notifyingNextBidder}
+                      className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold hover:scale-105 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {notifyingNextBidder ? "Sending..." : "🔔 Notify Next Bidders"}
+                    </button>
+                  ) : !loadingNextBidders && (
+                    <p className="text-xs text-slate-400 text-center py-2 bg-slate-50 rounded-xl border border-slate-200">
+                      No other bidders available to notify.
+                    </p>
+                  )}
+                  {notifyResult && (
+                    <div className={`mt-3 p-3 rounded-xl text-sm font-bold ${notifyResult.success ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                      {notifyResult.success ? `✅ ${notifyResult.message}` : `❌ ${notifyResult.message}`}
+                      {notifyResult.notified?.map((b: any) => (
+                        <p key={b.email} className="text-xs mt-1">→ {b.name} (£{b.bidAmount?.toLocaleString()})</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>,
         document.body

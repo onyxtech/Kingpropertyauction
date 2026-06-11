@@ -582,9 +582,8 @@ export default function AuctionDetail() {
         formatPrice={(val) => `£${val.toLocaleString()}`}
         getPropertyImage={(p) =>
           p?.media?.propertyImages?.[0]
-            ? p.media.propertyImages[0]
-            : mediaUrl(p?.media?.propertyImages?.[0]) ||
-              "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600"
+            ? mediaUrl(p.media.propertyImages[0])
+            : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600"
         }
       />
     </PublicLayout>

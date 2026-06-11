@@ -68,6 +68,20 @@ const auctionSchema = new mongoose.Schema(
     auctionImage: { type: String }, // Banner image for the auction
     totalLots: { type: Number, default: 0 }, // Number of properties
 
+    // Per-property outcome snapshots (survives property reset)
+    propertyOutcomes: {
+      type: Map,
+      of: new mongoose.Schema({
+        status: String,
+        buyerName: String,
+        buyerId: { type: mongoose.Schema.ObjectId, ref: "User" },
+        salePrice: Number,
+        note: String,
+        updatedAt: { type: Date, default: Date.now },
+      }, { _id: false }),
+      default: {},
+    },
+
     // Status & Tracking
     status: {
       type: String,

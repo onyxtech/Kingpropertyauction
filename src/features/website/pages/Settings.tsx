@@ -14,7 +14,7 @@ import {
   Map,
   Gavel,
   Users,
-  DollarSign,
+  PoundSterling,
   Briefcase,
   Shield,
   Sparkles,
@@ -209,7 +209,7 @@ export default function Settings() {
     {
       id: "currency",
       label: "Currencies",
-      icon: DollarSign,
+      icon: PoundSterling,
       color: "from-green-500 to-teal-600",
     },
     {

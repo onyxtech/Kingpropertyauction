@@ -98,6 +98,9 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         set({ token: null, user: null, isAuthenticated: false, activeView: null });
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("app:logout"));
+        }
       },
 
       setActiveView: (view: string) => {

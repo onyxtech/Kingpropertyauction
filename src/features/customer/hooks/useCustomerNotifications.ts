@@ -147,6 +147,34 @@ export const useCustomerNotifications = () => {
         queryClient.invalidateQueries({ queryKey: ["my-bids"] });
         return;
       }
+      if (type === "system") {
+        showToast({
+          type: "system",
+          title: "Update",
+          message: data.message || "You have an update",
+          color: data.color || "blue",
+          link: data.link,
+        });
+        refetch();
+        refetchCount();
+        queryClient.invalidateQueries({ queryKey: ["my-payments"] });
+        queryClient.invalidateQueries({ queryKey: ["my-commissions"] });
+        queryClient.invalidateQueries({ queryKey: ["my-bids"] });
+        return;
+      }
+      if (type === "offer") {
+        showToast({
+          type: "offer",
+          title: "Property Opportunity",
+          message: data.message || "A property you bid on may be available",
+          color: "amber",
+          link: data.link || "/dashboard/offers",
+        });
+        refetch();
+        refetchCount();
+        queryClient.invalidateQueries({ queryKey: ["customer-notifications"] });
+        return;
+      }
       showToast({
         type,
         title: "New notification",
@@ -156,6 +184,9 @@ export const useCustomerNotifications = () => {
       });
       refetch();
       refetchCount();
+      queryClient.invalidateQueries({ queryKey: ["my-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["my-commissions"] });
+      queryClient.invalidateQueries({ queryKey: ["my-bids"] });
     };
 
     socket.on("bid_update", handleBidUpdate);

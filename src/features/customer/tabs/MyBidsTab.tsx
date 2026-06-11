@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { mediaUrl } from "@/lib/mediaUrl";
 import { Gavel, Calendar, Award, AlertCircle, Clock, CheckCircle, XCircle, TrendingUp, Search, X, MapPin } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useTheme } from "@/app/hooks/useTheme";
@@ -240,7 +241,7 @@ export default function MyBidsTab() {
                   <div className="flex items-start gap-3 mb-3">
                     {bid.property?.media?.propertyImages?.[0] ? (
                       <img
-                        src={bid.property.media.propertyImages[0]}
+                        src={mediaUrl(bid.property.media.propertyImages[0])}
                         className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
                         alt=""
                       />

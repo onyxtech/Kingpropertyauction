@@ -35,6 +35,7 @@ export const NotificationRulesSchema = z.object({
   auctionLost: z.boolean().default(true),
   auctionStartingSoon: z.boolean().default(true),
   auctionStarted: z.boolean().default(true),
+  auctionStartedSeller: z.boolean().default(true),
   auctionEnded: z.boolean().default(true),
   propertySubmitted: z.boolean().default(true),
   propertyApproved: z.boolean().default(true),
@@ -68,6 +69,13 @@ export const NotificationRulesSchema = z.object({
   propertyAddedToAuction: z.boolean().default(true),
   propertyInquiryConfirmation: z.boolean().default(true),
   offerNotification: z.boolean().default(true),
+  paymentDue: z.boolean().default(true),
+  paymentOverdue: z.boolean().default(true),
+  paymentWithdrawn: z.boolean().default(true),
+  commissionEarned: z.boolean().default(true),
+  withdrawalRequested: z.boolean().default(true),
+  fundsTransferred: z.boolean().default(true),
+  propertyAvailableAgain: z.boolean().default(true),
 });
 
 // ─── API Integrations Schema ───
@@ -91,6 +99,11 @@ export const OAuthConfigSchema = z.object({
   google: OAuthProviderSchema.default({}),
   github: OAuthProviderSchema.default({}),
   facebook: OAuthProviderSchema.default({}),
+});
+
+export const GeneralSchema = z.object({
+  defaultCommissionRate: z.number().min(0).max(100).default(5),
+  paymentDueHours: z.number().min(1).default(48),
 });
 
 export const SettingKeySchema = z.enum([

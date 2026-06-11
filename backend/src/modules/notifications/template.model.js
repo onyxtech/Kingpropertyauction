@@ -25,7 +25,7 @@ const templateSchema = new mongoose.Schema(
     ],
     category: {
       type: String,
-      enum: ["auth", "bidding", "property", "auction", "lead", "system"],
+      enum: ["auth", "bidding", "property", "auction", "lead", "system", "payment", "commission"],
       default: "system",
     },
     updatedBy: {

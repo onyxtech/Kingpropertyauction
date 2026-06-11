@@ -1,4 +1,4 @@
-import { CheckCircle, BookOpen, FileText, Shield, Users, TrendingUp, Clock, Award, Home, DollarSign, Scale, Lightbulb, AlertCircle } from "lucide-react";
+import { CheckCircle, BookOpen, FileText, Shield, Users, TrendingUp, Clock, Award, Home, PoundSterling, Scale, Lightbulb, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 
@@ -34,7 +34,7 @@ export default function BuyingGuide() {
     },
     { 
       title: "Financing Your Purchase", 
-      icon: DollarSign,
+      icon: PoundSterling,
       gradient: "from-emerald-500 to-teal-600",
       sections: [
         "Mortgage options for auctions",

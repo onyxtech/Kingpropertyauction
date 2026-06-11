@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { mediaUrl } from "@/lib/mediaUrl";
 import { useNavigate } from "react-router";
 import AdminLayout from "../components/AdminLayout";
 import { apiClient } from "@/lib/apiClient";
@@ -158,7 +159,7 @@ export default function AuctionBids() {
                     {/* Property Header */}
                     <div className={`flex items-center gap-4 p-5 border-b border-slate-100 ${stats.isSold ? "bg-emerald-50" : "bg-slate-50"}`}>
                       {prop.media?.propertyImages?.[0] ? (
-                        <img src={prop.media.propertyImages[0]} className="w-14 h-14 rounded-xl object-cover" alt="" />
+                        <img src={mediaUrl(prop.media.propertyImages[0])} className="w-14 h-14 rounded-xl object-cover" alt="" />
                       ) : (
                         <div className="w-14 h-14 rounded-xl bg-slate-200 flex items-center justify-center">
                           <Building2 className="size-6 text-slate-400" />

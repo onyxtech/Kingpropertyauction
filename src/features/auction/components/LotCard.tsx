@@ -17,9 +17,7 @@ interface LotCardProps {
 
 function getPropertyImage(property: any) {
   if (property?.media?.propertyImages?.length > 0) {
-    const img = property.media.propertyImages[0];
-    
-    return img.startsWith("/uploads") ? img : `/uploads/properties/${img}`;
+    return mediaUrl(property.media.propertyImages[0]);
   }
   return "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600";
 }

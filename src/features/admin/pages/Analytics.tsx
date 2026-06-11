@@ -4,7 +4,7 @@ import {
   BarChart3,
   X,
   Calendar,
-  DollarSign,
+  PoundSterling,
   Gavel,
   Users,
   Building2,
@@ -203,7 +203,7 @@ export default function Analytics() {
                 </h3>
                 <div className="grid md:grid-cols-2 gap-3">
                   {[
-                    { value: "sales", label: "Sales Report", icon: DollarSign },
+                    { value: "sales", label: "Sales Report", icon: PoundSterling },
                     {
                       value: "auction",
                       label: "Auction Performance",

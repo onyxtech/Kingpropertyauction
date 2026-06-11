@@ -12,7 +12,7 @@ import {
   Clock,
   CheckCircle,
   MapPin,
-  DollarSign,
+  PoundSterling,
   BarChart,
   Target,
   Shield,

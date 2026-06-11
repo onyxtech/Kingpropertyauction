@@ -9,6 +9,7 @@ import {
   Shield,
   Zap,
   Brain,
+  Settings2,
 } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
 import AdminLayout from "../components/AdminLayout";
@@ -76,6 +77,7 @@ export default function AdminSettings() {
     openaiApiKey: "",
     activeAiProvider: "groq",
   });
+  const [generalForm, setGeneralForm] = useState({ defaultCommissionRate: 5, paymentDueHours: 48 });
   const [knowledgeEntries, setKnowledgeEntries] = useState<any[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -131,6 +133,10 @@ export default function AdminSettings() {
         if (integrationsResult.success && integrationsResult.data) {
           setIntegrationsForm((prev) => ({ ...prev, ...integrationsResult.data }));
         }
+        const generalResult = await apiClient.fetch("/settings/general");
+        if (generalResult.success && generalResult.data) {
+          setGeneralForm((prev) => ({ ...prev, ...generalResult.data }));
+        }
       } catch (e) {
         console.error("Failed to load settings:", e);
       }
@@ -172,6 +178,21 @@ export default function AdminSettings() {
       setTestResult({ success: false, message: e.message });
     }
     setIsTesting(false);
+  };
+
+  const handleGeneralSave = async () => {
+    setIsSaving(true);
+    try {
+      const result = await apiClient.fetch("/settings/general", {
+        method: "PUT",
+        body: JSON.stringify(generalForm),
+      });
+      setSaveMessage(result.success ? "General settings saved!" : "Error: " + result.message);
+    } catch (e: any) {
+      setSaveMessage("Error: " + e.message);
+    }
+    setIsSaving(false);
+    setTimeout(() => setSaveMessage(""), 4000);
   };
 
   const handleIntegrationsSave = async () => {
@@ -445,6 +466,12 @@ export default function AdminSettings() {
 
   const tabs = [
     {
+      id: "general",
+      label: "General",
+      icon: Settings2,
+      description: "Commission rates, payment due hours",
+    },
+    {
       id: "email",
       label: "Email Configuration",
       icon: Mail,
@@ -502,7 +529,8 @@ export default function AdminSettings() {
     auctionWon: { label: "Auction Won", icon: "🎉", category: "Bidding" },
     auctionLost: { label: "Auction Lost", icon: "😢", category: "Bidding" },
     auctionStartingSoon: { label: "Auction Starting Soon", icon: "⏰", category: "Auction" },
-    auctionStarted: { label: "Auction Started", icon: "🔴", category: "Auction" },
+    auctionStarted: { label: "Auction Started (Buyer)", icon: "🔴", category: "Auction" },
+    auctionStartedSeller: { label: "Auction Started (Seller/Owner)", icon: "🎯", category: "Auction" },
     auctionEnded: { label: "Auction Ended", icon: "🏁", category: "Auction" },
     propertySubmitted: { label: "Property Submitted", icon: "📋", category: "Property" },
     propertyApproved: { label: "Property Approved", icon: "✅", category: "Property" },
@@ -517,6 +545,13 @@ export default function AdminSettings() {
     faqsupport: { label: "FAQ Support", icon: "💬", category: "Leads" },
     legalenquiry: { label: "Legal Enquiry", icon: "⚖️", category: "Leads" },
     newsletterwelcome: { label: "Newsletter Welcome", icon: "📰", category: "Leads" },
+    paymentDue: { label: "Payment Due (Buyer)", icon: "💳", category: "Payment" },
+    paymentOverdue: { label: "Payment Overdue (Buyer)", icon: "⚠️", category: "Payment" },
+    paymentWithdrawn: { label: "Payment Withdrawn (Buyer)", icon: "❌", category: "Payment" },
+    commissionEarned: { label: "Commission Earned (Seller)", icon: "💰", category: "Commission" },
+    withdrawalRequested: { label: "Withdrawal Requested (Seller)", icon: "✅", category: "Commission" },
+    fundsTransferred: { label: "Funds Transferred (Seller)", icon: "🎉", category: "Commission" },
+    propertyAvailableAgain: { label: "Property Available Again (Next Bidders)", icon: "🏠", category: "Payment" },
   };
 
   const ruleLabels: Record<string, string> = {
@@ -529,7 +564,8 @@ export default function AdminSettings() {
     auctionWon: "Auction Won",
     auctionLost: "Auction Lost",
     auctionStartingSoon: "Auction Starting Soon",
-    auctionStarted: "Auction Started",
+    auctionStarted: "Auction Started (Buyer)",
+    auctionStartedSeller: "Auction Started (Seller/Owner)",
     auctionEnded: "Auction Ended",
     propertySubmitted: "Property Submitted (Admin Alert)",
     propertyApproved: "Property Approved",
@@ -563,6 +599,13 @@ export default function AdminSettings() {
     adminInquiryCC: "Admin CC - Property Enquiry Messages",
     propertyAddedToAuction: "Property Added to Auction (owner email)",
     offerNotification: "Property Offer Notification (to next bidder)",
+    paymentDue: "Payment Due (Buyer)",
+    paymentOverdue: "Payment Overdue (Buyer)",
+    paymentWithdrawn: "Payment Withdrawn (Buyer)",
+    commissionEarned: "Commission Earned (Seller)",
+    withdrawalRequested: "Withdrawal Requested (Seller)",
+    fundsTransferred: "Funds Transferred (Seller)",
+    propertyAvailableAgain: "Property Available Again (Next Bidders)",
   };
 
   if (isLoading) {
@@ -592,7 +635,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Tab Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -659,6 +702,59 @@ export default function AdminSettings() {
           </div>
 
           <div className="p-8">
+            {activeTab === "general" && (
+              <div className="space-y-6 max-w-lg">
+                <div>
+                  <h3 className="font-black text-slate-900 text-lg mb-1">General Settings</h3>
+                  <p className="text-sm text-slate-500">Platform-wide defaults for payments and commissions.</p>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">
+                      Default Commission Rate (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={generalForm.defaultCommissionRate}
+                      onChange={(e) => setGeneralForm((f) => ({ ...f, defaultCommissionRate: parseFloat(e.target.value) || 0 }))}
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Used when an agent/seller has no individual commission rate set.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">
+                      Payment Due Hours
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={generalForm.paymentDueHours}
+                      onChange={(e) => setGeneralForm((f) => ({ ...f, paymentDueHours: parseInt(e.target.value) || 48 }))}
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Hours after auction end before a payment is considered overdue (default: 48).
+                    </p>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleGeneralSave}
+                    disabled={isSaving}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isSaving ? <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="size-4" />}
+                    Save General Settings
+                  </button>
+                </div>
+              </div>
+            )}
+
             {activeTab === "email" && (
               <EmailConfigTab
                 emailForm={emailForm}

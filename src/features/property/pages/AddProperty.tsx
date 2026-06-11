@@ -4,7 +4,7 @@ import {
   Building2,
   MapPin,
   Home,
-  DollarSign,
+  PoundSterling,
   CheckCircle,
   ChevronRight,
   ChevronLeft,
@@ -535,7 +535,7 @@ export default function AddProperty() {
     { number: 1, title: "Basic Information", icon: Building2 },
     { number: 2, title: "Location Details", icon: MapPin },
     { number: 3, title: "Specifications", icon: Home },
-    { number: 4, title: "Pricing", icon: DollarSign },
+    { number: 4, title: "Pricing", icon: PoundSterling },
     { number: 5, title: "Auction Details", icon: Gavel },
     { number: 6, title: "Features", icon: Star },
     { number: 7, title: "Legal Info", icon: Scale },
@@ -769,6 +769,7 @@ export default function AddProperty() {
             )}
             {currentStep === (isAdmin ? 10 : 9) && (
               <StepReview
+                user={user}
                 formData={formData}
                 theme={theme}
                 onEditStep={goToStep}

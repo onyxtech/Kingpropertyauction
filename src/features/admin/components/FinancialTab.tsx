@@ -1,4 +1,4 @@
-import { Lock, TrendingUp, DollarSign, Receipt } from "lucide-react";
+import { Lock, TrendingUp, PoundSterling, Receipt } from "lucide-react";
 
 export default function FinancialTab() {
   return (
@@ -14,7 +14,7 @@ export default function FinancialTab() {
         {[
           { label: "Escrow Balance", value: "£2.4M", color: "from-green-500 to-emerald-600", icon: Lock },
           { label: "Revenue (MTD)", value: "£187K", color: "from-blue-500 to-indigo-600", icon: TrendingUp },
-          { label: "Commissions Paid", value: "£42.3K", color: "from-purple-500 to-pink-600", icon: DollarSign },
+          { label: "Commissions Paid", value: "£42.3K", color: "from-purple-500 to-pink-600", icon: PoundSterling },
           { label: "Pending Invoices", value: "23", color: "from-orange-500 to-amber-600", icon: Receipt },
         ].map((stat, index) => {
           const Icon = stat.icon;

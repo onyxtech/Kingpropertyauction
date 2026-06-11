@@ -120,7 +120,39 @@ export const getNextBidders = async (req, res) => {
         });
       }
     }
-    const nextBidders = unique.slice(1, 4);
+    const prop = await Property.findById(propertyId).select("soldTo").lean();
+    const currentOwnerId = prop?.soldTo?.toString() || null;
+
+    const Payment = (await import("../payment/payment.model.js")).default;
+    const withdrawnPayments = await Payment.find({
+      property: propertyId,
+      status: "withdrawn",
+    }).select("buyer notifiedBidders").sort({ createdAt: -1 }).lean();
+    const withdrawnBuyerIds = new Set(
+      withdrawnPayments.map(p => p.buyer?.toString()).filter(Boolean)
+    );
+
+    const respondedIds = new Set();
+    const latestWithdrawn = withdrawnPayments[0];
+    if (latestWithdrawn?.notifiedBidders) {
+      for (const nb of latestWithdrawn.notifiedBidders) {
+        if (nb.status === "accepted" || nb.status === "declined") {
+          respondedIds.add(nb.user?.toString());
+        }
+      }
+    }
+
+    const excludeIds = new Set(withdrawnBuyerIds);
+    if (currentOwnerId) excludeIds.add(currentOwnerId);
+    for (const id of respondedIds) excludeIds.add(id);
+
+    let candidates;
+    if (excludeIds.size > 0) {
+      candidates = unique.filter(b => !excludeIds.has(b._id));
+    } else {
+      candidates = unique.slice(1);
+    }
+    const nextBidders = candidates.slice(0, 3);
     res.json({ success: true, data: nextBidders });
   } catch (error) {
     console.error('[Bid] getNextBidders error:', error.message);
@@ -148,6 +180,13 @@ export const getAuctionPropertyStats = async (req, res) => {
     ]);
 
     const User = (await import('../user/user.model.js')).default;
+    const Payment = (await import('../payment/payment.model.js')).default;
+    const Auction = (await import('../auction/auction.model.js')).default;
+
+    // Load auction outcome snapshots once
+    const auctionDoc = await Auction.findById(auctionId).select("propertyOutcomes").lean();
+    const outcomesMap = auctionDoc?.propertyOutcomes || {};
+
     const result = {};
 
     for (const s of stats) {
@@ -159,16 +198,40 @@ export const getAuctionPropertyStats = async (req, res) => {
       }
 
       const prop = await Property.findById(s._id)
-        .select("pricing propertyTitle").lean();
+        .select("pricing propertyTitle soldTo soldPrice propertyStatus").lean();
       const reservePrice = prop?.pricing?.reservePrice || 0;
       const isSold = s.highestBid >= reservePrice && reservePrice > 0;
 
-      result[s._id.toString()] = {
+      const payment = await Payment.findOne({ property: s._id })
+        .sort({ createdAt: -1 }).lean();
+
+      const propIdStr = s._id.toString();
+
+      // Prefer assigned owner (property.soldTo) over original bid winner
+      let finalWinner = winnerData;
+      if (prop?.soldTo) {
+        const soldUser = await User.findById(prop.soldTo)
+          .select("name email phone bankDetails").lean();
+        if (soldUser) finalWinner = soldUser;
+      }
+
+      // Retrieve snapshot — Map stored as BSON Map, access via key
+      const snapshot = (typeof outcomesMap.get === "function"
+        ? outcomesMap.get(propIdStr)
+        : outcomesMap[propIdStr]) || null;
+
+      result[propIdStr] = {
         highestBid: s.highestBid || 0,
         totalBids: s.totalBids || 0,
-        winner: winnerData,
+        winner: finalWinner,
         isSold,
         reservePrice,
+        paymentStatus: payment?.status || null,
+        isWithdrawn: payment?.status === "withdrawn",
+        isPaid: payment?.status === "paid",
+        isResetToAvailable: payment?.resetToAvailable === true,
+        soldPrice: prop?.soldPrice || null,
+        outcome: snapshot,
       };
     }
 
@@ -220,7 +283,7 @@ export const notifyNextBidder = async (req, res) => {
     }
 
     const property = await Property.findById(propertyId)
-      .select("propertyTitle pricing currentBid slug")
+      .select("propertyTitle pricing currentBid slug soldTo")
       .lean();
 
     const uniqueBidders = [];
@@ -229,10 +292,43 @@ export const notifyNextBidder = async (req, res) => {
       const id = bid.bidder?._id?.toString();
       if (id && !seen.has(id)) { seen.add(id); uniqueBidders.push(bid); }
     }
-    const nextBidders = uniqueBidders.slice(1, 4);
+    const currentOwnerId = property?.soldTo?.toString() || null;
+
+    const Payment = (await import("../payment/payment.model.js")).default;
+    const withdrawnPayments = await Payment.find({
+      property: propertyId,
+      status: "withdrawn",
+    }).select("buyer notifiedBidders").sort({ createdAt: -1 }).lean();
+    const withdrawnBuyerIds = new Set(
+      withdrawnPayments.map(p => p.buyer?.toString()).filter(Boolean)
+    );
+
+    const respondedIds = new Set();
+    const latestWithdrawn = withdrawnPayments[0];
+    if (latestWithdrawn?.notifiedBidders) {
+      for (const nb of latestWithdrawn.notifiedBidders) {
+        if (nb.status === "accepted" || nb.status === "declined") {
+          respondedIds.add(nb.user?.toString());
+        }
+      }
+    }
+
+    const excludeIds = new Set(withdrawnBuyerIds);
+    if (currentOwnerId) excludeIds.add(currentOwnerId);
+    for (const id of respondedIds) excludeIds.add(id);
+
+    let candidates;
+    if (excludeIds.size > 0) {
+      candidates = uniqueBidders.filter(
+        b => !excludeIds.has(b.bidder?._id?.toString())
+      );
+    } else {
+      candidates = uniqueBidders.slice(1);
+    }
+    const nextBidders = candidates.slice(0, 3);
 
     if (nextBidders.length === 0) {
-      return res.status(400).json({ success: false, message: "No other bidders found" });
+      return res.status(400).json({ success: false, message: "No other bidders available to notify" });
     }
 
     const { sendEmail } = await import("../notifications/email.service.js");
@@ -262,21 +358,56 @@ export const notifyNextBidder = async (req, res) => {
       }
 
       await Notification.create({
-        type: "lead",
+        type: "offer",
         icon: "home",
-        message: `Property opportunity: ${property?.propertyTitle} may be available for you`,
-        link: `/properties/${property?.slug || propertyId}`,
+        message: `🏠 Property opportunity: "${property?.propertyTitle}" may be available. Check your offers.`,
+        link: `/dashboard/offers`,
         color: "amber",
         targetUser: bid.bidder._id,
+        metadata: {
+          propertyId: propertyId,
+          propertyUrl: `/properties/${property?.slug || propertyId}`,
+          propertyTitle: property?.propertyTitle,
+          bidAmount: bid.amount,
+          customMessage: message || "",
+        },
       }).catch(e => console.warn("Next bidder notification failed:", e.message));
 
       emitToUser(bid.bidder._id.toString(), "new_notification", {
-        type: "lead",
-        message: `Property opportunity: ${property?.propertyTitle}`,
-        link: `/properties/${property?.slug || propertyId}`,
+        type: "offer",
+        message: `🏠 Property opportunity: "${property?.propertyTitle}"`,
+        link: `/dashboard/offers`,
         color: "amber",
+        metadata: {
+          propertyId: propertyId,
+          propertyUrl: `/properties/${property?.slug || propertyId}`,
+          propertyTitle: property?.propertyTitle,
+          customMessage: message || "",
+        },
       });
     }
+
+    // Record notified bidders on the withdrawn payment
+    const notifiedList = nextBidders.map(b => ({
+      user: b.bidder._id,
+      name: b.bidder.name,
+      email: b.bidder.email,
+      bidAmount: b.amount,
+      status: "pending",
+      notifiedAt: new Date(),
+      respondedAt: null,
+    }));
+
+    await Payment.findOneAndUpdate(
+      { property: propertyId, status: "withdrawn" },
+      {
+        $set: {
+          notifiedBidders: notifiedList,
+          nextBiddersNotified: true,
+        }
+      },
+      { sort: { createdAt: -1 } }
+    ).catch(e => console.warn("Failed to record notified bidders on payment:", e.message));
 
     res.json({
       success: true,

@@ -1,4 +1,4 @@
-import { ThumbsUp, TrendingUp, Award, Users, Sparkles, CheckCircle, Clock, Target, Zap, DollarSign, Shield } from "lucide-react";
+import { ThumbsUp, TrendingUp, Award, Users, Sparkles, CheckCircle, Clock, Target, Zap, PoundSterling, Shield } from "lucide-react";
 import { useNavigate } from "react-router";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";

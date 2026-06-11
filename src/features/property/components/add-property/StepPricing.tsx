@@ -1,4 +1,4 @@
-import { DollarSign, Info } from "lucide-react";
+import { PoundSterling, Info } from "lucide-react";
 import { preventMinus } from "@/utils/validation";
 
 interface StepPricingProps {
@@ -14,7 +14,7 @@ export default function StepPricing({ formData, handleInputChange, theme }: Step
         <div
           className={`size-12 rounded-xl bg-gradient-to-br ${theme.primary} flex items-center justify-center`}
         >
-          <DollarSign className="size-6 text-white" />
+          <PoundSterling className="size-6 text-white" />
         </div>
         <div>
           <h2 className="text-2xl font-black text-slate-900">

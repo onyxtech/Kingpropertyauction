@@ -43,4 +43,22 @@ router.put('/integrations', protect, authorize('admin'), async (req, res) => {
   }
 });
 
+router.get('/general', protect, authorize('admin'), async (req, res) => {
+  try {
+    const data = await settingsService.getGeneralSettings();
+    res.json({ success: true, data });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+router.put('/general', protect, authorize('admin'), async (req, res) => {
+  try {
+    const data = await settingsService.updateGeneralSettings(req.body, req.user._id);
+    res.json({ success: true, data, message: 'General settings saved' });
+  } catch (e) {
+    res.status(400).json({ success: false, message: e.message });
+  }
+});
+
 export default router;

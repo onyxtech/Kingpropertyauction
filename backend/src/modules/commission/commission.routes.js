@@ -7,6 +7,7 @@ import {
   create,
   updateStatus,
   updateAgentRate,
+  requestWithdrawal,
 } from "./commission.controller.js";
 
 const router = express.Router();
@@ -15,6 +16,7 @@ router.get("/", protect, authorize("admin"), getAll);
 router.get("/my", protect, getMyCommissions);
 router.post("/", protect, authorize("admin"), create);
 router.patch("/:id/status", protect, authorize("admin"), updateStatus);
+router.post("/:id/withdraw", protect, requestWithdrawal);
 router.patch(
   "/agent/:agentId/rate",
   protect,

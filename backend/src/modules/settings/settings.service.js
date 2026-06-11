@@ -3,6 +3,7 @@ import Settings, {
   NotificationRulesSchema,
   OAuthConfigSchema,
   ApiIntegrationsSchema,
+  GeneralSchema,
 } from "./settings.model.js";
 import cache from "../../utils/cache.js";
 
@@ -11,8 +12,8 @@ const SETTINGS_TTL = 5 * 60; // 5 minutes in seconds
 // ─── Default Values ───
 const defaultEmailConfig = EmailConfigSchema.parse({});
 const defaultNotificationRules = NotificationRulesSchema.parse({});
-
 const defaultOAuthConfig = OAuthConfigSchema.parse({});
+const defaultGeneralSettings = GeneralSchema.parse({});
 
 // ─── Core Functions ───
 export const getSetting = async (key) => {
@@ -26,6 +27,7 @@ export const getSetting = async (key) => {
     if (key === "email_config") value = defaultEmailConfig;
     else if (key === "notification_rules") value = defaultNotificationRules;
     else if (key === "oauth_config") value = defaultOAuthConfig;
+    else if (key === "general") value = defaultGeneralSettings;
     else return null;
   } else {
     value = setting.value;
@@ -117,6 +119,17 @@ export const updateApiIntegrations = async (data, userId) => {
     { value: validated, updatedBy: userId },
     { upsert: true, new: true, runValidators: true },
   );
+};
+
+// ─── General Settings ───
+export const getGeneralSettings = async () => {
+  return await getSetting("general");
+};
+
+export const updateGeneralSettings = async (data, userId) => {
+  const current = (await getSetting("general")) || defaultGeneralSettings;
+  const updated = GeneralSchema.parse({ ...current, ...data });
+  return await updateSetting("general", updated, userId);
 };
 
 // ─── OAuth Convenience ───

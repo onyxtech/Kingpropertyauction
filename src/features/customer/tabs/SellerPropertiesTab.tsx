@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { mediaUrl } from "@/lib/mediaUrl";
 import { useNavigate } from "react-router";
 import {
   Building2, Plus, MapPin, Eye, Edit2, Clock, CheckCircle, XCircle,
-  Gavel, BarChart3, DollarSign, Search, X
+  Gavel, BarChart3, PoundSterling, Search, X
 } from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 import { useQueryClient } from "@tanstack/react-query";
@@ -135,7 +136,7 @@ export default function SellerPropertiesTab() {
             { label: "Pending", value: stats.pendingProperties, gradient: "from-amber-500 to-orange-500", shadow: "shadow-amber-200", icon: Clock },
             { label: "Live Auctions", value: stats.liveAuctions, gradient: "from-red-500 to-pink-600", shadow: "shadow-red-200", icon: Gavel },
             { label: "Completed", value: stats.completedAuctions, gradient: "from-purple-500 to-violet-600", shadow: "shadow-purple-200", icon: BarChart3 },
-            { label: "Revenue", value: `£${(stats.totalRevenue || 0).toLocaleString()}`, gradient: "from-green-500 to-emerald-600", shadow: "shadow-green-200", icon: DollarSign },
+            { label: "Revenue", value: `£${(stats.totalRevenue || 0).toLocaleString()}`, gradient: "from-green-500 to-emerald-600", shadow: "shadow-green-200", icon: PoundSterling },
           ].map((s) => {
             const Icon = s.icon;
             return (
@@ -196,7 +197,7 @@ export default function SellerPropertiesTab() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {property.media?.propertyImages?.[0] ? (
-                            <img src={property.media.propertyImages[0]} alt="" className="size-12 rounded-xl object-cover" />
+                            <img src={mediaUrl(property.media.propertyImages[0])} alt="" className="size-12 rounded-xl object-cover" />
                           ) : (
                             <div className="size-12 rounded-xl bg-slate-100 flex items-center justify-center">
                               <Building2 className="size-6 text-slate-400" />

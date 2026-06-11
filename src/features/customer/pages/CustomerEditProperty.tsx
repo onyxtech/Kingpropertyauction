@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   Save, ArrowLeft, ChevronRight, ChevronLeft, CheckCircle, AlertCircle, Loader2,
-  Building2, MapPin, Home, DollarSign, Gavel, Star, Scale, UserCheck, Camera,
+  Building2, MapPin, Home, PoundSterling, Gavel, Star, Scale, UserCheck, Camera,
 } from "lucide-react";
 import CustomerLayout from "../components/CustomerLayout";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
@@ -26,7 +26,7 @@ const STEPS = [
   { number: 1, title: "Basic", icon: Building2 },
   { number: 2, title: "Location", icon: MapPin },
   { number: 3, title: "Specs", icon: Home },
-  { number: 4, title: "Pricing", icon: DollarSign },
+  { number: 4, title: "Pricing", icon: PoundSterling },
   { number: 5, title: "Auction", icon: Gavel },
   { number: 6, title: "Features", icon: Star },
   { number: 7, title: "Legal", icon: Scale },

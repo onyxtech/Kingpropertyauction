@@ -42,6 +42,8 @@ export default function ProfileTab() {
     auctionStarted: true, auctionEnded: true, propertyApproved: true, propertyRejected: true,
     propertySold: true, newBidOnProperty: true, newEnquiry: true, messageReceived: true,
     offerReceived: true,
+    paymentDue: true, paymentOverdue: true,
+    commissionEarned: true, withdrawalUpdate: true, fundsTransferred: true,
   };
   const [notifSettings, setNotifSettings] = useState({
     ...defaultNotifSettings,
@@ -413,6 +415,63 @@ export default function ProfileTab() {
               </div>
             ))}
           </div>
+          {/* Payment Bell Notifications - buyers */}
+          {canBid && (
+            <div className="border-t border-slate-100 pt-4 mt-2">
+              <p className="text-xs font-black text-slate-500 uppercase tracking-wide mb-3">Payment Alerts</p>
+              {[
+                { key: "paymentDue", label: "Payment Due Reminders", desc: "Bell alert when payment is due" },
+                { key: "paymentOverdue", label: "Overdue Payment Alerts", desc: "Bell alert when payment is overdue" },
+              ].map(item => (
+                <div key={item.key} className="flex items-center justify-between py-3 border-b border-slate-50 last:border-0">
+                  <div>
+                    <p className="text-sm font-bold text-slate-700">{item.label}</p>
+                    <p className="text-xs text-slate-400">{item.desc}</p>
+                  </div>
+                  <button
+                    onClick={() => setNotifSettings((s: any) => ({ ...s, [item.key]: !s[item.key] }))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      notifSettings[item.key as keyof typeof notifSettings] !== false ? "bg-blue-600" : "bg-slate-200"
+                    }`}
+                  >
+                    <span className={`inline-block size-4 transform rounded-full bg-white transition-transform shadow-sm ${
+                      notifSettings[item.key as keyof typeof notifSettings] !== false ? "translate-x-6" : "translate-x-1"
+                    }`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Commission Bell Notifications - sellers/agents */}
+          {canListProperties && (
+            <div className="border-t border-slate-100 pt-4 mt-2">
+              <p className="text-xs font-black text-slate-500 uppercase tracking-wide mb-3">Commission Alerts</p>
+              {[
+                { key: "commissionEarned", label: "Commission Earned", desc: "Bell alert when commission is generated" },
+                { key: "withdrawalUpdate", label: "Withdrawal Updates", desc: "Bell alert on withdrawal status changes" },
+                { key: "fundsTransferred", label: "Funds Transferred", desc: "Bell alert when payment sent to bank" },
+              ].map(item => (
+                <div key={item.key} className="flex items-center justify-between py-3 border-b border-slate-50 last:border-0">
+                  <div>
+                    <p className="text-sm font-bold text-slate-700">{item.label}</p>
+                    <p className="text-xs text-slate-400">{item.desc}</p>
+                  </div>
+                  <button
+                    onClick={() => setNotifSettings((s: any) => ({ ...s, [item.key]: !s[item.key] }))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      notifSettings[item.key as keyof typeof notifSettings] !== false ? "bg-blue-600" : "bg-slate-200"
+                    }`}
+                  >
+                    <span className={`inline-block size-4 transform rounded-full bg-white transition-transform shadow-sm ${
+                      notifSettings[item.key as keyof typeof notifSettings] !== false ? "translate-x-6" : "translate-x-1"
+                    }`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex gap-4">
             <SaveButton onClick={handleNotifSave} label="Save Settings" />
           </div>

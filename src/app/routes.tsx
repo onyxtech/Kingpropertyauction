@@ -346,7 +346,7 @@ export const router = createBrowserRouter([
   {
     path: "/dashboard",
     element: lazy_eb(
-      <ProtectedRoute allowedRoles={["buyer", "seller", "agent", "admin", "user"]}>
+      <ProtectedRoute allowedRoles={["buyer", "seller", "agent", "user"]}>
         <CustomerDashboard />
       </ProtectedRoute>,
     ),
@@ -354,7 +354,7 @@ export const router = createBrowserRouter([
   {
     path: "/dashboard/:tab",
     element: lazy_eb(
-      <ProtectedRoute allowedRoles={["buyer", "seller", "agent", "admin", "user"]}>
+      <ProtectedRoute allowedRoles={["buyer", "seller", "agent", "user"]}>
         <CustomerDashboard />
       </ProtectedRoute>,
     ),

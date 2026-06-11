@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router";
+import { mediaUrl } from "@/lib/mediaUrl";
 import { Building2, Plus, MapPin, Eye, Clock, CheckCircle, XCircle } from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 import { useCustomerApi } from "../api/useCustomerApi";
@@ -73,7 +74,7 @@ export default function MyPropertiesTab() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {property.media?.propertyImages?.[0] ? (
-                            <img src={property.media.propertyImages[0]} alt="" className="size-12 rounded-xl object-cover" />
+                            <img src={mediaUrl(property.media.propertyImages[0])} alt="" className="size-12 rounded-xl object-cover" />
                           ) : (
                             <div className="size-12 rounded-xl bg-slate-100 flex items-center justify-center">
                               <Building2 className="size-6 text-slate-400" />

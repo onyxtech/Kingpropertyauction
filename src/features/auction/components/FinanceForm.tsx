@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  DollarSign, Clock, CheckCircle, FileText, X, User, Mail, Phone,
+  PoundSterling, Clock, CheckCircle, FileText, X, User, Mail, Phone,
   Home, MapPin, Building2, Percent, Calendar, Briefcase,
 } from "lucide-react";
 import { preventMinus } from "@/utils/validation";
@@ -100,11 +100,11 @@ export default function FinanceForm({ show, onClose }: FinanceFormProps) {
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><DollarSign className="size-4 text-emerald-600" /> Property Value *</label>
+                        <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><PoundSterling className="size-4 text-emerald-600" /> Property Value *</label>
                         <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required min="0" onKeyDown={preventMinus} value={formData.propertyValue} onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) setFormData({ ...formData, propertyValue: v }); }} placeholder="500000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
                       </div>
                       <div>
-                        <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><DollarSign className="size-4 text-emerald-600" /> Purchase Price *</label>
+                        <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><PoundSterling className="size-4 text-emerald-600" /> Purchase Price *</label>
                         <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required min="0" onKeyDown={preventMinus} value={formData.purchasePrice} onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) setFormData({ ...formData, purchasePrice: v }); }} placeholder="450000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
                       </div>
                     </div>
@@ -114,7 +114,7 @@ export default function FinanceForm({ show, onClose }: FinanceFormProps) {
                 {/* Finance Details */}
                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-3xl p-6 border-2 border-purple-100">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="size-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center"><DollarSign className="size-5 text-white" /></div>
+                    <div className="size-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center"><PoundSterling className="size-5 text-white" /></div>
                     <h3 className="text-2xl font-black text-slate-900">Finance Details</h3>
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
@@ -126,7 +126,7 @@ export default function FinanceForm({ show, onClose }: FinanceFormProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><DollarSign className="size-4 text-purple-600" /> Loan Amount *</label>
+                      <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><PoundSterling className="size-4 text-purple-600" /> Loan Amount *</label>
                       <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required min="0" onKeyDown={preventMinus} value={formData.loanAmount} onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) setFormData({ ...formData, loanAmount: v }); }} placeholder="375000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
                     </div>
                     <div>
@@ -158,7 +158,7 @@ export default function FinanceForm({ show, onClose }: FinanceFormProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><DollarSign className="size-4 text-cyan-600" /> Annual Income *</label>
+                      <label className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2"><PoundSterling className="size-4 text-cyan-600" /> Annual Income *</label>
                       <div className="relative"><span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span><input type="number" required min="0" onKeyDown={preventMinus} value={formData.annualIncome} onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) setFormData({ ...formData, annualIncome: v }); }} placeholder="60000" className="w-full pl-10 pr-5 py-4 bg-white border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-500 font-semibold text-slate-900 shadow-lg transition-all" /></div>
                     </div>
                   </div>

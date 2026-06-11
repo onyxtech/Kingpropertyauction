@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Mail, MapPin, DollarSign, Home, Sparkles, CheckCircle, Zap, TrendingUp, Target } from "lucide-react";
+import { Bell, Mail, MapPin, PoundSterling, Home, Sparkles, CheckCircle, Zap, TrendingUp, Target } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
 import { showSuccess, showError } from "@/lib/toast";
@@ -63,7 +63,7 @@ export default function RegisterAlert() {
   const alertTypes = [
     { icon: Home, title: "Property Type", desc: "Get notified for specific property types", gradient: "from-blue-500 to-indigo-600" },
     { icon: MapPin, title: "Location Based", desc: "Alerts for your preferred areas", gradient: "from-purple-500 to-pink-600" },
-    { icon: DollarSign, title: "Price Range", desc: "Properties within your budget", gradient: "from-emerald-500 to-teal-600" },
+    { icon: PoundSterling, title: "Price Range", desc: "Properties within your budget", gradient: "from-emerald-500 to-teal-600" },
     { icon: TrendingUp, title: "New Listings", desc: "First to know about new auctions", gradient: "from-orange-500 to-amber-600" }
   ];
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, UserCheck, Briefcase, DollarSign, Mail, Phone, User, Lock } from "lucide-react";
+import { X, UserCheck, Briefcase, PoundSterling, Mail, Phone, User, Lock } from "lucide-react";
 import { preventMinus } from "@/utils/validation";
 
 export default function AddAgentModal({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
@@ -89,7 +89,7 @@ export default function AddAgentModal({ onClose, onSuccess }: { onClose: () => v
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-xl font-black text-slate-900 flex items-center gap-2"><DollarSign className="size-6 text-green-600" />Commission & Account</h3>
+            <h3 className="text-xl font-black text-slate-900 flex items-center gap-2"><PoundSterling className="size-6 text-green-600" />Commission & Account</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div><label className="block text-sm font-bold text-slate-700 mb-2">Commission Rate (%)</label><input name="commission" type="number" placeholder="2.5" step="0.1" min="0" onKeyDown={preventMinus} className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500" /></div>
               <div><label className="block text-sm font-bold text-slate-700 mb-2">Specialization</label><select name="specialization" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500"><option value="">Select...</option><option value="residential">Residential</option><option value="commercial">Commercial</option><option value="luxury">Luxury Properties</option><option value="all">All Types</option></select></div>

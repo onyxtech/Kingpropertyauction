@@ -19,6 +19,8 @@ export const useAuctionApi = () => {
         return result;
       },
       enabled: true,
+      refetchOnWindowFocus: true,
+      staleTime: 10000,
     });
   };
 

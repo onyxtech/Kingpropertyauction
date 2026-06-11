@@ -155,6 +155,7 @@ export const offerResponse = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid response" });
     }
 
+    // Update the notification record
     if (notificationId) {
       await Notification.findByIdAndUpdate(notificationId, {
         $addToSet: { readBy: req.user._id },
@@ -162,19 +163,71 @@ export const offerResponse = async (req, res) => {
       });
     }
 
+    // Persist response to payment.notifiedBidders
+    if (propertyId) {
+      const Payment = (await import("../payment/payment.model.js")).default;
+      await Payment.findOneAndUpdate(
+        {
+          property: propertyId,
+          status: "withdrawn",
+          "notifiedBidders.user": req.user._id,
+        },
+        {
+          $set: {
+            "notifiedBidders.$.status": response,
+            "notifiedBidders.$.respondedAt": new Date(),
+          }
+        }
+      ).catch(e => console.warn("Failed to update notifiedBidders on payment:", e.message));
+    }
+
+    // Notify admins (bell)
     const { emitToAdmins } = await import("../../socket.js");
     const responseNotif = {
       type: "system",
       icon: response === "accepted" ? "check" : "x",
-      message: `Buyer ${req.user.name || req.user.email} has ${response} the property offer${message ? `: "${message}"` : "."}`,
-      link: propertyId ? `/admin/properties/${propertyId}` : "/admin/offers",
+      message: `Buyer ${req.user.name || req.user.email} has ${response} the property offer.`,
+      link: "/admin/offers",
       color: response === "accepted" ? "green" : "red",
       targetUser: null,
     };
     await Notification.create(responseNotif);
     emitToAdmins("new_notification", responseNotif);
 
-    res.json({ success: true, message: `Offer ${response} successfully` });
+    // Admin email
+    try {
+      const { sendEmail } = await import("./email.service.js");
+      const { isNotificationEnabled } = await import("../settings/settings.service.js");
+      const User = (await import("../user/user.model.js")).default;
+      const Property = (await import("../property/property.model.js")).default;
+
+      const property = propertyId
+        ? await Property.findById(propertyId).select("propertyTitle").lean()
+        : null;
+
+      const admins = await User.find({ role: "admin" }).select("email name").lean();
+      if (await isNotificationEnabled("offerNotification")) {
+        for (const admin of admins) {
+          if (!admin.email) continue;
+          sendEmail({
+            to: admin.email,
+            subject: `${response === "accepted" ? "✅" : "❌"} Offer ${response} - ${property?.propertyTitle || "Property"}`,
+            templateKey: "offerresponseadmin",
+            variables: {
+              admin_name: admin.name || "Admin",
+              buyer_name: req.user.name || req.user.email,
+              property_title: property?.propertyTitle || "the property",
+              response: response,
+              dashboard_url: `${process.env.CLIENT_URL || "http://localhost:5173"}/admin/offers`,
+            },
+          }).catch((e) => console.warn("offerResponseAdmin email failed:", e.message));
+        }
+      }
+    } catch (e) {
+      console.warn("Offer response admin email setup failed:", e.message);
+    }
+
+    res.json({ success: true, message: `Offer ${response} successfully`, response });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

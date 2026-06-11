@@ -48,6 +48,16 @@ const ensureGoogleStrategy = async () => {
                 canListProperties: false,
               },
             });
+          } else {
+            const needsUpdate = !user.isActive ||
+              (user.role === "buyer" && !user.permissions?.canBid);
+            if (needsUpdate) {
+              user = await User.findByIdAndUpdate(
+                user._id,
+                { isActive: true, "permissions.canBid": true },
+                { new: true }
+              );
+            }
           }
 
           return done(null, user);
@@ -116,6 +126,16 @@ const ensureGitHubStrategy = async () => {
                 canListProperties: false,
               },
             });
+          } else {
+            const needsUpdate = !user.isActive ||
+              (user.role === "buyer" && !user.permissions?.canBid);
+            if (needsUpdate) {
+              user = await User.findByIdAndUpdate(
+                user._id,
+                { isActive: true, "permissions.canBid": true },
+                { new: true }
+              );
+            }
           }
 
           return done(null, user);
@@ -160,6 +180,16 @@ const ensureFacebookStrategy = async () => {
             canListProperties: false,
           },
         });
+      } else {
+        const needsUpdate = !user.isActive ||
+          (user.role === 'buyer' && !user.permissions?.canBid);
+        if (needsUpdate) {
+          user = await User.findByIdAndUpdate(
+            user._id,
+            { isActive: true, 'permissions.canBid': true },
+            { new: true }
+          );
+        }
       }
 
       return done(null, user);

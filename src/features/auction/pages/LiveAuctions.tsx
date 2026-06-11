@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router";
+import { mediaUrl } from "@/lib/mediaUrl";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuctionSocket } from "@/hooks/useAuctionSocket";
 import {
@@ -40,9 +41,11 @@ export default function LiveAuctions() {
     // Get first property image for the card
     const firstProperty = a.properties?.[0];
     const isPopulated = typeof firstProperty === "object" && firstProperty.propertyTitle;
-    const cardImage = isPopulated && firstProperty?.media?.propertyImages?.[0]
-      ? firstProperty.media.propertyImages[0]
-      : a.auctionImage || "https://images.unsplash.com/photo-1627257363565-4bc682c69e8e?w=1080";
+    const rawCardImage = (isPopulated && firstProperty?.media?.propertyImages?.[0])
+      || a.auctionImage || null;
+    const cardImage = rawCardImage
+      ? mediaUrl(rawCardImage)
+      : "https://images.unsplash.com/photo-1627257363565-4bc682c69e8e?w=1080";
 
     return {
       id: a._id,

@@ -1,23 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useTheme } from "@/app/hooks/useTheme";
 import { useCustomerNotifications } from "../hooks/useCustomerNotifications";
 import { apiClient } from "@/lib/apiClient";
 import { showSuccess, showError } from "@/lib/toast";
 import { Bell, Home, Trophy, Clock, CheckCircle, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getSocket } from "@/lib/socket";
 
 export default function OffersTab() {
   const navigate = useNavigate();
   const theme = useTheme();
   const { notifications, markAsRead } = useCustomerNotifications();
+  const queryClient = useQueryClient();
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [responses, setResponses] = useState<Record<string, "accepted" | "declined">>({});
 
-  const offerNotifications = notifications.filter((n: any) =>
-    n.message?.toLowerCase().includes("opportunity") ||
-    n.message?.toLowerCase().includes("offer") ||
-    (n.type === "lead" && n.icon === "home")
+  const offerNotifications = notifications.filter(
+    (n: any) => n.type === "offer"
   );
+
+  const seen = new Set<string>();
+  const uniqueOffers = offerNotifications.filter((n: any) => {
+    const key = n.metadata?.propertyId || n.propertyId || n._id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  useEffect(() => {
+    const socket = getSocket();
+    const handleNewNotification = (data: any) => {
+      if (data.type === "offer") {
+        queryClient.invalidateQueries({ queryKey: ["customer-notifications"] });
+      }
+    };
+    socket.on("new_notification", handleNewNotification);
+    return () => {
+      socket.off("new_notification", handleNewNotification);
+    };
+  }, [queryClient]);
 
   const handleAccept = async (notif: any) => {
     setRespondingId(notif._id);
@@ -27,13 +49,12 @@ export default function OffersTab() {
         body: JSON.stringify({
           notificationId: notif._id,
           response: "accepted",
-          propertyId: notif.propertyId || null,
+          propertyId: notif.metadata?.propertyId || notif.propertyId || null,
         }),
       });
       markAsRead(notif._id);
       setResponses(prev => ({ ...prev, [notif._id]: "accepted" }));
-      showSuccess("Offer accepted!", "Our team will be in touch shortly.");
-      if (notif.link) navigate(notif.link);
+      showSuccess("Interest registered! ✅", "Our team will contact you shortly to discuss this property.");
     } catch (err: any) {
       showError("Response failed", err?.message);
     } finally {
@@ -41,17 +62,24 @@ export default function OffersTab() {
     }
   };
 
-  const handleDecline = async (notifId: string) => {
+  const handleDecline = async (notif: any) => {
+    setRespondingId(notif._id);
     try {
       await apiClient.fetch("/notifications/offer-response", {
         method: "POST",
-        body: JSON.stringify({ notificationId: notifId, response: "declined" }),
+        body: JSON.stringify({
+          notificationId: notif._id,
+          response: "declined",
+          propertyId: notif.metadata?.propertyId || notif.propertyId || null,
+        }),
       });
-      markAsRead(notifId);
-      setResponses(prev => ({ ...prev, [notifId]: "declined" }));
+      markAsRead(notif._id);
+      setResponses(prev => ({ ...prev, [notif._id]: "declined" }));
       showSuccess("Offer declined");
     } catch (err: any) {
       showError("Response failed", err?.message);
+    } finally {
+      setRespondingId(null);
     }
   };
 
@@ -88,7 +116,7 @@ export default function OffersTab() {
       </div>
 
       {/* Offers List */}
-      {offerNotifications.length === 0 ? (
+      {uniqueOffers.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl border border-slate-200">
           <div className="size-20 bg-amber-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
             <Trophy className="size-10 text-amber-500" />
@@ -107,9 +135,9 @@ export default function OffersTab() {
         </div>
       ) : (
         <div className="space-y-4">
-          {offerNotifications.map((notif: any) => {
-            const response = responses[notif._id];
-            const isResponded = !!response;
+          {uniqueOffers.map((notif: any) => {
+            const resp = responses[notif._id] || notif.offerResponse;
+            const isResponded = !!resp;
 
             return (
               <div
@@ -120,15 +148,15 @@ export default function OffersTab() {
                     : "border-amber-200 shadow-amber-100"
                 }`}
               >
-                {response === "accepted" && (
+                {resp === "accepted" && (
                   <div className="bg-emerald-500 px-5 py-2 flex items-center gap-2">
                     <CheckCircle className="size-4 text-white" />
                     <span className="text-white text-xs font-bold">
-                      You accepted this offer — viewing property
+                      Interest registered — our team will contact you
                     </span>
                   </div>
                 )}
-                {response === "declined" && (
+                {resp === "declined" && (
                   <div className="bg-slate-400 px-5 py-2 flex items-center gap-2">
                     <X className="size-4 text-white" />
                     <span className="text-white text-xs font-bold">Offer declined</span>
@@ -147,6 +175,12 @@ export default function OffersTab() {
                           <p className="text-sm text-slate-600 mt-1 leading-relaxed">
                             {notif.message}
                           </p>
+                          {notif.metadata?.customMessage && (
+                            <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                              <p className="text-xs font-bold text-amber-800 mb-1">Message from King Property Auction:</p>
+                              <p className="text-sm text-slate-700">{notif.metadata.customMessage}</p>
+                            </div>
+                          )}
                           <div className="flex items-center gap-2 mt-2">
                             <Clock className="size-3 text-slate-400" />
                             <p className="text-xs text-slate-400">
@@ -167,25 +201,49 @@ export default function OffersTab() {
                         )}
                       </div>
 
-                      {!isResponded && (
-                        <div className="flex gap-3 mt-4">
-                          <button
-                            onClick={() => handleAccept(notif)}
-                            disabled={respondingId === notif._id}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-sm font-bold hover:scale-105 transition-all shadow-md shadow-emerald-200 flex items-center justify-center gap-2 disabled:opacity-50"
-                          >
-                            <CheckCircle className="size-4" />
-                            View Property
-                          </button>
-                          <button
-                            onClick={() => handleDecline(notif._id)}
-                            className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
-                          >
-                            <X className="size-4" />
-                            Not Interested
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex gap-2 mt-3 flex-wrap">
+                        {resp === "accepted" ? (
+                          <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-xl text-xs font-bold flex items-center gap-1">
+                            <CheckCircle className="size-3" />
+                            Accepted - Team will contact you
+                          </span>
+                        ) : resp === "declined" ? (
+                          <span className="px-3 py-1.5 bg-slate-100 text-slate-500 rounded-xl text-xs font-bold">
+                            Declined
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleAccept(notif)}
+                              disabled={respondingId === notif._id}
+                              className="px-3 py-1.5 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition-all disabled:opacity-50 flex items-center gap-1"
+                            >
+                              <CheckCircle className="size-3" />
+                              {respondingId === notif._id ? "Processing..." : "Yes, I'm Interested"}
+                            </button>
+                            <button
+                              onClick={() => handleDecline(notif)}
+                              disabled={respondingId === notif._id}
+                              className="px-3 py-1.5 bg-red-100 text-red-600 rounded-xl text-xs font-bold hover:bg-red-200 transition-all disabled:opacity-50 flex items-center gap-1"
+                            >
+                              <X className="size-3" />
+                              Not Interested
+                            </button>
+                            {(notif.metadata?.propertyUrl || notif.link) && (
+                              <button
+                                onClick={() => {
+                                  const url = notif.metadata?.propertyUrl || notif.link;
+                                  navigate(url);
+                                }}
+                                className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all flex items-center gap-1"
+                              >
+                                <Home className="size-3" />
+                                View Property
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

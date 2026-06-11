@@ -14,6 +14,12 @@ const queryClient = new QueryClient({
   },
 });
 
+if (typeof window !== "undefined") {
+  window.addEventListener("app:logout", () => {
+    queryClient.clear();
+  });
+}
+
 // Scroll to top on route change
 const originalPushState = window.history.pushState;
 window.history.pushState = function (...args) {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { mediaUrl } from "@/lib/mediaUrl";
 import { useNavigate } from "react-router";
 import {
   CheckCircle, XCircle, Clock, User, Shield,
@@ -180,7 +181,7 @@ export default function Approvals() {
                     <div className="flex items-start gap-4 p-5">
                       {prop.media?.propertyImages?.[0] ? (
                         <img
-                          src={prop.media.propertyImages[0]}
+                          src={mediaUrl(prop.media.propertyImages[0])}
                           className="w-20 h-20 rounded-xl object-cover flex-shrink-0"
                           alt=""
                         />

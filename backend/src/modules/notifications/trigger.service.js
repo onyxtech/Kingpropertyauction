@@ -598,70 +598,120 @@ notificationService.on(
 notificationService.on(
   NotificationEvents.AUCTION_STARTED,
   async ({ auctionId }) => {
-    const enabled = await isNotificationEnabled("auctionStarted");
-    if (!enabled) return;
-
-    const auction = await Auction.findById(auctionId);
-    if (!auction) return;
-
-    // Only notify previous bidders and property owners
-    const previousBidderIds = await Bid.distinct("bidder", { auction: auction._id });
-    const auctionForOwners = await Auction.findById(auctionId).populate("properties", "createdBy");
-    const propertyOwnerIds = (auctionForOwners?.properties || [])
-      .map(p => p.createdBy?.toString())
-      .filter(Boolean);
-    const relevantIds = [...new Set([
-      ...previousBidderIds.map(id => id.toString()),
-      ...propertyOwnerIds,
-    ])];
-    const users = await User.find({ _id: { $in: relevantIds }, isActive: true });
-
-    for (const user of users) {
-      await sendEmail({
-        to: user.email,
-        subject: `🔴 Auction Now Live - ${auction.auctionTitle}`,
-        templateKey: "auctionStarted",
-        variables: {
-          user_name: user.name,
-          auction_name: auction.auctionTitle,
-          lot_count: String(auction.properties?.length || 0),
-          auction_url: `${process.env.CLIENT_URL}/auctions/${auction.slug || auction._id}`,
-        },
-      });
-    }
-
-    // Admin notification for auction started
-    await Notification.create({
-      type: "auction_live",
-      icon: "gavel",
-      message: `Auction started: ${auction.auctionTitle}`,
-      link: `/admin/auctions`,
-      color: "green",
-      targetUser: null,
-    }).catch(e => console.warn("Admin auction start notification failed:", e.message));
-
-    // Notify all buyers who have previously bid on this auction
     try {
-      const bidderIds = await Bid.distinct("bidder", { auction: auction._id });
-      const { emitToUser } = await import("../../socket.js");
-      for (const bidderId of bidderIds) {
-        await Notification.create({
-          type: "auction_live",
-          icon: "gavel",
-          message: `Auction is now live: ${auction.auctionTitle}`,
-          link: `/auctions/${auction.slug || auction._id}`,
-          color: "green",
-          targetUser: bidderId,
-        }).catch(e => console.warn("Buyer auction start notification failed:", e.message));
+      const enabled = await isNotificationEnabled("auctionStarted");
+      if (!enabled) return;
 
-        emitToUser(bidderId.toString(), "new_notification", {
-          type: "auction_live",
-          message: `Auction is now live: ${auction.auctionTitle}`,
+      const auction = await Auction.findById(auctionId)
+        .populate("properties", "createdBy propertyTitle");
+      if (!auction) return;
+
+      const { emitToUser } = await import("../../socket.js");
+      const auctionUrl = `${process.env.CLIENT_URL}/auctions/${auction.slug || auction._id}`;
+
+      // Get property owner IDs
+      const ownerIds = (auction.properties || [])
+        .map(p => p.createdBy?.toString())
+        .filter(Boolean);
+
+      // ALL active buyers excluding owners
+      const allBuyers = await User.find({
+        isActive: true,
+        "permissions.canBid": true,
+        _id: { $nin: ownerIds },
+      });
+
+      // Property owners
+      const owners = await User.find({
+        _id: { $in: ownerIds },
+        isActive: true,
+      });
+
+      // Admin users
+      const admins = await User.find({
+        role: "admin",
+        isActive: true,
+      });
+
+      // 1. Send "Bidding is Open" to ALL buyers
+      for (const buyer of allBuyers) {
+        await sendEmail({
+          to: buyer.email,
+          subject: `🔴 Auction Now Live - ${auction.auctionTitle}`,
+          templateKey: "auctionStarted",
+          variables: {
+            user_name: buyer.name,
+            auction_name: auction.auctionTitle,
+            lot_count: String(auction.properties?.length || 0),
+            auction_url: auctionUrl,
+          },
+        }).catch(e => console.warn("Buyer auction start email failed:", e.message));
+
+        await Notification.create({
+          type: "auction",
+          icon: "gavel",
+          message: `🔴 Auction Now Live: ${auction.auctionTitle} — Start bidding!`,
           link: `/auctions/${auction.slug || auction._id}`,
+          color: "red",
+          targetUser: buyer._id,
+        }).catch(e => console.warn("Buyer start notification failed:", e.message));
+
+        emitToUser(buyer._id.toString(), "new_notification", {
+          type: "auction",
+          message: `🔴 Auction Now Live: ${auction.auctionTitle}`,
+          link: `/auctions/${auction.slug || auction._id}`,
+          color: "red",
         });
       }
+
+      // 2. Send "Your Auction Started" to property owners
+      const sellerEnabled = await isNotificationEnabled("auctionStartedSeller");
+      if (sellerEnabled) {
+        for (const owner of owners) {
+          await sendEmail({
+            to: owner.email,
+            subject: `🎯 Your Auction is Now Live - ${auction.auctionTitle}`,
+            templateKey: "auctionStartedSeller",
+            variables: {
+              user_name: owner.name,
+              auction_name: auction.auctionTitle,
+              lot_count: String(auction.properties?.length || 0),
+              auction_url: auctionUrl,
+            },
+          }).catch(e => console.warn("Owner auction start email failed:", e.message));
+
+          await Notification.create({
+            type: "auction",
+            icon: "gavel",
+            message: `🎯 Your auction "${auction.auctionTitle}" is now live!`,
+            link: `/auctions/${auction.slug || auction._id}`,
+            color: "green",
+            targetUser: owner._id,
+          }).catch(e => console.warn("Owner start notification failed:", e.message));
+
+          emitToUser(owner._id.toString(), "new_notification", {
+            type: "auction",
+            message: `🎯 Your auction "${auction.auctionTitle}" is now live!`,
+            link: `/auctions/${auction.slug || auction._id}`,
+            color: "green",
+          });
+        }
+      }
+
+      // 3. Admin bell notification
+      for (const admin of admins) {
+        await Notification.create({
+          type: "auction",
+          icon: "gavel",
+          message: `Auction started: ${auction.auctionTitle}`,
+          link: `/admin/auctions`,
+          color: "purple",
+          targetUser: null,
+        }).catch(e => console.warn("Admin auction start notification failed:", e.message));
+      }
+
     } catch (e) {
-      console.warn("Buyer auction start notifications failed:", e.message);
+      console.warn("AUCTION_STARTED handler error:", e.message);
     }
   },
 );
@@ -722,47 +772,6 @@ notificationService.on(
       targetUser: null,
     }).catch(e => console.warn("Admin auction end notification failed:", e.message));
 
-    // Notify property owners (sellers/agents)
-    try {
-      const auctionWithProps = await Auction.findById(auctionId).populate({
-        path: "properties",
-        select: "propertyTitle createdBy currentBid pricing",
-        populate: { path: "createdBy", select: "_id name email" },
-      });
-
-      if (auctionWithProps?.properties?.length) {
-        const { emitToUser } = await import("../../socket.js");
-
-        for (const prop of auctionWithProps.properties) {
-          if (!prop.createdBy?._id) continue;
-
-          const reserveMet = (prop.currentBid || 0) >= (prop.pricing?.reservePrice || 0) &&
-            (prop.pricing?.reservePrice || 0) > 0;
-
-          const msg = reserveMet
-            ? `🎉 Your property "${prop.propertyTitle}" sold for £${(prop.currentBid || 0).toLocaleString()}!`
-            : `Auction ended: "${prop.propertyTitle}" — Reserve not met (Highest: £${(prop.currentBid || 0).toLocaleString()})`;
-
-          await Notification.create({
-            type: reserveMet ? "property_sold" : "property",
-            icon: reserveMet ? "check" : "x-circle",
-            message: msg,
-            link: "/dashboard/my-properties",
-            color: reserveMet ? "green" : "orange",
-            targetUser: prop.createdBy._id,
-          }).catch(e => console.warn("Seller auction end notification failed:", e.message));
-
-          emitToUser(prop.createdBy._id.toString(), "new_notification", {
-            type: reserveMet ? "property_sold" : "property",
-            message: msg,
-            link: "/dashboard/my-properties",
-            color: reserveMet ? "green" : "orange",
-          });
-        }
-      }
-    } catch (e) {
-      console.warn("Seller auction end notifications failed:", e.message);
-    }
   },
 );
 

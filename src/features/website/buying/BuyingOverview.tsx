@@ -1,4 +1,4 @@
-import { Zap, CheckCircle, Home, TrendingUp, Shield, Award, Sparkles, Target, Users, Clock, X, User, Mail, Phone, FileText, Landmark, DollarSign } from "lucide-react";
+import { Zap, CheckCircle, Home, TrendingUp, Shield, Award, Sparkles, Target, Users, Clock, X, User, Mail, Phone, FileText, Landmark, PoundSterling } from "lucide-react";
 import { useState } from "react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
@@ -330,7 +330,7 @@ export default function BuyingOverview() {
                     </div>
                     <div>
                       <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-                        <DollarSign className="size-4 text-amber-600" />
+                        <PoundSterling className="size-4 text-amber-600" />
                         Budget Range *
                       </label>
                       <input
@@ -403,7 +403,7 @@ export default function BuyingOverview() {
                     </div>
                     <div>
                       <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-                        <DollarSign className="size-4 text-teal-600" />
+                        <PoundSterling className="size-4 text-teal-600" />
                         Is your finance arranged? *
                       </label>
                       <select

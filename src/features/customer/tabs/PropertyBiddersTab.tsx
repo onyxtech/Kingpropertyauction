@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { mediaUrl } from "@/lib/mediaUrl";
 import { Users, Gavel, Trophy, Eye, RefreshCw, Search, X } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useTheme } from "@/app/hooks/useTheme";
@@ -159,7 +160,7 @@ export default function PropertyBiddersTab() {
               <div className="flex items-center gap-4 p-5 border-b border-slate-100 bg-slate-50">
                 {item.property?.media?.propertyImages?.[0] ? (
                   <img
-                    src={item.property.media.propertyImages[0]}
+                    src={mediaUrl(item.property.media.propertyImages[0])}
                     className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
                     alt=""
                   />

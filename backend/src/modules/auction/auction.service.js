@@ -490,6 +490,84 @@ export const completeAuction = async (auctionId) => {
       notificationService
         .emit(NotificationEvents.PROPERTY_SOLD, { propertyId: property._id })
         .catch((e) => console.error("Property sold event failed:", e.message));
+
+      // Auto-create Payment + Commission records
+      try {
+        const Payment = (await import("../payment/payment.model.js")).default;
+        const Commission = (await import("../commission/commission.model.js")).default;
+        const User = (await import("../user/user.model.js")).default;
+        const { getSetting } = await import("../settings/settings.service.js");
+
+        const generalSettings = (await getSetting("general")) || {};
+        const paymentDueHours = generalSettings.paymentDueHours || 48;
+        const defaultCommissionRate = generalSettings.defaultCommissionRate || 5;
+
+        const { sendEmail } = await import("../notifications/email.service.js");
+        const { isNotificationEnabled } = await import("../settings/settings.service.js");
+        const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
+
+        if (winner?._id) {
+          const dueDate = new Date(Date.now() + paymentDueHours * 60 * 60 * 1000);
+          await Payment.create({
+            buyer: winner._id,
+            property: property._id,
+            auction: auctionId,
+            amount: currentBid,
+            status: "pending",
+            dueDate,
+          });
+          if (winner?.email && await isNotificationEnabled("paymentDue")) {
+            sendEmail({
+              to: winner.email,
+              subject: `💳 Payment Due - ${freshProperty?.propertyTitle || property.propertyTitle || "Property"}`,
+              templateKey: "paymentDue",
+              variables: {
+                user_name: winner.name || "Bidder",
+                property_title: freshProperty?.propertyTitle || property.propertyTitle || "the property",
+                amount: `£${currentBid.toLocaleString()}`,
+                due_datetime: dueDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }),
+                auction_name: freshProperty?.propertyTitle || "Auction",
+                dashboard_url: `${siteUrl}/dashboard/payments`,
+              },
+            }).catch((e) => console.warn("paymentDue email failed:", e.message));
+          }
+        }
+
+        if (freshProperty?.createdBy) {
+          const propOwner = await User.findById(freshProperty.createdBy).select("role agentDetails name email").lean();
+          if (propOwner && (propOwner.role === "agent" || propOwner.role === "seller")) {
+            const rate = propOwner.agentDetails?.commissionRate || defaultCommissionRate;
+            const commissionAmount = (currentBid * rate) / 100;
+            await Commission.create({
+              agent: freshProperty.createdBy,
+              property: property._id,
+              auction: auctionId,
+              buyer: winner?._id || null,
+              salePrice: currentBid,
+              commissionRate: rate,
+              commissionAmount,
+              status: "pending",
+            });
+            if (propOwner.email && await isNotificationEnabled("commissionEarned")) {
+              sendEmail({
+                to: propOwner.email,
+                subject: `💰 Commission Earned - ${freshProperty?.propertyTitle || property.propertyTitle || "Property"}`,
+                templateKey: "commissionEarned",
+                variables: {
+                  user_name: propOwner.name || "Agent",
+                  property_title: freshProperty?.propertyTitle || property.propertyTitle || "the property",
+                  commission_amount: `£${commissionAmount.toLocaleString()}`,
+                  commission_rate: rate,
+                  sale_price: `£${currentBid.toLocaleString()}`,
+                  dashboard_url: `${siteUrl}/dashboard/payments`,
+                },
+              }).catch((e) => console.warn("commissionEarned email failed:", e.message));
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Auto-create Payment/Commission failed:", e.message);
+      }
     } else if (currentBid > 0 && currentBid < reservePrice) {
       await Property.findByIdAndUpdate(property._id, {
         propertyStatus: "unsold",

@@ -10,13 +10,18 @@ const commissionSchema = new mongoose.Schema({
   commissionAmount: { type: Number, required: true },
   status: {
     type: String,
-    enum: ["pending", "approved", "paid", "disputed"],
+    enum: ["pending", "approved", "paid", "disputed", "voided"],
     default: "pending",
     index: true,
   },
   notes: { type: String },
   paidAt: { type: Date },
   paidBy: { type: mongoose.Schema.ObjectId, ref: "User" },
+  withdrawalRequest: {
+    requested: { type: Boolean, default: false },
+    requestedAt: { type: Date },
+    expectedPaymentDate: { type: Date },
+  },
 }, { timestamps: true });
 
 commissionSchema.index({ agent: 1, status: 1 });

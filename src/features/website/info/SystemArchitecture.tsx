@@ -1,4 +1,4 @@
-import { ArrowRight, Database, Server, Globe, Shield, Upload, Users, FileText, Briefcase, CheckSquare, FileSpreadsheet, Settings, Lock, FileCheck, Zap, GitBranch, AlertCircle, Eye, Building2, Gavel, TrendingUp, UserCheck, CreditCard, BrainCircuit, DollarSign, Send, Bell, BarChart3, Menu, Mail, Smartphone, Map, Video } from 'lucide-react';
+import { ArrowRight, Database, Server, Globe, Shield, Upload, Users, FileText, Briefcase, CheckSquare, FileSpreadsheet, Settings, Lock, FileCheck, Zap, GitBranch, AlertCircle, Eye, Building2, Gavel, TrendingUp, UserCheck, CreditCard, BrainCircuit, PoundSterling, Send, Bell, BarChart3, Menu, Mail, Smartphone, Map, Video } from 'lucide-react';
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 
 export default function SystemArchitecture() {
@@ -334,7 +334,7 @@ export default function SystemArchitecture() {
                     { name: 'Auctions', icon: Gavel, desc: 'View auctions', methods: 'GET' },
                     { name: 'Bids', icon: TrendingUp, desc: 'Place bids', methods: 'GET, POST' },
                     { name: 'Valuations', icon: BrainCircuit, desc: 'AI valuation', methods: 'POST' },
-                    { name: 'Mortgages', icon: DollarSign, desc: 'Calculate finance', methods: 'POST' },
+                    { name: 'Mortgages', icon: PoundSterling, desc: 'Calculate finance', methods: 'POST' },
                     { name: 'Contact Forms', icon: Mail, desc: 'Submit inquiries', methods: 'POST' },
                     { name: 'Alerts', icon: Bell, desc: 'Property alerts', methods: 'GET, POST' },
                     { name: 'User Profile', icon: Users, desc: 'Account management', methods: 'GET, PUT' },

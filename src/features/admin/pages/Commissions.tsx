@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Percent, CheckCircle, Clock, DollarSign, Search, RefreshCw, TrendingUp } from "lucide-react";
+import { Percent, CheckCircle, Clock, Search, RefreshCw, TrendingUp, ArrowDownCircle, XCircle } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 import { showSuccess, showError } from "@/lib/toast";
+import { getSocket } from "@/lib/socket";
+import ConfirmModal from "@/features/shared/components/ConfirmModal";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
   approved: "bg-blue-100 text-blue-700",
   paid: "bg-green-100 text-green-700",
   disputed: "bg-red-100 text-red-700",
+  voided: "bg-slate-100 text-slate-500",
 };
 
 export default function Commissions() {
@@ -18,6 +21,13 @@ export default function Commissions() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean; title: string; message: string;
+    confirmLabel: string; variant: any; action: () => void;
+  }>({ show: false, title: "", message: "", confirmLabel: "Confirm", variant: "primary", action: () => {} });
+
+  const closeConfirm = () => setConfirmModal(s => ({ ...s, show: false }));
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-commissions", statusFilter],
@@ -27,7 +37,30 @@ export default function Commissions() {
       const result = await apiClient.fetch(`/commissions?${params}`);
       return result;
     },
+    refetchInterval: 30000,
   });
+
+  useEffect(() => {
+    const socket = getSocket();
+    const handleUpdate = (data: any) => {
+      if (
+        data.type === "system" ||
+        data.message?.toLowerCase().includes("commission") ||
+        data.message?.toLowerCase().includes("withdrawal")
+      ) {
+        queryClient.invalidateQueries({ queryKey: ["admin-commissions"] });
+      }
+    };
+    const handleCommissionUpdated = () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-commissions"] });
+    };
+    socket.on("new_notification", handleUpdate);
+    socket.on("commission_updated", handleCommissionUpdated);
+    return () => {
+      socket.off("new_notification", handleUpdate);
+      socket.off("commission_updated", handleCommissionUpdated);
+    };
+  }, [queryClient]);
 
   const updateCommission = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -42,7 +75,7 @@ export default function Commissions() {
   });
 
   const commissions = data?.data || [];
-  const stats = data?.stats || { totalAmount: 0, paidAmount: 0, pendingAmount: 0, count: 0 };
+  const stats = data?.stats || { totalAmount: 0, paidAmount: 0, pendingAmount: 0, voidedAmount: 0, count: 0, activeCount: 0 };
 
   const filtered = commissions.filter((c: any) =>
     !search ||
@@ -51,11 +84,14 @@ export default function Commissions() {
   );
 
   const handleUpdateStatus = async (id: string, status: string) => {
+    setProcessingId(id);
     try {
       await updateCommission.mutateAsync({ id, status });
       showSuccess(`Commission marked as ${status}`);
     } catch (err: any) {
       showError("Update failed", err.message);
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -76,17 +112,18 @@ export default function Commissions() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Total Commission", value: `£${stats.totalAmount?.toLocaleString() || 0}`, icon: TrendingUp, color: "purple" },
-            { label: "Paid Out", value: `£${stats.paidAmount?.toLocaleString() || 0}`, icon: CheckCircle, color: "green" },
-            { label: "Pending", value: `£${stats.pendingAmount?.toLocaleString() || 0}`, icon: Clock, color: "yellow" },
-            { label: "Total Records", value: stats.count || 0, icon: DollarSign, color: "blue" },
-          ].map(({ label, value, icon: Icon, color }) => (
+            { label: "Active Commission", value: `£${(stats.totalAmount || 0).toLocaleString()}`, icon: TrendingUp, color: "purple", sub: `${stats.activeCount || 0} active record(s)` },
+            { label: "Paid Out", value: `£${(stats.paidAmount || 0).toLocaleString()}`, icon: CheckCircle, color: "green", sub: "Confirmed payments" },
+            { label: "Pending", value: `£${(stats.pendingAmount || 0).toLocaleString()}`, icon: Clock, color: "yellow", sub: "Awaiting approval" },
+            { label: "Voided", value: `£${(stats.voidedAmount || 0).toLocaleString()}`, icon: XCircle, color: "slate", sub: "Cancelled / disputed" },
+          ].map(({ label, value, icon: Icon, color, sub }) => (
             <div key={label} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
               <div className="flex items-center gap-2 mb-2">
                 <Icon className={`size-4 text-${color}-600`} />
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">{label}</p>
               </div>
               <p className={`text-xl font-black text-${color}-600`}>{value}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{sub}</p>
             </div>
           ))}
         </div>
@@ -108,7 +145,7 @@ export default function Commissions() {
             className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none"
           >
             <option value="">All Status</option>
-            {["pending", "approved", "paid", "disputed"].map(s => (
+            {["pending", "approved", "paid", "disputed", "voided"].map(s => (
               <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
             ))}
           </select>
@@ -130,7 +167,7 @@ export default function Commissions() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
-                    {["Agent", "Property", "Sale Price", "Rate", "Commission", "Status", "Actions"].map(h => (
+                    {["Agent", "Property", "Sale Price", "Rate", "Commission", "Status", "Withdrawal", "Actions"].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-black text-slate-500 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
@@ -157,20 +194,51 @@ export default function Commissions() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex gap-1">
+                        {c.withdrawalRequest?.requested ? (
+                          <div>
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-lg flex items-center gap-1 w-fit">
+                              <ArrowDownCircle className="size-3" />
+                              Requested
+                            </span>
+                            {c.withdrawalRequest.expectedPaymentDate && (
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                By {new Date(c.withdrawalRequest.expectedPaymentDate).toLocaleDateString("en-GB")}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1 flex-wrap">
                           {c.status === "pending" && (
                             <button
-                              onClick={() => handleUpdateStatus(c._id, "approved")}
-                              disabled={updateCommission.isPending}
+                              onClick={() => setConfirmModal({
+                                show: true,
+                                title: "Approve Commission?",
+                                message: `Approve £${c.commissionAmount?.toLocaleString()} for ${c.agent?.name || "agent"}. They can then request a withdrawal.`,
+                                confirmLabel: "Approve",
+                                variant: "primary",
+                                action: () => { closeConfirm(); handleUpdateStatus(c._id, "approved"); },
+                              })}
+                              disabled={processingId === c._id}
                               className="px-2 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors disabled:opacity-50"
                             >
                               Approve
                             </button>
                           )}
-                          {c.status === "approved" && (
+                          {(c.status === "approved" || (c.status === "pending" && c.withdrawalRequest?.requested)) && (
                             <button
-                              onClick={() => handleUpdateStatus(c._id, "paid")}
-                              disabled={updateCommission.isPending}
+                              onClick={() => setConfirmModal({
+                                show: true,
+                                title: "Mark Commission as Paid?",
+                                message: `Mark £${c.commissionAmount?.toLocaleString()} as paid + transferred to ${c.agent?.name || "agent"}. They will be notified by email.`,
+                                confirmLabel: "Mark Paid",
+                                variant: "success",
+                                action: () => { closeConfirm(); handleUpdateStatus(c._id, "paid"); },
+                              })}
+                              disabled={processingId === c._id}
                               className="px-2 py-1 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-colors disabled:opacity-50"
                             >
                               Mark Paid
@@ -186,6 +254,15 @@ export default function Commissions() {
           )}
         </div>
       </div>
+      <ConfirmModal
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        variant={confirmModal.variant}
+        onConfirm={confirmModal.action}
+        onCancel={closeConfirm}
+      />
     </AdminLayout>
   );
 }

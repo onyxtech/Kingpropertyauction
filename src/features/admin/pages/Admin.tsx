@@ -11,7 +11,6 @@ import {
   Users,
   Gavel,
   TrendingUp,
-  DollarSign,
   ArrowUp,
   ArrowDown,
   Search,

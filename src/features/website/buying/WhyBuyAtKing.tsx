@@ -1,4 +1,4 @@
-import { ThumbsUp, TrendingUp, Shield, Users, Award, Clock, CheckCircle, Sparkles, Target, Heart, Crown, Zap, Star, DollarSign } from "lucide-react";
+import { ThumbsUp, TrendingUp, Shield, Users, Award, Clock, CheckCircle, Sparkles, Target, Heart, Crown, Zap, Star, PoundSterling } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 import { useNavigate } from "react-router";
@@ -17,7 +17,7 @@ export default function WhyBuyAtKing() {
     {
       title: "Exceptional Value",
       desc: "Properties typically sell for 5-25% below market value, offering excellent investment opportunities.",
-      icon: DollarSign,
+      icon: PoundSterling,
       gradient: "from-blue-500 to-indigo-600"
     },
     {

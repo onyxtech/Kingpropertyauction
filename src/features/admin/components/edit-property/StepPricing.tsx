@@ -1,10 +1,10 @@
-import { DollarSign } from "lucide-react";
+import { PoundSterling } from "lucide-react";
 import { preventMinus } from "@/utils/validation";
 
 export default function StepPricing({ form, updateField }: any) {
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-black text-slate-900 flex items-center gap-2"><DollarSign className="size-6 text-emerald-600" /> Pricing</h2>
+      <h2 className="text-xl font-black text-slate-900 flex items-center gap-2"><PoundSterling className="size-6 text-emerald-600" /> Pricing</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div><label className="block text-sm font-bold mb-1">Currency</label><select value={form.currency} onChange={(e) => updateField("currency", e.target.value)} className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm"><option value="GBP">GBP (£)</option><option value="USD">USD ($)</option><option value="EUR">EUR (€)</option></select></div>
         <div><label className="block text-sm font-bold mb-1">Starting Price *</label><input type="number" min="1" onKeyDown={preventMinus} value={form.startingAuctionPrice} onChange={(e) => { const v = e.target.value; if (v === '' || Number(v) >= 0) updateField("startingAuctionPrice", v); }} className="w-full px-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm" /></div>

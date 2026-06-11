@@ -1,4 +1,4 @@
-import { Briefcase, TrendingUp, Clock, Award, Users, CheckCircle, Sparkles, DollarSign, Shield, Target, X, Building2 } from "lucide-react";
+import { Briefcase, TrendingUp, Clock, Award, Users, CheckCircle, Sparkles, PoundSterling, Shield, Target, X, Building2 } from "lucide-react";
 import { preventMinus } from "@/utils/validation";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";

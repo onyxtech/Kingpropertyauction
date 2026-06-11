@@ -1,4 +1,4 @@
-import { Gift, DollarSign, Users, TrendingUp, Sparkles, CheckCircle, Award, Target, Zap, X, Mail, User, Phone, Building, MessageSquare, MapPin, Home, Info, HelpCircle, BookOpen } from "lucide-react";
+import { Gift, PoundSterling, Users, TrendingUp, Sparkles, CheckCircle, Award, Target, Zap, X, Mail, User, Phone, Building, MessageSquare, MapPin, Home, Info, HelpCircle, BookOpen } from "lucide-react";
 import { useState } from "react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
@@ -100,7 +100,7 @@ export default function ReferralFee() {
 
   const benefits = [
     { title: "No Limits", desc: "Unlimited earning potential with no caps", icon: Zap },
-    { title: "Fast Payments", desc: "Receive commission within 7 days of completion", icon: DollarSign },
+    { title: "Fast Payments", desc: "Receive commission within 7 days of completion", icon: PoundSterling },
     { title: "Full Transparency", desc: "Track all referrals in real-time", icon: Target },
     { title: "Ongoing Support", desc: "Dedicated team to help you succeed", icon: Award }
   ];
@@ -587,7 +587,7 @@ export default function ReferralFee() {
               {/* Commission Tiers */}
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 mb-6 border-2 border-purple-200">
                 <h2 className="text-2xl font-black text-slate-900 mb-3 flex items-center gap-2">
-                  <DollarSign className="size-6 text-purple-600" />
+                  <PoundSterling className="size-6 text-purple-600" />
                   Commission Tiers
                 </h2>
                 <p className="text-slate-700 font-medium mb-4">

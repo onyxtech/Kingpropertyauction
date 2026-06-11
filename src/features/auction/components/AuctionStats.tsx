@@ -1,4 +1,4 @@
-import { Gavel, Zap, Calendar, CheckCircle, TrendingUp, DollarSign } from "lucide-react";
+import { Gavel, Zap, Calendar, CheckCircle, TrendingUp, PoundSterling } from "lucide-react";
 import { useAuctionApi } from "@/features/auction/api/useAuctionApi";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
 
@@ -26,7 +26,7 @@ export default function AuctionStats() {
     { label: "Completed", value: completed, color: "from-purple-500 to-pink-600", icon: CheckCircle },
     { label: "Total Bids", value: totalBids, color: "from-orange-500 to-amber-600", icon: TrendingUp },
     { label: "Properties Sold", value: soldCount, color: "from-emerald-500 to-teal-600", icon: Gavel },
-    { label: "Total Revenue", value: totalRevenue >= 1000000 ? `£${(totalRevenue/1000000).toFixed(1)}M` : `£${totalRevenue.toLocaleString()}`, color: "from-cyan-500 to-blue-600", icon: DollarSign },
+    { label: "Total Revenue", value: totalRevenue >= 1000000 ? `£${(totalRevenue/1000000).toFixed(2)}M` : `£${totalRevenue.toLocaleString()}`, color: "from-cyan-500 to-blue-600", icon: PoundSterling },
   ];
 
   return (

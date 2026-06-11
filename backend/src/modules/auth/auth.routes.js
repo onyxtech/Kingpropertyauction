@@ -54,7 +54,7 @@ router.get("/google/callback", async (req, res, next) => {
       const accessToken = jwt.sign(
         { id: user._id },
         process.env.JWT_ACCESS_SECRET,
-        { expiresIn: "15m" },
+        { expiresIn: process.env.JWT_ACCESS_EXPIRE || "2h" },
       );
       const refreshToken = jwt.sign(
         { id: user._id },
@@ -69,7 +69,7 @@ router.get("/google/callback", async (req, res, next) => {
       });
 
       res.redirect(
-        `${process.env.CLIENT_URL}/oauth-callback?token=${accessToken}&user=${JSON.stringify({ id: user._id, name: user.name, email: user.email, role: user.role })}`,
+        `${process.env.CLIENT_URL}/oauth-callback?token=${accessToken}&user=${JSON.stringify({ id: user._id, name: user.name, email: user.email, role: user.role, permissions: user.permissions })}`,
       );
     },
   )(req, res, next);
@@ -99,7 +99,7 @@ router.get("/github/callback", async (req, res, next) => {
       const accessToken = jwt.sign(
         { id: user._id },
         process.env.JWT_ACCESS_SECRET,
-        { expiresIn: "15m" },
+        { expiresIn: process.env.JWT_ACCESS_EXPIRE || "2h" },
       );
       const refreshToken = jwt.sign(
         { id: user._id },
@@ -114,7 +114,7 @@ router.get("/github/callback", async (req, res, next) => {
       });
 
       res.redirect(
-        `${process.env.CLIENT_URL}/oauth-callback?token=${accessToken}&user=${JSON.stringify({ id: user._id, name: user.name, email: user.email, role: user.role })}`,
+        `${process.env.CLIENT_URL}/oauth-callback?token=${accessToken}&user=${JSON.stringify({ id: user._id, name: user.name, email: user.email, role: user.role, permissions: user.permissions })}`,
       );
     },
   )(req, res, next);
@@ -132,7 +132,7 @@ router.get('/facebook/callback', async (req, res, next) => {
     if (err || !user) {
       return res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`);
     }
-    const accessToken = jwt.sign({ id: user._id }, process.env.JWT_ACCESS_SECRET, { expiresIn: '15m' });
+    const accessToken = jwt.sign({ id: user._id }, process.env.JWT_ACCESS_SECRET, { expiresIn: process.env.JWT_ACCESS_EXPIRE || '2h' });
     const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
     
     res.cookie('refreshToken', refreshToken, {
@@ -141,7 +141,7 @@ router.get('/facebook/callback', async (req, res, next) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     
-    res.redirect(`${process.env.CLIENT_URL}/oauth-callback?token=${accessToken}&user=${JSON.stringify({ id: user._id, name: user.name, email: user.email, role: user.role })}`);
+    res.redirect(`${process.env.CLIENT_URL}/oauth-callback?token=${accessToken}&user=${JSON.stringify({ id: user._id, name: user.name, email: user.email, role: user.role, permissions: user.permissions })}`);
   })(req, res, next);
 });
 

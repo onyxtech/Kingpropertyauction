@@ -13,7 +13,7 @@ import {
   Home,
   ArrowRight,
   Award,
-  DollarSign,
+  PoundSterling,
   Target,
   Zap,
   Building2,
@@ -31,7 +31,7 @@ export default function Selling() {
       description: "Reach millions of potential buyers across multiple platforms",
     },
     {
-      icon: DollarSign,
+      icon: PoundSterling,
       title: "Best Price Achieved",
       description: "Competitive bidding drives up property values",
     },
@@ -62,7 +62,7 @@ export default function Selling() {
       step: 1,
       title: "Free Valuation",
       description: "Get an accurate market valuation from our experts",
-      icon: DollarSign,
+      icon: PoundSterling,
     },
     {
       step: 2,

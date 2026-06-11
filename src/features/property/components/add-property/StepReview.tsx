@@ -1,13 +1,16 @@
-import { CheckCircle, Building2, MapPin, Home, Bed, Bath, DollarSign, UserCheck, Pencil, Scale, FileText, Camera, Gavel, Star } from "lucide-react";
+import { CheckCircle, Building2, MapPin, Home, Bed, Bath, PoundSterling, UserCheck, Pencil, Scale, FileText, Camera, Gavel, Star } from "lucide-react";
+
 
 interface StepReviewProps {
+  user?: any;
   formData: any;
   theme: { primary: string };
   onEditStep?: (step: number) => void;
   isAdmin?: boolean;
 }
 
-export default function StepReview({ formData, theme, onEditStep, isAdmin }: StepReviewProps) {
+export default function StepReview({ formData, theme, onEditStep, isAdmin, user }: StepReviewProps) {
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
@@ -118,7 +121,7 @@ export default function StepReview({ formData, theme, onEditStep, isAdmin }: Ste
         {/* Pricing */}
         <div className="bg-white rounded-2xl p-6 border-2 border-slate-200">
           <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
-            <DollarSign className="size-5 text-green-600" />
+            <PoundSterling className="size-5 text-green-600" />
             Pricing
             {onEditStep && (
               <button type="button" onClick={() => onEditStep(4)} className="ml-auto flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
@@ -259,7 +262,7 @@ export default function StepReview({ formData, theme, onEditStep, isAdmin }: Ste
           <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
             <UserCheck className="size-5 text-orange-600" />
             Seller / Agent Details
-            {onEditStep && isAdmin && (
+            {onEditStep && (
               <button type="button" onClick={() => onEditStep(8)} className="ml-auto flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
                 <Pencil className="size-3.5" /> Edit
               </button>
@@ -269,13 +272,13 @@ export default function StepReview({ formData, theme, onEditStep, isAdmin }: Ste
             <div>
               <span className="font-bold text-slate-600">Agent Name:</span>
               <p className="text-slate-900 font-medium">
-                {formData.agentName || "Not provided"}
+                {formData.agentName || user?.name || "Not provided"}
               </p>
             </div>
             <div>
               <span className="font-bold text-slate-600">Contact:</span>
               <p className="text-slate-900 font-medium">
-                {formData.agentContact || "Not provided"}
+                {formData.agentContact || user?.phone || "Not provided"}
               </p>
             </div>
           </div>
@@ -366,3 +369,4 @@ export default function StepReview({ formData, theme, onEditStep, isAdmin }: Ste
     </div>
   );
 }
+
