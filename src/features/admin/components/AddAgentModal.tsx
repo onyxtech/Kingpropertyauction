@@ -63,7 +63,7 @@ export default function AddAgentModal({ onClose, onSuccess }: { onClose: () => v
         <div className="sticky top-0 bg-gradient-to-br from-orange-600 via-amber-600 to-yellow-600 px-8 py-6 rounded-t-3xl border-b-2 border-white/20">
           <div className="flex items-center justify-between">
             <div><h2 className="text-3xl font-black text-white mb-2">Add New Agent</h2><p className="text-white/90 font-medium">Register a new property agent</p></div>
-            <button onClick={onClose} className="size-10 rounded-xl bg-white/20 backdrop-blur-md hover:bg-white/30 flex items-center justify-center transition-all border border-white/30 hover:scale-110"><X className="size-5 text-white" /></button>
+            <button onClick={onClose} title="Close" className="size-10 rounded-xl bg-white/20 backdrop-blur-md hover:bg-white/30 flex items-center justify-center transition-all border border-white/30 hover:scale-110"><X className="size-5 text-white" /></button>
           </div>
         </div>
         <form className="p-8 space-y-6" onSubmit={handleSubmit}>

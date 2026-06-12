@@ -1,4 +1,12 @@
-import { CheckCircle, Clock, Tag, Gavel, Phone, MessageSquare } from "lucide-react";
+import {
+  CheckCircle,
+  Clock,
+  Tag,
+  Gavel,
+  Phone,
+  MessageSquare,
+} from "lucide-react";
+import { jsPDF } from "jspdf";
 
 interface PropertyActionCardProps {
   property: any;
@@ -36,54 +44,231 @@ export default function PropertyActionCard({
   isOwnProperty = false,
 }: PropertyActionCardProps) {
   const handleDownloadBrochure = () => {
-    const content = [
-      `PROPERTY BROCHURE`,
-      `================`,
-      ``,
-      `Title: ${property?.propertyTitle || 'N/A'}`,
-      `Type: ${property?.propertyType || 'N/A'}`,
-      `Category: ${property?.propertyCategory || 'N/A'}`,
-      `Status: ${property?.propertyStatus || 'N/A'}`,
-      ``,
-      `LOCATION`,
-      `--------`,
-      `Address: ${property?.location?.streetAddress || 'N/A'}`,
-      `City: ${property?.location?.city || 'N/A'}`,
-      `State: ${property?.location?.state || 'N/A'}`,
-      `Country: ${property?.location?.country || 'N/A'}`,
-      `Postcode: ${property?.location?.postcode || 'N/A'}`,
-      ``,
-      `PRICING`,
-      `-------`,
-      `Starting Price: £${(property?.pricing?.startingAuctionPrice || 0).toLocaleString()}`,
-      `Reserve Price: £${(property?.pricing?.reservePrice || 0).toLocaleString()}`,
-      ``,
-      `SPECIFICATIONS`,
-      `--------------`,
-      `Bedrooms: ${property?.specifications?.bedrooms || 'N/A'}`,
-      `Bathrooms: ${property?.specifications?.bathrooms || 'N/A'}`,
-      `Square Feet: ${property?.specifications?.squareFeet || 'N/A'}`,
-      ``,
-      `DESCRIPTION`,
-      `-----------`,
-      `${property?.propertyDescription || 'N/A'}`,
-      ``,
-      `================`,
-      `King Property Auction`,
-      `kingpropertyauction.com`,
-    ].join('\n');
+    const doc = new jsPDF();
+    let y = 20;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 20;
+    const maxY = pageHeight - margin;
 
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${(property?.propertyTitle || 'property')
-      .replace(/\s+/g, '-')
-      .toLowerCase()}-brochure.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const line = (text: string, size = 11, bold = false) => {
+      // Check if we need a new page
+      if (y > maxY) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.setFontSize(size);
+      doc.setFont("helvetica", bold ? "bold" : "normal");
+      const split = doc.splitTextToSize(text || "N/A", 170);
+      doc.text(split, 20, y);
+      y += split.length * size * 0.5;
+      y += 4;
+    };
+
+    const divider = () => {
+      if (y > maxY) {
+        doc.addPage();
+        y = margin;
+      }
+      doc.setDrawColor(180);
+      doc.setLineWidth(0.5);
+      doc.line(20, y, 190, y);
+      y += 6;
+    };
+
+    const sectionTitle = (title: string) => {
+      if (y + 15 > maxY) {
+        doc.addPage();
+        y = margin;
+      }
+      y += 2;
+      doc.setFillColor(37, 99, 235);
+      doc.roundedRect(20, y - 2, 170, 8, 2, 2, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(title, 25, y + 4);
+      doc.setTextColor(0, 0, 0);
+      y += 14;
+    };
+
+    // ─── HEADER ────────────────────────────────
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(37, 99, 235);
+    doc.text("KING PROPERTY AUCTION", 20, y);
+    y += 8;
+    doc.setFontSize(14);
+    doc.setTextColor(100);
+    doc.text("Property Brochure", 20, y);
+    y += 12;
+    doc.setTextColor(0);
+    divider();
+
+    // ─── BASIC INFO ────────────────────────────
+    sectionTitle("PROPERTY DETAILS");
+    line(`Title: ${property?.propertyTitle || "N/A"}`, 13, true);
+    line(
+      `Property ID: ${property?.propertyID || property?._id?.slice(-6) || "N/A"}`,
+    );
+    line(
+      `Type: ${property?.propertyType ? property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1) : "N/A"}`,
+    );
+    line(
+      `Category: ${property?.propertyCategory ? property.propertyCategory.charAt(0).toUpperCase() + property.propertyCategory.slice(1) : "N/A"}`,
+    );
+    line(
+      `Listing Type: ${property?.listingType === "auction" ? "Auction" : "Direct Sale"}`,
+    );
+    line(
+      `Status: ${property?.propertyStatus ? property.propertyStatus.charAt(0).toUpperCase() + property.propertyStatus.slice(1) : "N/A"}`,
+    );
+    divider();
+
+    // ─── LOCATION ──────────────────────────────
+    sectionTitle("LOCATION");
+    const loc = property?.location || {};
+    line(`Address: ${loc.streetAddress || "N/A"}`);
+    line(`Area: ${loc.area || "N/A"}`);
+    line(`City: ${loc.city || "N/A"}`);
+    line(`State: ${loc.state || "N/A"}`);
+    line(`Postcode: ${loc.postalCode || "N/A"}`);
+    line(`Country: ${loc.country || "N/A"}`);
+    if (loc.latitude && loc.longitude)
+      line(`Coordinates: ${loc.latitude}, ${loc.longitude}`);
+    divider();
+
+    // ─── SPECIFICATIONS ────────────────────────
+    sectionTitle("SPECIFICATIONS");
+    const specs = property?.specifications || {};
+    line(`Total Area: ${specs.totalArea ? specs.totalArea + " sq ft" : "N/A"}`);
+    line(`Bedrooms: ${specs.bedrooms || "N/A"}`);
+    line(`Bathrooms: ${specs.bathrooms || "N/A"}`);
+    line(`Floors: ${specs.floors || "N/A"}`);
+    line(`Year Built: ${specs.yearBuilt || "N/A"}`);
+    line(`Parking: ${specs.parkingSpaces || "N/A"} spaces`);
+    line(`Furnished: ${specs.furnishedStatus || "N/A"}`);
+    divider();
+
+    // ─── PRICING ───────────────────────────────
+    sectionTitle("PRICING");
+    const pricing = property?.pricing || {};
+    line(`Currency: ${pricing.currency || "GBP"}`);
+    line(
+      `Starting Price: £${(pricing.startingAuctionPrice || 0).toLocaleString()}`,
+    );
+    line(`Reserve Price: £${(pricing.reservePrice || 0).toLocaleString()}`);
+    if (pricing.buyNowPrice)
+      line(`Buy Now Price: £${pricing.buyNowPrice.toLocaleString()}`);
+    line(
+      `Minimum Bid Increment: £${(pricing.minimumBidIncrement || 0).toLocaleString()}`,
+    );
+    if (pricing.estimatedMarketValue)
+      line(
+        `Est. Market Value: £${pricing.estimatedMarketValue.toLocaleString()}`,
+      );
+    divider();
+
+    // ─── AUCTION DETAILS ───────────────────────
+    const auction = property?.auctionDetails || {};
+    if (auction.auctionStartDate || auction.auctionEndDate) {
+      sectionTitle("AUCTION DETAILS");
+      if (auction.auctionStartDate)
+        line(
+          `Start Date: ${new Date(auction.auctionStartDate).toLocaleString()}`,
+        );
+      if (auction.auctionEndDate)
+        line(`End Date: ${new Date(auction.auctionEndDate).toLocaleString()}`);
+      line(`Status: ${auction.auctionStatus || "N/A"}`);
+      if (auction.bidDepositAmount)
+        line(`Bid Deposit: £${auction.bidDepositAmount.toLocaleString()}`);
+      line(`Auto Bidding: ${auction.autoBidEnabled ? "Enabled" : "Disabled"}`);
+      divider();
+    }
+
+    // ─── FEATURES ──────────────────────────────
+    const features = property?.features || {};
+    const featureKeys = Object.keys(features);
+    if (featureKeys.length > 0) {
+      sectionTitle("FEATURES & AMENITIES");
+      featureKeys.forEach((key) => {
+        const label = key
+          .replace(/([A-Z])/g, " $1")
+          .replace(/^./, (s) => s.toUpperCase());
+        line(`${features[key] ? "✔" : "✘"} ${label}`);
+      });
+      divider();
+    }
+
+    // ─── LEGAL INFO ────────────────────────────
+    const legal = property?.legalInfo || {};
+    if (legal.ownershipType || legal.titleDeedNumber) {
+      sectionTitle("LEGAL INFORMATION");
+      line(
+        `Ownership: ${legal.ownershipType ? legal.ownershipType.charAt(0).toUpperCase() + legal.ownershipType.slice(1) : "N/A"}`,
+      );
+      line(`Title Deed: ${legal.titleDeedNumber || "N/A"}`);
+      if (legal.propertyTaxInfo) line(`Tax Info: ${legal.propertyTaxInfo}`);
+      line(`Mortgage Status: ${legal.mortgageStatus || "N/A"}`);
+      if (legal.zoningType) line(`Zoning: ${legal.zoningType}`);
+      divider();
+    }
+
+    // ─── SELLER/AGENT INFO ─────────────────────
+    const seller = property?.sellerInfo || {};
+    if (seller.sellerName || seller.agentName) {
+      sectionTitle("CONTACT INFORMATION");
+      if (seller.agentName) line(`Agent: ${seller.agentName}`);
+      if (seller.agentContact) line(`Agent Contact: ${seller.agentContact}`);
+      if (seller.sellerName) line(`Seller: ${seller.sellerName}`);
+      if (seller.sellerEmail) line(`Seller Email: ${seller.sellerEmail}`);
+      divider();
+    }
+
+    // ─── MEDIA ─────────────────────────────────
+    const media = property?.media || {};
+    const images = media.propertyImages || [];
+    if (images.length > 0 || media.propertyVideo || media.floorPlan) {
+      sectionTitle("MEDIA");
+      if (images.length > 0) line(`Property Images: ${images.length} image(s)`);
+      if (media.propertyVideo) line(`Video Tour: Available`);
+      if (media.virtualTour) line(`Virtual Tour: ${media.virtualTour}`);
+      if (media.floorPlan) line(`Floor Plan: Available`);
+      const docs = media.legalDocuments
+        ? Array.isArray(media.legalDocuments)
+          ? media.legalDocuments
+          : [media.legalDocuments]
+        : [];
+      if (docs.length > 0) line(`Legal Documents: ${docs.length} document(s)`);
+      divider();
+    }
+
+    // ─── DESCRIPTION ───────────────────────────
+    sectionTitle("DESCRIPTION");
+    line(property?.propertyDescription || "No description provided.", 11);
+    divider();
+
+    // ─── BIDDING INFO ──────────────────────────
+    sectionTitle("CURRENT BIDDING STATUS");
+    line(`Current Bid: £${(property?.currentBid || 0).toLocaleString()}`);
+    line(`Total Bids: ${property?.totalBids || 0}`);
+    divider();
+
+    // ─── FOOTER ────────────────────────────────
+    doc.setFontSize(9);
+    doc.setTextColor(128);
+    doc.text(
+      "King Property Auction - kingpropertyauction.com",
+      20,
+      pageHeight - 15,
+    );
+    doc.text(
+      `Generated: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}`,
+      20,
+      pageHeight - 10,
+    );
+
+    const filename = `${(property?.propertyTitle || "property").replace(/\s+/g, "-").toLowerCase()}-brochure.pdf`;
+    doc.save(filename);
   };
 
   return (
@@ -150,8 +335,12 @@ export default function PropertyActionCard({
             <>
               {isOwnProperty ? (
                 <div className="w-full py-4 bg-white/10 border-2 border-white/30 rounded-xl text-center">
-                  <p className="text-white/80 font-bold text-sm">🏠 This is your property</p>
-                  <p className="text-white/60 text-xs mt-1">You cannot bid on your own listing</p>
+                  <p className="text-white/80 font-bold text-sm">
+                    🏠 This is your property
+                  </p>
+                  <p className="text-white/60 text-xs mt-1">
+                    You cannot bid on your own listing
+                  </p>
                 </div>
               ) : (
                 <button
@@ -197,9 +386,7 @@ export default function PropertyActionCard({
                 </div>
               )}
               <button
-                onClick={() =>
-                  onNavigate(`/auctions/${matchingAuction.slug}`)
-                }
+                onClick={() => onNavigate(`/auctions/${matchingAuction.slug}`)}
                 className="w-full py-4 bg-white/20 text-white border-2 border-white/40 rounded-xl font-bold hover:bg-white/30 transition-all"
               >
                 View Auction Results
@@ -220,7 +407,9 @@ export default function PropertyActionCard({
           ) : (
             <>
               <div className="bg-white/20 rounded-2xl p-4 text-center text-white">
-                <p className="text-3xl font-black">{formatPrice(startingPrice)}</p>
+                <p className="text-3xl font-black">
+                  {formatPrice(startingPrice)}
+                </p>
                 <p className="text-sm text-white/80">Asking Price</p>
               </div>
               {buyNowPrice > 0 && (
@@ -283,8 +472,12 @@ export default function PropertyActionCard({
               <MessageSquare className="size-5 text-white" />
             </div>
             <div className="text-left">
-              <p className="font-black text-slate-900 text-sm">Enquire About This Property</p>
-              <p className="text-xs text-slate-500 font-medium">Get more details from the agent</p>
+              <p className="font-black text-slate-900 text-sm">
+                Enquire About This Property
+              </p>
+              <p className="text-xs text-slate-500 font-medium">
+                Get more details from the agent
+              </p>
             </div>
           </button>
         </div>

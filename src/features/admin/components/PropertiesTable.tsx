@@ -212,6 +212,7 @@ export default function PropertiesTable() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <button
+                          title="View Property"
                           onClick={() =>
                             navigate(
                               `/properties/${property.slug || property._id}`,
@@ -224,12 +225,14 @@ export default function PropertiesTable() {
                         {property.approvalStatus === "pending" && (
                           <>
                             <button
+                              title="Approve"
                               onClick={() => handleApprove(property._id)}
                               className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"
                             >
                               <CheckCircle className="size-4" />
                             </button>
                             <button
+                              title="Reject"
                               onClick={() => handleReject(property._id)}
                               className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
                             >
@@ -238,6 +241,7 @@ export default function PropertiesTable() {
                           </>
                         )}
                         <button
+                          title="Edit"
                           onClick={() =>
                             navigate(`/admin/properties/${property._id}/edit`)
                           }
@@ -246,6 +250,7 @@ export default function PropertiesTable() {
                           <Edit className="size-4" />
                         </button>
                         <button
+                          title="Delete"
                           onClick={() => setDeleteTarget(property._id)}
                           className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
                         >
@@ -269,6 +274,7 @@ export default function PropertiesTable() {
             </p>
             <div className="flex items-center gap-2">
               <button
+                title="Previous Page"
                 onClick={() => setPage(Math.max(1, page - 1))}
                 disabled={page === 1}
                 className="p-2 bg-white border-2 border-slate-200 rounded-xl disabled:opacity-50 hover:bg-slate-100"
@@ -285,6 +291,7 @@ export default function PropertiesTable() {
                 </button>
               ))}
               <button
+                title="Next Page"
                 onClick={() => setPage(Math.min(totalPages, page + 1))}
                 disabled={page === totalPages}
                 className="p-2 bg-white border-2 border-slate-200 rounded-xl disabled:opacity-50 hover:bg-slate-100"

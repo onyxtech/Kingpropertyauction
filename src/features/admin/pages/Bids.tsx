@@ -396,7 +396,7 @@ export default function Bids() {
           <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-black text-slate-900">Winner Details</h3>
-              <button onClick={() => { setShowBidModal(false); setNotifyResult(null); }}>
+              <button title="Close" onClick={() => { setShowBidModal(false); setNotifyResult(null); }}>
                 <X className="size-5 text-slate-400 hover:text-slate-600" />
               </button>
             </div>

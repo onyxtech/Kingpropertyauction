@@ -71,7 +71,7 @@ export default function AddUserModal({ onClose, onSuccess }: { onClose: () => vo
         <div className={`sticky top-0 bg-gradient-to-br ${theme.primary} px-8 py-6 rounded-t-3xl border-b-2 border-white/20`}>
           <div className="flex items-center justify-between">
             <div><h2 className="text-3xl font-black text-white mb-2">Add New User</h2><p className="text-white/90 font-medium">Create a new user account</p></div>
-            <button onClick={onClose} className="size-10 rounded-xl bg-white/20 backdrop-blur-md hover:bg-white/30 flex items-center justify-center transition-all border border-white/30 hover:scale-110"><X className="size-5 text-white" /></button>
+            <button onClick={onClose} title="Close" className="size-10 rounded-xl bg-white/20 backdrop-blur-md hover:bg-white/30 flex items-center justify-center transition-all border border-white/30 hover:scale-110"><X className="size-5 text-white" /></button>
           </div>
         </div>
         <form className="p-8 space-y-6" onSubmit={handleSubmit}>

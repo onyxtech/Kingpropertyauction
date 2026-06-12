@@ -102,6 +102,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         <button
           onClick={() => navigate("/")}
           className="flex items-center gap-3 group"
+          title="Back to Website"
         >
           <div
             className={`size-12 rounded-2xl bg-gradient-to-br ${theme.primary} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}
@@ -155,6 +156,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                     handleNavigation(item);
                   }
                 }}
+                title={item.label}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
                   isActive
                     ? `bg-gradient-to-r ${theme.secondary} text-white shadow-lg`

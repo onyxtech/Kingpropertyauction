@@ -500,7 +500,7 @@ export default function RegisterForm() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">
-                  License Number
+                  License Number <span className="font-normal text-slate-400">(Optional)</span>
                 </label>
                 <input
                   type="text"

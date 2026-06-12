@@ -297,7 +297,6 @@ export default function FreeValuation() {
                   <input
                     type="number"
                     name="sqft"
-                    required
                     min="0"
                     placeholder="2000"
                     onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}

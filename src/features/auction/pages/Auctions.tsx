@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { mediaUrl } from "@/lib/mediaUrl";
 import { useNavigate } from "react-router";
 import {
@@ -99,6 +101,60 @@ export default function Auctions() {
     const val = parseFloat(a.estimatedValue?.replace(/[£,]/g, "") || "0");
     return sum + val;
   }, 0);
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("King Property Auction", 14, 18);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text("Auction Catalogue", 14, 26);
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text(`Generated: ${new Date().toLocaleString("en-GB")}`, 14, 32);
+    doc.text(`Total Lots: ${filteredLots.length}`, 14, 37);
+
+    autoTable(doc, {
+      startY: 42,
+      head: [["Lot", "Title", "Type", "Start", "End", "Props", "Est. Value", "Status", "Bidders"]],
+      body: filteredLots.map((l) => [
+        l.lotNumber,
+        l.title,
+        l.type,
+        l.startDate,
+        l.endDate,
+        String(l.totalProperties),
+        l.estimatedValue,
+        l.status,
+        String(l.registeredBidders),
+      ]),
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 14, right: 14 },
+    });
+
+    doc.save(`auction-catalogue-${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
+  const handleExportCSV = () => {
+    const headers = ["Lot Number", "Title", "Type", "Location", "Start Date", "End Date", "Properties", "Estimated Value", "Status", "Registered Bidders"];
+    const rows = filteredLots.map((l) => [
+      l.lotNumber, l.title, l.type, l.location, l.startDate, l.endDate,
+      l.totalProperties, l.estimatedValue, l.status, l.registeredBidders,
+    ]);
+    const csv = [headers, ...rows]
+      .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `auction-catalogue-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (isLoading) {
     return (
@@ -221,7 +277,6 @@ export default function Auctions() {
                 <option>All Types</option>
                 <option>Residential</option>
                 <option>Commercial</option>
-                <option>Mixed Portfolio</option>
               </select>
               <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-5 text-slate-400 pointer-events-none" />
             </div>
@@ -267,10 +322,16 @@ export default function Auctions() {
               </span>{" "}
               auction lots
             </p>
-            <button className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-bold hover:shadow-lg transition-all flex items-center gap-2">
-              <Download className="size-5" />
-              Export Catalogue
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={handleExportPDF} className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-bold hover:shadow-lg transition-all flex items-center gap-2">
+                <Download className="size-5" />
+                Export PDF
+              </button>
+              <button onClick={handleExportCSV} className="px-5 py-3 bg-white border-2 border-emerald-500 text-emerald-600 rounded-2xl font-bold hover:bg-emerald-50 transition-all flex items-center gap-2">
+                <Download className="size-5" />
+                CSV
+              </button>
+            </div>
           </div>
         </div>
 

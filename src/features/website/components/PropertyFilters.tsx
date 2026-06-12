@@ -200,7 +200,7 @@ export default function PropertyFilters({
                 <div>
                   <label className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                     <Bed className="size-4 text-purple-600" />
-                    Min Bedrooms
+                    Bedrooms
                   </label>
                   <select
                     value={filters.minBeds}
@@ -210,18 +210,19 @@ export default function PropertyFilters({
                     className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-700 shadow-sm hover:border-slate-300"
                   >
                     <option value="">Any</option>
-                    <option value="1">1+</option>
-                    <option value="2">2+</option>
-                    <option value="3">3+</option>
-                    <option value="4">4+</option>
-                    <option value="5">5+</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6plus">6+</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                     <Bath className="size-4 text-cyan-600" />
-                    Min Bathrooms
+                    Bathrooms
                   </label>
                   <select
                     value={filters.minBaths}
@@ -231,10 +232,12 @@ export default function PropertyFilters({
                     className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-700 shadow-sm hover:border-slate-300"
                   >
                     <option value="">Any</option>
-                    <option value="1">1+</option>
-                    <option value="2">2+</option>
-                    <option value="3">3+</option>
-                    <option value="4">4+</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6plus">6+</option>
                   </select>
                 </div>
               </div>
@@ -277,7 +280,7 @@ export default function PropertyFilters({
                       {filters.minBeds && (
                         <div className="px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg">
                           <Bed className="size-3" />
-                          {filters.minBeds}+ beds
+                          {filters.minBeds === "6plus" ? "6+ beds" : `${filters.minBeds} bed${filters.minBeds === "1" ? "" : "s"}`}
                           <button
                             onClick={() =>
                               setFilters({ ...filters, minBeds: "" })
@@ -291,7 +294,7 @@ export default function PropertyFilters({
                       {filters.minBaths && (
                         <div className="px-3 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg">
                           <Bath className="size-3" />
-                          {filters.minBaths}+ baths
+                          {filters.minBaths === "6plus" ? "6+ baths" : `${filters.minBaths} bath${filters.minBaths === "1" ? "" : "s"}`}
                           <button
                             onClick={() =>
                               setFilters({ ...filters, minBaths: "" })

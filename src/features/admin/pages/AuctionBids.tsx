@@ -184,7 +184,7 @@ export default function AuctionBids() {
                           <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold">No Bids</span>
                         )}
                       </div>
-                      <button onClick={() => navigate(`/properties/${prop.slug || prop._id}`)} className="p-2 hover:bg-white rounded-lg transition-all">
+                      <button title="View Property" onClick={() => navigate(`/properties/${prop.slug || prop._id}`)} className="p-2 hover:bg-white rounded-lg transition-all">
                         <Eye className="size-4 text-slate-500" />
                       </button>
                     </div>

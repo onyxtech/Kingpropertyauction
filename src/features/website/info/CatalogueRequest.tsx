@@ -21,36 +21,45 @@ export default function CatalogueRequest() {
   const [loadingAuctions, setLoadingAuctions] = useState(true);
 
   useEffect(() => {
-    apiClient.fetch('/auctions?status=scheduled&limit=10')
-      .then(data => {
+    apiClient
+      .fetch("/auctions?status=scheduled&limit=10")
+      .then((data) => {
         if (data.success && data.data?.length > 0) {
-          setUpcomingAuctions(data.data.map((a: any) => ({
-            id: a._id,
-            date: new Date(a.startDateTime).toLocaleDateString('en-GB', {
-              day: 'numeric', month: 'long', year: 'numeric',
-            }),
-            properties: a.totalLots || 0,
-            location: a.venue?.city || a.auctionType || 'Online',
-            title: a.auctionTitle,
-          })));
+          setUpcomingAuctions(
+            data.data.map((a: any) => ({
+              id: a._id,
+              date: new Date(a.startDateTime).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              }),
+              properties: a.totalLots || 0,
+              location: a.venue?.city || a.auctionType || "Online",
+              title: a.auctionTitle,
+            })),
+          );
         } else {
-          setUpcomingAuctions([{
-            id: 'general',
-            date: 'Next Available Auction',
-            properties: 0,
-            location: 'UK Wide',
-            title: 'General Catalogue Request',
-          }]);
+          setUpcomingAuctions([
+            {
+              id: "general",
+              date: "Next Available Auction",
+              properties: 0,
+              location: "UK Wide",
+              title: "General Catalogue Request",
+            },
+          ]);
         }
       })
       .catch(() => {
-        setUpcomingAuctions([{
-          id: 'general',
-          date: 'Next Available Auction',
-          properties: 0,
-          location: 'UK Wide',
-          title: 'General Catalogue Request',
-        }]);
+        setUpcomingAuctions([
+          {
+            id: "general",
+            date: "Next Available Auction",
+            properties: 0,
+            location: "UK Wide",
+            title: "General Catalogue Request",
+          },
+        ]);
       })
       .finally(() => setLoadingAuctions(false));
   }, []);
@@ -68,10 +77,21 @@ export default function CatalogueRequest() {
     }
     setLoading(true);
 
-    const selectedAuctions = upcomingAuctions
-      .filter(a => fd.get(`auction_${a.id}`) === 'on')
-      .map(a => `${a.title || a.date} - ${a.location}${a.properties > 0 ? ` (${a.properties} properties)` : ''}`)
-      .join(', ') || 'None selected';
+    const selectedAuctionsList = upcomingAuctions.filter(
+      (a) => fd.get(`auction_${a.id}`) === "on",
+    );
+
+    const selectedAuctionIds = selectedAuctionsList
+      .map((a) => a.id)
+      .filter((id) => id !== "general");
+
+    const selectedAuctions =
+      selectedAuctionsList
+        .map(
+          (a) =>
+            `${a.title || a.date} - ${a.location}${a.properties > 0 ? ` (${a.properties} properties)` : ""}`,
+        )
+        .join(", ") || "None selected";
 
     try {
       await apiClient.fetch("/leads", {
@@ -87,15 +107,16 @@ export default function CatalogueRequest() {
             `Catalogue Request Details:`,
             `Selected Auctions: ${selectedAuctions}`,
             `Delivery Method: ${fd.get("deliveryMethod") || "Email PDF"}`,
-          ].join('\n'),
+          ].join("\n"),
           leadType: "catalogue",
+          auctionIds: selectedAuctionIds,
         }),
       });
       setSubmitted(true);
       showSuccess("Catalogue request sent!", "You'll receive it shortly.");
     } catch (e: any) {
       showError("Submission failed", "Please try again.");
-      console.error('Catalogue submit error:', e?.message || e);
+      console.error("Catalogue submit error:", e?.message || e);
       setError("Failed to submit. Please try again.");
     }
     setLoading(false);
@@ -259,8 +280,13 @@ export default function CatalogueRequest() {
                               {auction.title || auction.date}
                             </p>
                             <p className="text-sm text-slate-600 font-medium">
-                              {auction.properties > 0 ? `${auction.properties} properties • ` : ''}{auction.location}
-                              {auction.title && auction.date !== auction.title ? ` • ${auction.date}` : ''}
+                              {auction.properties > 0
+                                ? `${auction.properties} properties • `
+                                : ""}
+                              {auction.location}
+                              {auction.title && auction.date !== auction.title
+                                ? ` • ${auction.date}`
+                                : ""}
                             </p>
                           </div>
                         </label>
@@ -273,7 +299,10 @@ export default function CatalogueRequest() {
                   <label className="block text-sm font-bold text-slate-700 mb-2">
                     Delivery Method
                   </label>
-                  <select name="deliveryMethod" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium">
+                  <select
+                    name="deliveryMethod"
+                    className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium"
+                  >
                     <option>Email (PDF)</option>
                     <option>Postal Mail</option>
                     <option>Both Email & Post</option>

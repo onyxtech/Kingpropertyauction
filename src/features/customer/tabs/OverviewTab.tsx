@@ -61,12 +61,12 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
     ? conversations.filter((c: any) => (c.unreadCount?.user || 0) > 0).length : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-5">
       {/* Welcome Banner */}
-      <div className={`bg-gradient-to-r ${showSellerView ? "from-blue-600 to-indigo-700" : "from-green-600 to-emerald-700"} rounded-2xl lg:rounded-3xl p-4 sm:p-6 text-white shadow-xl`}>
+      <div className={`bg-gradient-to-r ${showSellerView ? "from-blue-600 to-indigo-700" : "from-green-600 to-emerald-700"} rounded-2xl p-4 sm:p-5 text-white shadow-xl`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-black mb-1">
+            <h2 className="text-lg sm:text-xl font-black mb-1">
               {showSellerView
                 ? role === "agent"
                   ? "Agent Dashboard"
@@ -85,7 +85,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             {showSellerView && (
               <button
                 onClick={() => navigate("/add-property")}
-                className="px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl font-bold text-sm transition-all flex items-center gap-2"
+                className="px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg font-bold text-[13px] transition-all flex items-center gap-2"
               >
                 <Plus className="size-4" /> Add Property
               </button>
@@ -93,7 +93,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             {showBuyerView && (
               <button
                 onClick={() => navigate("/auctions")}
-                className="px-4 py-2.5 bg-white text-slate-900 hover:bg-white/90 rounded-xl font-bold text-sm transition-all flex items-center gap-2"
+                className="px-3 py-2 bg-white text-slate-900 hover:bg-white/90 rounded-lg font-bold text-[13px] transition-all flex items-center gap-2"
               >
                 <Gavel className="size-4" /> Browse Auctions
               </button>
@@ -101,7 +101,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             {!showSellerView && !showBuyerView && canAddProperty && (
               <button
                 onClick={() => navigate("/add-property")}
-                className="px-4 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl font-bold text-sm flex items-center gap-2"
+                className="px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg font-bold text-[13px] flex items-center gap-2"
               >
                 <Plus className="size-4" /> Add Property
               </button>
@@ -116,15 +116,15 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
         {showSellerView && canAddProperty && (
           <button
             onClick={() => onTabChange("my-properties")}
-            className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-blue-200"
+            className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-3 sm:p-4 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-blue-200"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <Building2 className="size-5 text-white" />
+            <div className="flex items-center justify-between mb-2">
+              <div className="size-8 rounded-lg bg-white/20 flex items-center justify-center">
+                <Building2 className="size-4 text-white" />
               </div>
               <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-white">{myProperties.length}</p>
+            <p className="text-xl sm:text-2xl font-black text-white">{myProperties.length}</p>
             <p className="text-sm text-white/80 font-medium mt-0.5">My Properties</p>
           </button>
         )}
@@ -132,45 +132,45 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
         {showSellerView && (
           <button
             onClick={() => onTabChange("my-auctions")}
-            className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-amber-200"
+            className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-3 sm:p-4 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-amber-200"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <Clock className="size-5 text-white" />
+            <div className="flex items-center justify-between mb-2">
+              <div className="size-8 rounded-lg bg-white/20 flex items-center justify-center">
+                <Clock className="size-4 text-white" />
               </div>
               <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-white">{myPropertyStats?.liveAuctions || 0}</p>
+            <p className="text-xl sm:text-2xl font-black text-white">{myPropertyStats?.liveAuctions || 0}</p>
             <p className="text-sm text-white/80 font-medium mt-0.5">Live Auctions</p>
           </button>
         )}
         {showSellerView && (
           <button
             onClick={() => onTabChange("property-bidders")}
-            className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-purple-200"
+            className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl p-3 sm:p-4 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-purple-200"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <TrendingUp className="size-5 text-white" />
+            <div className="flex items-center justify-between mb-2">
+              <div className="size-8 rounded-lg bg-white/20 flex items-center justify-center">
+                <TrendingUp className="size-4 text-white" />
               </div>
               <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-white">{myPropertyStats?.totalBidsReceived || 0}</p>
+            <p className="text-xl sm:text-2xl font-black text-white">{myPropertyStats?.totalBidsReceived || 0}</p>
             <p className="text-sm text-white/80 font-medium mt-0.5">Bids Received</p>
           </button>
         )}
         {showSellerView && (
           <button
             onClick={() => onTabChange("messages")}
-            className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-emerald-200"
+            className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-3 sm:p-4 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-emerald-200"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <MessageSquare className="size-5 text-white" />
+            <div className="flex items-center justify-between mb-2">
+              <div className="size-8 rounded-lg bg-white/20 flex items-center justify-center">
+                <MessageSquare className="size-4 text-white" />
               </div>
               <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-white">{enquiryCount}</p>
+            <p className="text-xl sm:text-2xl font-black text-white">{enquiryCount}</p>
             <p className="text-sm text-white/80 font-medium mt-0.5">Customer Enquiries</p>
           </button>
         )}
@@ -179,15 +179,15 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
           <>
             <button
               onClick={() => onTabChange("my-bids")}
-              className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-green-200"
+              className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-3 sm:p-4 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-green-200"
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
-                  <Gavel className="size-5 text-white" />
+              <div className="flex items-center justify-between mb-2">
+                <div className="size-8 rounded-lg bg-white/20 flex items-center justify-center">
+                  <Gavel className="size-4 text-white" />
                 </div>
                 <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
               </div>
-              <p className="text-2xl sm:text-3xl font-black text-white">{activeBids.length}</p>
+              <p className="text-xl sm:text-2xl font-black text-white">{activeBids.length}</p>
               <p className="text-sm text-white/80 font-medium mt-0.5">Active Bids</p>
               {outbidBids.length > 0 && (
                 <p className="text-xs text-white/70 font-bold mt-1">⚠️ {outbidBids.length} outbid</p>
@@ -195,31 +195,31 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             </button>
             <button
               onClick={() => onTabChange("my-bids")}
-              className="bg-gradient-to-br from-amber-500 to-yellow-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-amber-200"
+              className="bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl p-3 sm:p-4 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-amber-200"
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
-                  <Trophy className="size-5 text-white" />
+              <div className="flex items-center justify-between mb-2">
+                <div className="size-8 rounded-lg bg-white/20 flex items-center justify-center">
+                  <Trophy className="size-4 text-white" />
                 </div>
                 <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
               </div>
-              <p className="text-2xl sm:text-3xl font-black text-white">{wonBids.length}</p>
+              <p className="text-xl sm:text-2xl font-black text-white">{wonBids.length}</p>
               <p className="text-sm text-white/80 font-medium mt-0.5">Auctions Won</p>
             </button>
             {showBuyerView && offerCount > 0 && (
               <button
                 onClick={() => onTabChange("offers")}
-                className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-amber-200"
+                className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-3 sm:p-4 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-amber-200"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
-                    <Trophy className="size-5 text-white" />
+                <div className="flex items-center justify-between mb-2">
+                  <div className="size-8 rounded-lg bg-white/20 flex items-center justify-center">
+                    <Trophy className="size-4 text-white" />
                   </div>
                   <span className="size-5 bg-white text-amber-600 rounded-full text-xs font-black flex items-center justify-center">
                     {offerCount}
                   </span>
                 </div>
-                <p className="text-2xl sm:text-3xl font-black text-white">{offerCount}</p>
+                <p className="text-xl sm:text-2xl font-black text-white">{offerCount}</p>
                 <p className="text-sm text-white/80 font-medium mt-0.5">Property Offers</p>
               </button>
             )}
@@ -228,26 +228,26 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
         {/* Always show messages */}
         <button
           onClick={() => onTabChange("messages")}
-          className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-violet-200"
+          className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl p-3 sm:p-4 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-violet-200"
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <MessageSquare className="size-5 text-white" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="size-8 rounded-lg bg-white/20 flex items-center justify-center">
+              <MessageSquare className="size-4 text-white" />
             </div>
             <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-white">{unreadCount}</p>
+          <p className="text-xl sm:text-2xl font-black text-white">{unreadCount}</p>
           <p className="text-sm text-white/80 font-medium mt-0.5">Unread Messages</p>
         </button>
       </div>
 
       {/* Content Grid */}
-      <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
+      <div className="grid md:grid-cols-2 gap-3 lg:gap-4">
         {/* Recent Properties - seller view */}
         {showSellerView && canAddProperty && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <h3 className="font-black text-slate-900 flex items-center gap-2">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
                 <Building2 className="size-5 text-blue-600" />
                 Recent Properties
               </h3>
@@ -260,7 +260,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             </div>
             {myProperties.length === 0 ? (
               <div className="text-center py-10 px-4">
-                <Building2 className="size-10 text-slate-300 mx-auto mb-2" />
+                <Building2 className="size-8 text-slate-300 mx-auto mb-2" />
                 <p className="text-slate-500 text-sm font-medium mb-3">No properties listed yet</p>
                 <button
                   onClick={() => navigate("/add-property")}
@@ -272,7 +272,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             ) : (
               <div className="divide-y divide-slate-100">
                 {myProperties.slice(0, 3).map((p: any) => (
-                  <div key={p._id} className="flex items-center gap-3 p-4 hover:bg-slate-50 transition-all">
+                  <div key={p._id} className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-all">
                     {p.media?.propertyImages?.[0] ? (
                       <img src={mediaUrl(p.media.propertyImages[0])} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" alt="" />
                     ) : (
@@ -304,8 +304,8 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
         {/* Recent Bids - buyer view */}
         {showBuyerView && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <h3 className="font-black text-slate-900 flex items-center gap-2">
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
                 <Gavel className="size-5 text-green-600" />
                 Recent Bids
               </h3>
@@ -318,7 +318,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             </div>
             {myBids.length === 0 ? (
               <div className="text-center py-10 px-4">
-                <Gavel className="size-10 text-slate-300 mx-auto mb-2" />
+                <Gavel className="size-8 text-slate-300 mx-auto mb-2" />
                 <p className="text-slate-500 text-sm font-medium mb-3">No bids placed yet</p>
                 <button
                   onClick={() => navigate("/auctions")}
@@ -333,9 +333,9 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                   <button
                     key={bid._id}
                     onClick={() => navigate(`/auctions/${bid.auction?.slug || bid.auction?._id}`)}
-                    className="w-full flex items-center gap-3 p-4 hover:bg-slate-50 transition-all text-left"
+                    className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 transition-all text-left"
                   >
-                    <div className={`size-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    <div className={`size-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
                       bid.status === "winning" ? "bg-green-100" :
                       bid.status === "won" ? "bg-amber-100" :
                       bid.status === "outbid" ? "bg-orange-100" : "bg-blue-100"
@@ -379,21 +379,21 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
         )}
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-          <h3 className="font-black text-slate-900 mb-4">Quick Actions</h3>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+          <h3 className="font-black text-slate-900 text-sm mb-3">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-3">
             {showSellerView && (
               <>
                 <button
                   onClick={() => navigate("/add-property")}
-                  className="flex flex-col items-center gap-2 p-4 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all group"
+                  className="flex flex-col items-center gap-2 p-3 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all group"
                 >
                   <Plus className="size-6 text-blue-600 group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-bold text-slate-700">Add Property</span>
                 </button>
                 <button
                   onClick={() => navigate("/properties")}
-                  className="flex flex-col items-center gap-2 p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all group"
+                  className="flex flex-col items-center gap-2 p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all group"
                 >
                   <Eye className="size-6 text-slate-600 group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-bold text-slate-700">Browse Properties</span>
@@ -404,14 +404,14 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
               <>
                 <button
                   onClick={() => navigate("/auctions")}
-                  className="flex flex-col items-center gap-2 p-4 bg-green-50 hover:bg-green-100 rounded-xl transition-all group"
+                  className="flex flex-col items-center gap-2 p-3 bg-green-50 hover:bg-green-100 rounded-xl transition-all group"
                 >
                   <Gavel className="size-6 text-green-600 group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-bold text-slate-700">Live Auctions</span>
                 </button>
                 <button
                   onClick={() => navigate("/properties")}
-                  className="flex flex-col items-center gap-2 p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all group"
+                  className="flex flex-col items-center gap-2 p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all group"
                 >
                   <Eye className="size-6 text-slate-600 group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-bold text-slate-700">Browse Properties</span>
@@ -420,7 +420,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             )}
             <button
               onClick={() => onTabChange("messages")}
-              className="flex flex-col items-center gap-2 p-4 bg-purple-50 hover:bg-purple-100 rounded-xl transition-all group relative"
+              className="flex flex-col items-center gap-2 p-3 bg-purple-50 hover:bg-purple-100 rounded-xl transition-all group relative"
             >
               <MessageSquare className="size-6 text-purple-600 group-hover:scale-110 transition-transform" />
               <span className="text-xs font-bold text-slate-700">Messages</span>
@@ -432,7 +432,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             </button>
             <button
               onClick={() => onTabChange("profile")}
-              className="flex flex-col items-center gap-2 p-4 bg-orange-50 hover:bg-orange-100 rounded-xl transition-all group"
+              className="flex flex-col items-center gap-2 p-3 bg-orange-50 hover:bg-orange-100 rounded-xl transition-all group"
             >
               <User className="size-6 text-orange-600 group-hover:scale-110 transition-transform" />
               <span className="text-xs font-bold text-slate-700">My Profile</span>
@@ -442,8 +442,8 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
 
         {/* Activity Feed */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-slate-100">
-            <h3 className="font-black text-slate-900 flex items-center gap-2">
+          <div className="p-4 border-b border-slate-100">
+            <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
               <Clock className="size-5 text-slate-500" />
               Recent Activity
             </h3>
@@ -526,7 +526,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
               return activities.slice(0, 5).map((activity: any) => {
                 const Icon = activity.icon;
                 const content = (
-                  <div className="flex items-start gap-3 p-4 hover:bg-slate-50 transition-all">
+                  <div className="flex items-start gap-3 p-3 hover:bg-slate-50 transition-all">
                     <div className={`size-9 rounded-full ${activity.iconBg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
                       <Icon className={`size-4 ${activity.iconColor}`} />
                     </div>

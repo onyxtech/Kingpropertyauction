@@ -314,9 +314,9 @@ export default function Leads() {
                     </td>
                     <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => fetchLeadDetail(lead._id)}
+                        <button title="View Lead" onClick={() => fetchLeadDetail(lead._id)}
                           className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"><Eye className="size-4" /></button>
-                        <button onClick={() => { if (confirm("Delete this lead?")) deleteLead.mutate(lead._id); }}
+                        <button title="Delete Lead" onClick={() => { if (confirm("Delete this lead?")) deleteLead.mutate(lead._id); }}
                           className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"><Trash2 className="size-4" /></button>
                       </div>
                     </td>
@@ -359,7 +359,7 @@ export default function Leads() {
                       </div>
                     </div>
                   </div>
-                  <button onClick={() => { setSelectedLead(null); setShowReplyBox(false); setReplyMessage(''); setReplySubject(''); setReplyResult(null); }} className="size-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30">
+                  <button title="Close" onClick={() => { setSelectedLead(null); setShowReplyBox(false); setReplyMessage(''); setReplySubject(''); setReplyResult(null); }} className="size-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30">
                     <X className="size-5" />
                   </button>
                 </div>

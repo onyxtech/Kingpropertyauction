@@ -24,7 +24,7 @@ export default function CustomerLayout({ children, activeTab, onTabChange }: Cus
       />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <CustomerTopBar onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-5">
+        <main className="flex-1 overflow-y-auto p-2.5 sm:p-3 lg:p-4">
           {children}
         </main>
       </div>

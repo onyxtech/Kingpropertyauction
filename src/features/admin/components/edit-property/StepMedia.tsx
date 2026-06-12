@@ -21,7 +21,7 @@ export default function StepMedia({
             {form.existingImages.map((img: string, i: number) => (
               <div key={i} className="relative group">
                 <img src={mediaUrl(img)} alt="" className="w-full h-24 object-cover rounded-xl" />
-                <button type="button" onClick={() => removeExistingImage(i)} className="absolute top-1 right-1 size-6 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><X className="size-3" /></button>
+                <button type="button" title="Remove Image" onClick={() => removeExistingImage(i)} className="absolute top-1 right-1 size-6 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><X className="size-3" /></button>
               </div>
             ))}
           </div>
@@ -44,7 +44,7 @@ export default function StepMedia({
             {imagePreviews.map((preview: string, i: number) => (
               <div key={i} className="relative group">
                 <img src={preview} alt="" className="w-full h-24 object-cover rounded-xl" />
-                <button type="button" onClick={() => removeNewImage(i)} className="absolute top-1 right-1 size-6 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><X className="size-3" /></button>
+                <button type="button" title="Remove Image" onClick={() => removeNewImage(i)} className="absolute top-1 right-1 size-6 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><X className="size-3" /></button>
               </div>
             ))}
           </div>
@@ -62,7 +62,7 @@ export default function StepMedia({
               <div key={i} className="flex items-center gap-2 p-3 bg-blue-50 border-2 border-blue-200 rounded-xl">
                 <Video className="size-4 text-blue-600 flex-shrink-0" />
                 <video src={mediaUrl(vid)} className="h-16 rounded-lg flex-1" />
-                <button type="button" onClick={() => setExistingVideos(existingVideos.filter((_: any, idx: number) => idx !== i))} className="text-red-500 hover:text-red-700 flex-shrink-0"><X className="size-4" /></button>
+                <button type="button" title="Remove Video" onClick={() => setExistingVideos(existingVideos.filter((_: any, idx: number) => idx !== i))} className="text-red-500 hover:text-red-700 flex-shrink-0"><X className="size-4" /></button>
               </div>
             ))}
           </div>
@@ -75,7 +75,7 @@ export default function StepMedia({
               <div key={i} className="flex items-center gap-3 p-3 bg-green-50 border-2 border-green-200 rounded-xl">
                 <Video className="size-4 text-green-600" />
                 <span className="text-sm font-medium text-green-700 flex-1 truncate">{vid.name}</span>
-                <button type="button" onClick={() => setVideoFiles(videoFiles.filter((_: any, idx: number) => idx !== i))} className="text-red-500 hover:text-red-700"><X className="size-4" /></button>
+                <button type="button" title="Remove Video" onClick={() => setVideoFiles(videoFiles.filter((_: any, idx: number) => idx !== i))} className="text-red-500 hover:text-red-700"><X className="size-4" /></button>
               </div>
             ))}
           </div>
@@ -106,7 +106,7 @@ export default function StepMedia({
                 ) : (
                   <a href={mediaUrl(fp)} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-green-700 flex-1 truncate hover:underline">Floor Plan {i + 1}</a>
                 )}
-                <button type="button" onClick={() => setExistingFloorPlans(existingFloorPlans.filter((_: any, idx: number) => idx !== i))} className="text-red-500 hover:text-red-700 flex-shrink-0"><X className="size-4" /></button>
+                <button type="button" title="Remove Floor Plan" onClick={() => setExistingFloorPlans(existingFloorPlans.filter((_: any, idx: number) => idx !== i))} className="text-red-500 hover:text-red-700 flex-shrink-0"><X className="size-4" /></button>
               </div>
             ))}
           </div>
@@ -119,7 +119,7 @@ export default function StepMedia({
               <div key={i} className="flex items-center gap-3 p-3 bg-green-50 border-2 border-green-200 rounded-xl">
                 <FileText className="size-4 text-green-600" />
                 <span className="text-sm font-medium text-green-700 flex-1 truncate">{fp.name}</span>
-                <button type="button" onClick={() => setFloorPlanFiles(floorPlanFiles.filter((_: any, idx: number) => idx !== i))} className="text-red-500 hover:text-red-700"><X className="size-4" /></button>
+                <button type="button" title="Remove Floor Plan" onClick={() => setFloorPlanFiles(floorPlanFiles.filter((_: any, idx: number) => idx !== i))} className="text-red-500 hover:text-red-700"><X className="size-4" /></button>
               </div>
             ))}
           </div>
@@ -146,7 +146,7 @@ export default function StepMedia({
               <div key={i} className="flex items-center gap-2 p-3 bg-purple-50 border-2 border-purple-200 rounded-xl">
                 <FileText className="size-4 text-purple-600 flex-shrink-0" />
                 <a href={mediaUrl(doc)} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-purple-700 flex-1 truncate hover:underline">{doc.split('/').pop()}</a>
-                <button type="button" onClick={() => removeExistingLegalDoc(i)} className="text-red-500 hover:text-red-700 flex-shrink-0"><X className="size-4" /></button>
+                <button type="button" title="Remove Document" onClick={() => removeExistingLegalDoc(i)} className="text-red-500 hover:text-red-700 flex-shrink-0"><X className="size-4" /></button>
               </div>
             ))}
           </div>
@@ -159,7 +159,7 @@ export default function StepMedia({
               <div key={i} className="flex items-center gap-3 p-3 bg-purple-50 border-2 border-purple-200 rounded-xl">
                 <FileText className="size-4 text-purple-600" />
                 <span className="text-sm font-medium text-purple-700 flex-1 truncate">{doc.name}</span>
-                <button type="button" onClick={() => removeNewLegalDoc(i)} className="text-red-500 hover:text-red-700"><X className="size-4" /></button>
+                <button type="button" title="Remove Document" onClick={() => removeNewLegalDoc(i)} className="text-red-500 hover:text-red-700"><X className="size-4" /></button>
               </div>
             ))}
           </div>

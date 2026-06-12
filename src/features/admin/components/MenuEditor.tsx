@@ -344,6 +344,7 @@ export default function MenuEditor({
             </button>
             <button
               onClick={onClose}
+              title="Close"
               className="p-2.5 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-xl transition-all"
             >
               <X className="size-6 text-white" />
@@ -850,12 +851,14 @@ export default function MenuEditor({
                                           </div>
                                           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
+                                              title="Edit Item"
                                               onClick={() => handleEditItem(item)}
                                               className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-all"
                                             >
                                               <Edit className="size-4" />
                                             </button>
                                             <button
+                                              title="Delete Item"
                                               onClick={() => handleDeleteItem(item.id || item._id)}
                                               className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                                             >
@@ -914,12 +917,14 @@ export default function MenuEditor({
                                                           </div>
                                                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <button
+                                                              title="Edit Item"
                                                               onClick={() => handleEditItem(child)}
                                                               className="p-1.5 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-all"
                                                             >
                                                               <Edit className="size-3" />
                                                             </button>
                                                             <button
+                                                              title="Delete Item"
                                                               onClick={() => handleDeleteItem(child.id || child._id)}
                                                               className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                                                             >

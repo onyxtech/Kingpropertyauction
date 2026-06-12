@@ -10,8 +10,8 @@ export const registerSchema = Joi.object({
     .default("user"),
   isActive: Joi.boolean().optional(),
   agentDetails: Joi.object({
-    companyName: Joi.string().optional(),
-    licenseNumber: Joi.string().optional(),
+    companyName: Joi.string().allow("").optional(),
+    licenseNumber: Joi.string().allow("").optional(),
     commissionRate: Joi.number().optional(),
     specialization: Joi.string().optional(),
   }).optional(),

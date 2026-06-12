@@ -48,7 +48,7 @@ export default function TopBar() {
           {actions.map((action) => {
             const Icon = action.icon;
             return (
-              <button key={action.id} onClick={action.action}
+              <button key={action.id} onClick={action.action} title={action.label}
                 className={`px-4 py-2.5 bg-gradient-to-r ${theme.secondary} text-white rounded-xl text-sm font-bold hover:scale-105 transition-all shadow-lg flex items-center gap-2`}>
                 <Icon className="size-4" />
                 <span className="hidden xl:inline">{action.label}</span>

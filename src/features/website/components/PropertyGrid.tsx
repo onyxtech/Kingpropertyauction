@@ -63,8 +63,22 @@ export default function PropertyGrid({
     const locationStr = `${property.location?.city || ""} ${property.location?.area || ""} ${property.location?.state || ""}`;
     if (filters.location && !locationStr.toLowerCase().includes(filters.location.toLowerCase())) return false;
 
-    if (filters.minBeds && (property.specifications?.bedrooms || 0) < parseInt(filters.minBeds)) return false;
-    if (filters.minBaths && (property.specifications?.bathrooms || 0) < parseInt(filters.minBaths)) return false;
+    if (filters.minBeds) {
+      const beds = property.specifications?.bedrooms || 0;
+      if (filters.minBeds === "6plus") {
+        if (beds < 6) return false;
+      } else if (beds !== parseInt(filters.minBeds)) {
+        return false;
+      }
+    }
+    if (filters.minBaths) {
+      const baths = property.specifications?.bathrooms || 0;
+      if (filters.minBaths === "6plus") {
+        if (baths < 6) return false;
+      } else if (baths !== parseInt(filters.minBaths)) {
+        return false;
+      }
+    }
 
     if (filters.searchQuery) {
       const query = filters.searchQuery.toLowerCase();

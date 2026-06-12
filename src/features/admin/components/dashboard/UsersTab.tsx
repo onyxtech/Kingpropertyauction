@@ -168,12 +168,12 @@ export default function UsersTab({ users, usersLoading, theme, updateUserStatus,
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <button className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"><Eye className="size-4" /></button>
+                        <button title="View User" className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200"><Eye className="size-4" /></button>
                         {!user.isActive && (
-                          <button onClick={() => updateUserStatus.mutate({ id: user._id, status: "active" })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"><CheckCircle className="size-4" /></button>
+                          <button title="Activate User" onClick={() => updateUserStatus.mutate({ id: user._id, status: "active" })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200"><CheckCircle className="size-4" /></button>
                         )}
                         {user.isActive && user.role !== "admin" && (
-                          <button onClick={() => updateUserStatus.mutate({ id: user._id, status: "pending" })} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"><XCircle className="size-4" /></button>
+                          <button title="Set Pending" onClick={() => updateUserStatus.mutate({ id: user._id, status: "pending" })} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"><XCircle className="size-4" /></button>
                         )}
                         {user.roleRequest?.status === "pending" && (
                           <>
@@ -193,8 +193,8 @@ export default function UsersTab({ users, usersLoading, theme, updateUserStatus,
                             </button>
                           </>
                         )}
-                        <button onClick={() => onEditUser(user)} className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200"><Edit className="size-4" /></button>
-                        <button onClick={() => onDeleteUser(user._id)} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"><Trash2 className="size-4" /></button>
+                        <button title="Edit User" onClick={() => onEditUser(user)} className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200"><Edit className="size-4" /></button>
+                        <button title="Delete User" onClick={() => onDeleteUser(user._id)} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"><Trash2 className="size-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -209,11 +209,11 @@ export default function UsersTab({ users, usersLoading, theme, updateUserStatus,
           <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
             <p className="text-sm text-slate-600 font-medium">Showing {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, total)} of {total}</p>
             <div className="flex items-center gap-2">
-              <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1} className="p-2 bg-white border-2 border-slate-200 rounded-xl disabled:opacity-50"><ChevronLeft className="size-4" /></button>
+              <button title="Previous Page" onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1} className="p-2 bg-white border-2 border-slate-200 rounded-xl disabled:opacity-50"><ChevronLeft className="size-4" /></button>
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => (
                 <button key={i + 1} onClick={() => setPage(i + 1)} className={`size-9 rounded-xl text-sm font-bold ${page === i + 1 ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white" : "bg-white border-2 border-slate-200"}`}>{i + 1}</button>
               ))}
-              <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages} className="p-2 bg-white border-2 border-slate-200 rounded-xl disabled:opacity-50"><ChevronRight className="size-4" /></button>
+              <button title="Next Page" onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages} className="p-2 bg-white border-2 border-slate-200 rounded-xl disabled:opacity-50"><ChevronRight className="size-4" /></button>
             </div>
           </div>
         )}

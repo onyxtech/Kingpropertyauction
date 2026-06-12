@@ -154,21 +154,21 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
 
       <aside
         className={`
-          w-60 max-w-[85vw] bg-white/80 backdrop-blur-xl border-r-2 border-white/60
+          w-56 max-w-[85vw] bg-white/80 backdrop-blur-xl border-r-2 border-white/60
           flex flex-col shadow-xl h-screen overflow-hidden
           fixed top-0 left-0 z-50 transition-transform duration-300 ease-in-out
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0 lg:sticky lg:z-auto
         `}
       >
-        <div className="p-4 border-b-2 border-slate-100 flex items-center gap-2">
+        <div className="p-3 border-b-2 border-slate-100 flex items-center gap-2">
           <button onClick={() => navigate("/")} className="flex items-center gap-3 group flex-1 min-w-0">
-            <div className={`size-9 rounded-xl bg-gradient-to-br ${theme.primary} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0`}>
-              <LayoutDashboard className="size-5 text-white" />
+            <div className={`size-8 rounded-lg bg-gradient-to-br ${theme.primary} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0`}>
+              <LayoutDashboard className="size-4 text-white" />
             </div>
             <div className="text-left min-w-0">
-              <h1 className="font-black text-slate-900 text-sm leading-tight truncate">King Property Auction</h1>
-              <p className="text-xs text-slate-600 font-bold">My Dashboard</p>
+              <h1 className="font-black text-slate-900 text-[13px] leading-tight truncate">King Property Auction</h1>
+              <p className="text-[11px] text-slate-600 font-bold">My Dashboard</p>
             </div>
           </button>
           <button
@@ -183,7 +183,7 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
         {/* Active View Indicator */}
         {canSwitchView && (
           <div className="px-4 pt-4">
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold ${
+            <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold ${
               showSellerView
                 ? "bg-blue-50 text-blue-700 border border-blue-200"
                 : "bg-green-50 text-green-700 border border-green-200"
@@ -195,8 +195,8 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
         )}
 
         <nav className="flex-1 p-3 overflow-y-auto">
-          <div className="space-y-2">
-            <p className="text-xs font-black text-slate-500 uppercase tracking-wider px-4 mb-3">
+          <div className="space-y-1">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider px-3 mb-2">
               My Account
             </p>
             {navItems.map((item) => {
@@ -210,16 +210,16 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
                     navigate(`/dashboard/${item.id}`);
                     onMobileClose?.();
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-bold transition-all ${
                     isActive
                       ? `bg-gradient-to-r ${theme.secondary} text-white shadow-lg`
                       : "text-slate-700 hover:bg-slate-100"
                   }`}
                 >
-                  <Icon className="size-5" />
+                  <Icon className="size-4" />
                   <span className="flex-1 text-left">{item.label}</span>
                   {"badge" in item && item.badge && (
-                    <span className="size-5 bg-red-500 text-white text-xs font-black rounded-full flex items-center justify-center">
+                    <span className="size-4 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
                       {item.badge}
                     </span>
                   )}
@@ -235,9 +235,9 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
             <button
               onClick={handleSwitchView}
               disabled={switchView.isPending}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-blue-600 hover:bg-blue-50 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-[13px] font-bold transition-all disabled:opacity-50"
             >
-              <ArrowLeftRight className="size-5" />
+              <ArrowLeftRight className="size-4" />
               {showSellerView ? "Switch to Buyer View" : "Switch to Seller View"}
             </button>
           )}
@@ -246,9 +246,9 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
           {canApplyToSell && (
             <button
               onClick={() => setShowRoleSwitchModal(true)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-purple-600 hover:bg-purple-50 rounded-xl text-sm font-bold transition-all"
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg text-[13px] font-bold transition-all"
             >
-              <Building2 className="size-5" />
+              <Building2 className="size-4" />
               Become a Seller
             </button>
           )}
@@ -257,9 +257,9 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
           {canApplyToBid && (
             <button
               onClick={() => setShowRoleSwitchModal(true)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-green-600 hover:bg-green-50 rounded-xl text-sm font-bold transition-all"
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-green-600 hover:bg-green-50 rounded-lg text-[13px] font-bold transition-all"
             >
-              <ShoppingBag className="size-5" />
+              <ShoppingBag className="size-4" />
               Become a Buyer
             </button>
           )}
@@ -275,9 +275,9 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 rounded-xl text-sm font-bold transition-all"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg text-[13px] font-bold transition-all"
           >
-            <LogOut className="size-5" /> Logout
+            <LogOut className="size-4" /> Logout
           </button>
         </div>
       </aside>

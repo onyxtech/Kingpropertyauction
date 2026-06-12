@@ -101,6 +101,7 @@ export default function Properties() {
           <div className="flex gap-2">
             <button
               onClick={() => refetch()}
+              title="Refresh"
               className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
             >
               <RefreshCw className="size-5 text-slate-500" />

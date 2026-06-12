@@ -103,7 +103,7 @@ export default function Revenue() {
             </h1>
             <p className="text-slate-500 text-sm mt-1">{payments.length} payment records</p>
           </div>
-          <button onClick={() => refetch()} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+          <button onClick={() => refetch()} title="Refresh" className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
             <RefreshCw className="size-5 text-slate-500" />
           </button>
         </div>

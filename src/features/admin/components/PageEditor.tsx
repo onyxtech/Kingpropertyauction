@@ -102,8 +102,9 @@ export default function PageEditor({ onClose, editData }: PageEditorProps) {
               <Save className="size-4" />
               Save Page
             </button>
-            <button 
+            <button
               onClick={onClose}
+              title="Close"
               className="p-2.5 bg-white/20 backdrop-blur-md hover:bg-white/30 rounded-xl transition-all"
             >
               <X className="size-6 text-white" />
@@ -269,13 +270,14 @@ export default function PageEditor({ onClose, editData }: PageEditorProps) {
                                 </div>
                               </div>
                               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-all">
+                                <button title="Edit Component" className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-all">
                                   <Edit className="size-4" />
                                 </button>
-                                <button className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all">
+                                <button title="Duplicate Component" className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all">
                                   <Copy className="size-4" />
                                 </button>
-                                <button 
+                                <button
+                                  title="Delete Component"
                                   onClick={() => removeComponent(component.id)}
                                   className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
                                 >
