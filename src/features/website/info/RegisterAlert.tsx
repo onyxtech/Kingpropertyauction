@@ -3,11 +3,14 @@ import { Bell, Mail, MapPin, PoundSterling, Home, Sparkles, CheckCircle, Zap, Tr
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
 import { showSuccess, showError } from "@/lib/toast";
+import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
+import type { ParsedAddress } from "@/lib/googlePlaces";
 
 export default function RegisterAlert() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [alertLocation, setAlertLocation] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -211,18 +214,17 @@ export default function RegisterAlert() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Location</label>
-                <select name="location" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium">
-                  <option>All Locations</option>
-                  <option>London</option>
-                  <option>Manchester</option>
-                  <option>Birmingham</option>
-                  <option>Leeds</option>
-                  <option>Liverpool</option>
-                  <option>Bristol</option>
-                  <option>Edinburgh</option>
-                  <option>Glasgow</option>
-                </select>
+                <AddressAutocomplete
+                  label="Location"
+                  value={alertLocation}
+                  onChange={setAlertLocation}
+                  onAddressSelect={(parsed: ParsedAddress) =>
+                    setAlertLocation(parsed.city || parsed.formattedAddress || parsed.streetAddress)
+                  }
+                  placeholder="Search any area (leave empty for All Locations)"
+                  inputClassName="px-5 py-4 bg-white/80 rounded-2xl focus:ring-emerald-500 focus:border-emerald-500"
+                />
+                <input type="hidden" name="location" value={alertLocation} />
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">

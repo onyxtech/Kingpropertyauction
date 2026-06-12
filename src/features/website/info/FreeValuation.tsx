@@ -229,6 +229,8 @@ export default function FreeValuation() {
                     type="text"
                     name="city"
                     required
+                    value={addressFields?.city || ""}
+                    onChange={(e) => setAddressFields((f: any) => ({ ...f, city: e.target.value }))}
                     placeholder="London"
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
                   />
@@ -241,6 +243,8 @@ export default function FreeValuation() {
                     type="text"
                     name="postcode"
                     required
+                    value={addressFields?.postalCode || ""}
+                    onChange={(e) => setAddressFields((f: any) => ({ ...f, postalCode: e.target.value }))}
                     placeholder="W1A 1AA"
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
                   />

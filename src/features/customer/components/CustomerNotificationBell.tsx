@@ -79,8 +79,8 @@ export default function CustomerNotificationBell() {
       {open && createPortal(
         <div
           id="customer-notif-portal"
-          className="fixed z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 w-80 overflow-hidden"
-          style={{ top: "68px", right: "80px" }}
+          className="fixed z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden left-2 right-2 w-auto sm:left-auto sm:right-20 sm:w-80"
+          style={{ top: "68px" }}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">

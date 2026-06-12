@@ -1,3 +1,4 @@
+import { useState } from "react";
 import CustomerSidebar from "./CustomerSidebar";
 import CustomerTopBar from "./CustomerTopBar";
 import NotificationToast from "./NotificationToast";
@@ -11,13 +12,19 @@ interface CustomerLayoutProps {
 
 export default function CustomerLayout({ children, activeTab, onTabChange }: CustomerLayoutProps) {
   const { toasts } = useCustomerNotifications();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      <CustomerSidebar activeTab={activeTab} onTabChange={onTabChange} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <CustomerTopBar />
-        <main className="flex-1 overflow-y-auto p-6">
+      <CustomerSidebar
+        activeTab={activeTab}
+        onTabChange={onTabChange}
+        mobileOpen={mobileOpen}
+        onMobileClose={() => setMobileOpen(false)}
+      />
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <CustomerTopBar onMenuClick={() => setMobileOpen(true)} />
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-5">
           {children}
         </main>
       </div>

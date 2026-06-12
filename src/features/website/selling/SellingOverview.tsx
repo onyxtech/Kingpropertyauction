@@ -1,4 +1,5 @@
 import { Briefcase, TrendingUp, Clock, Award, Users, CheckCircle, Sparkles, PoundSterling, Shield, Target, X, Building2 } from "lucide-react";
+import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
 import { preventMinus } from "@/utils/validation";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
@@ -260,14 +261,19 @@ export default function SellingOverview() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-bold text-slate-700 mb-2">Full Address</label>
-                      <input
-                        type="text"
-                        placeholder="Enter full property address"
-                        className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all font-medium"
+                      <AddressAutocomplete
+                        label="Full Address"
                         value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        required
+                        onChange={(v) => setFormData({ ...formData, address: v })}
+                        onAddressSelect={(parsed: any) =>
+                          setFormData((f: any) => ({
+                            ...f,
+                            address: parsed.streetAddress || parsed.formattedAddress,
+                            postcode: parsed.postalCode || f.postcode,
+                          }))
+                        }
+                        placeholder="Start typing property address..."
+                        inputClassName="px-4 py-3 bg-white rounded-xl focus:ring-purple-500 focus:border-purple-500 font-medium"
                       />
                     </div>
                     

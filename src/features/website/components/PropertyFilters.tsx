@@ -8,6 +8,8 @@ import {
   Bed,
   Bath,
 } from "lucide-react";
+import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
+import type { ParsedAddress } from "@/lib/googlePlaces";
 
 interface Filters {
   propertyType: string;
@@ -184,14 +186,14 @@ export default function PropertyFilters({
                     <MapPin className="size-4 text-red-600" />
                     Location
                   </label>
-                  <input
-                    type="text"
+                  <AddressAutocomplete
                     value={filters.location}
-                    onChange={(e) =>
-                      setFilters({ ...filters, location: e.target.value })
+                    onChange={(v) => setFilters({ ...filters, location: v })}
+                    onAddressSelect={(parsed: ParsedAddress) =>
+                      setFilters({ ...filters, location: parsed.city || parsed.formattedAddress || parsed.streetAddress })
                     }
                     placeholder="e.g. London, Manchester..."
-                    className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-700 placeholder:text-slate-400 shadow-sm hover:border-slate-300"
+                    inputClassName="px-4 py-3 bg-white rounded-xl focus:ring-blue-500 focus:border-blue-500 text-slate-700"
                   />
                 </div>
 

@@ -1,4 +1,5 @@
 import { Gift, PoundSterling, Users, TrendingUp, Sparkles, CheckCircle, Award, Target, Zap, X, Mail, User, Phone, Building, MessageSquare, MapPin, Home, Info, HelpCircle, BookOpen } from "lucide-react";
+import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
 import { useState } from "react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
@@ -408,17 +409,20 @@ export default function ReferralFee() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-                      <Home className="size-4 text-teal-600" />
-                      Street Address *
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-semibold text-slate-900"
-                      placeholder="123 Main Street"
+                    <AddressAutocomplete
+                      label="Street Address *"
                       value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      required
+                      onChange={(v) => setFormData({ ...formData, address: v })}
+                      onAddressSelect={(parsed: any) =>
+                        setFormData((f: any) => ({
+                          ...f,
+                          address: parsed.streetAddress || parsed.formattedAddress,
+                          city: parsed.city || f.city,
+                          postcode: parsed.postalCode || f.postcode,
+                        }))
+                      }
+                      placeholder="Start typing address..."
+                      inputClassName="px-5 py-4 bg-white rounded-xl focus:ring-teal-500 focus:border-teal-500 font-semibold text-slate-900"
                     />
                   </div>
                   <div>

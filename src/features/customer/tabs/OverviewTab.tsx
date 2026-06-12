@@ -63,10 +63,10 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className={`bg-gradient-to-r ${showSellerView ? "from-blue-600 to-indigo-700" : "from-green-600 to-emerald-700"} rounded-3xl p-6 text-white shadow-xl`}>
-        <div className="flex items-center justify-between">
+      <div className={`bg-gradient-to-r ${showSellerView ? "from-blue-600 to-indigo-700" : "from-green-600 to-emerald-700"} rounded-2xl lg:rounded-3xl p-4 sm:p-6 text-white shadow-xl`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-black mb-1">
+            <h2 className="text-xl sm:text-2xl font-black mb-1">
               {showSellerView
                 ? role === "agent"
                   ? "Agent Dashboard"
@@ -81,7 +81,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                 : "Track your bids and discover new properties"}
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             {showSellerView && (
               <button
                 onClick={() => navigate("/add-property")}
@@ -111,12 +111,12 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Seller stats */}
         {showSellerView && canAddProperty && (
           <button
             onClick={() => onTabChange("my-properties")}
-            className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-blue-200"
+            className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-blue-200"
           >
             <div className="flex items-center justify-between mb-3">
               <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -124,7 +124,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
               </div>
               <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-3xl font-black text-white">{myProperties.length}</p>
+            <p className="text-2xl sm:text-3xl font-black text-white">{myProperties.length}</p>
             <p className="text-sm text-white/80 font-medium mt-0.5">My Properties</p>
           </button>
         )}
@@ -132,7 +132,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
         {showSellerView && (
           <button
             onClick={() => onTabChange("my-auctions")}
-            className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-amber-200"
+            className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-amber-200"
           >
             <div className="flex items-center justify-between mb-3">
               <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -140,14 +140,14 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
               </div>
               <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-3xl font-black text-white">{myPropertyStats?.liveAuctions || 0}</p>
+            <p className="text-2xl sm:text-3xl font-black text-white">{myPropertyStats?.liveAuctions || 0}</p>
             <p className="text-sm text-white/80 font-medium mt-0.5">Live Auctions</p>
           </button>
         )}
         {showSellerView && (
           <button
             onClick={() => onTabChange("property-bidders")}
-            className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-purple-200"
+            className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-purple-200"
           >
             <div className="flex items-center justify-between mb-3">
               <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -155,14 +155,14 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
               </div>
               <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-3xl font-black text-white">{myPropertyStats?.totalBidsReceived || 0}</p>
+            <p className="text-2xl sm:text-3xl font-black text-white">{myPropertyStats?.totalBidsReceived || 0}</p>
             <p className="text-sm text-white/80 font-medium mt-0.5">Bids Received</p>
           </button>
         )}
         {showSellerView && (
           <button
             onClick={() => onTabChange("messages")}
-            className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-emerald-200"
+            className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-emerald-200"
           >
             <div className="flex items-center justify-between mb-3">
               <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -170,7 +170,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
               </div>
               <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-3xl font-black text-white">{enquiryCount}</p>
+            <p className="text-2xl sm:text-3xl font-black text-white">{enquiryCount}</p>
             <p className="text-sm text-white/80 font-medium mt-0.5">Customer Enquiries</p>
           </button>
         )}
@@ -179,7 +179,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
           <>
             <button
               onClick={() => onTabChange("my-bids")}
-              className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-green-200"
+              className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-green-200"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -187,7 +187,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                 </div>
                 <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
               </div>
-              <p className="text-3xl font-black text-white">{activeBids.length}</p>
+              <p className="text-2xl sm:text-3xl font-black text-white">{activeBids.length}</p>
               <p className="text-sm text-white/80 font-medium mt-0.5">Active Bids</p>
               {outbidBids.length > 0 && (
                 <p className="text-xs text-white/70 font-bold mt-1">⚠️ {outbidBids.length} outbid</p>
@@ -195,7 +195,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             </button>
             <button
               onClick={() => onTabChange("my-bids")}
-              className="bg-gradient-to-br from-amber-500 to-yellow-600 rounded-2xl p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-amber-200"
+              className="bg-gradient-to-br from-amber-500 to-yellow-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-amber-200"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -203,13 +203,13 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                 </div>
                 <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
               </div>
-              <p className="text-3xl font-black text-white">{wonBids.length}</p>
+              <p className="text-2xl sm:text-3xl font-black text-white">{wonBids.length}</p>
               <p className="text-sm text-white/80 font-medium mt-0.5">Auctions Won</p>
             </button>
             {showBuyerView && offerCount > 0 && (
               <button
                 onClick={() => onTabChange("offers")}
-                className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-amber-200"
+                className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-amber-200"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -219,7 +219,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                     {offerCount}
                   </span>
                 </div>
-                <p className="text-3xl font-black text-white">{offerCount}</p>
+                <p className="text-2xl sm:text-3xl font-black text-white">{offerCount}</p>
                 <p className="text-sm text-white/80 font-medium mt-0.5">Property Offers</p>
               </button>
             )}
@@ -228,7 +228,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
         {/* Always show messages */}
         <button
           onClick={() => onTabChange("messages")}
-          className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-violet-200"
+          className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-4 sm:p-5 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-violet-200"
         >
           <div className="flex items-center justify-between mb-3">
             <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -236,13 +236,13 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             </div>
             <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
           </div>
-          <p className="text-3xl font-black text-white">{unreadCount}</p>
+          <p className="text-2xl sm:text-3xl font-black text-white">{unreadCount}</p>
           <p className="text-sm text-white/80 font-medium mt-0.5">Unread Messages</p>
         </button>
       </div>
 
       {/* Content Grid */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
         {/* Recent Properties - seller view */}
         {showSellerView && canAddProperty && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

@@ -1,4 +1,5 @@
 import { Zap, CheckCircle, Home, TrendingUp, Shield, Award, Sparkles, Target, Users, Clock, X, User, Mail, Phone, FileText, Landmark, PoundSterling } from "lucide-react";
+import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
 import { useState } from "react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
@@ -343,17 +344,18 @@ export default function BuyingOverview() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
-                        <Target className="size-4 text-cyan-600" />
-                        Preferred Location *
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-5 py-4 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all font-semibold text-slate-900"
-                        placeholder="London, Manchester, etc."
+                      <AddressAutocomplete
+                        label="Preferred Location *"
                         value={formData.location}
-                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                        required
+                        onChange={(v) => setFormData({ ...formData, location: v })}
+                        onAddressSelect={(parsed: any) =>
+                          setFormData((f: any) => ({
+                            ...f,
+                            location: parsed.city || parsed.formattedAddress || parsed.streetAddress,
+                          }))
+                        }
+                        placeholder="London, Manchester, etc."
+                        inputClassName="px-5 py-4 bg-white rounded-xl focus:ring-cyan-500 focus:border-cyan-500 font-semibold text-slate-900"
                       />
                     </div>
                     <div>
