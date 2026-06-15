@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { MapPin } from "lucide-react";
-import { fetchGoogleApiKey, loadGoogleMapsScript, ParsedAddress } from "@/lib/googlePlaces";
+import {
+  fetchGoogleApiKey,
+  loadGoogleMapsScript,
+  ParsedAddress,
+} from "@/lib/googlePlaces";
 
 interface AddressAutocompleteProps {
   value: string;
@@ -63,6 +67,9 @@ export default function AddressAutocomplete({
 
   const removeDropdown = () => {
     if (dropdownRef.current) {
+      if ((dropdownRef.current as any)._cleanup) {
+        (dropdownRef.current as any)._cleanup();
+      }
       dropdownRef.current.remove();
       dropdownRef.current = null;
     }
@@ -113,8 +120,12 @@ export default function AddressAutocomplete({
         alignItems: "center",
       });
 
-      item.onmouseover = () => { item.style.background = "#eff6ff"; };
-      item.onmouseout = () => { item.style.background = "white"; };
+      item.onmouseover = () => {
+        item.style.background = "#eff6ff";
+      };
+      item.onmouseout = () => {
+        item.style.background = "white";
+      };
 
       item.onmousedown = async (e) => {
         e.preventDefault();
@@ -122,7 +133,7 @@ export default function AddressAutocomplete({
         removeDropdown();
 
         try {
-          const { Place } = (window.google.maps.places as any);
+          const { Place } = window.google.maps.places as any;
           const place = new Place({ id: placeId });
           await place.fetchFields({
             fields: ["addressComponents", "formattedAddress", "location"],
@@ -144,19 +155,25 @@ export default function AddressAutocomplete({
             parsed.lng = place.location.lng();
           }
 
-          for (const comp of (place.addressComponents || [])) {
+          for (const comp of place.addressComponents || []) {
             const types = comp.types || [];
-            if (types.includes("street_number")) parsed.streetNumber = comp.longText;
+            if (types.includes("street_number"))
+              parsed.streetNumber = comp.longText;
             if (types.includes("route")) parsed.streetAddress = comp.longText;
-            if (types.includes("postal_town") || types.includes("locality")) parsed.city = comp.longText;
-            if (types.includes("administrative_area_level_2")) parsed.area = comp.longText;
-            if (types.includes("administrative_area_level_1")) parsed.state = comp.longText;
+            if (types.includes("postal_town") || types.includes("locality"))
+              parsed.city = comp.longText;
+            if (types.includes("administrative_area_level_2"))
+              parsed.area = comp.longText;
+            if (types.includes("administrative_area_level_1"))
+              parsed.state = comp.longText;
             if (types.includes("country")) parsed.country = comp.longText;
-            if (types.includes("postal_code")) parsed.postalCode = comp.longText;
+            if (types.includes("postal_code"))
+              parsed.postalCode = comp.longText;
           }
 
           parsed.streetAddress = [parsed.streetNumber, parsed.streetAddress]
-            .filter(Boolean).join(" ");
+            .filter(Boolean)
+            .join(" ");
 
           onAddressSelect(parsed);
         } catch (err) {
@@ -178,6 +195,22 @@ export default function AddressAutocomplete({
 
     document.body.appendChild(div);
     dropdownRef.current = div;
+
+    // Reposition on scroll/resize
+    const reposition = () => {
+      if (inputRef.current && dropdownRef.current) {
+        const newRect = inputRef.current.getBoundingClientRect();
+        dropdownRef.current.style.top = newRect.bottom + "px";
+        dropdownRef.current.style.left = newRect.left + "px";
+        dropdownRef.current.style.width = newRect.width + "px";
+      }
+    };
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+    (div as any)._cleanup = () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
   };
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,13 +224,11 @@ export default function AddressAutocomplete({
     clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const { AutocompleteSuggestion } = (window.google.maps.places as any);
-        const { suggestions } = await AutocompleteSuggestion
-          .fetchAutocompleteSuggestions({
+        const { AutocompleteSuggestion } = window.google.maps.places as any;
+        const { suggestions } =
+          await AutocompleteSuggestion.fetchAutocompleteSuggestions({
             input: val,
-            includedRegionCodes: [
-              typeof country === "string" ? country : "gb",
-            ],
+            includedRegionCodes: [typeof country === "string" ? country : "gb"],
           });
 
         const mapped = (suggestions || []).map((s: any) => {
@@ -205,10 +236,14 @@ export default function AddressAutocomplete({
             // Method 1: Direct placePrediction API (newer)
             if (s.placePrediction) {
               return {
-                placeId: s.placePrediction.placeId ||
-                         s.placePrediction.place?.id || "",
-                text: s.placePrediction.text?.text ||
-                      s.placePrediction.structuredFormat?.mainText?.text || "",
+                placeId:
+                  s.placePrediction.placeId ||
+                  s.placePrediction.place?.id ||
+                  "",
+                text:
+                  s.placePrediction.text?.text ||
+                  s.placePrediction.structuredFormat?.mainText?.text ||
+                  "",
               };
             }
 
@@ -216,9 +251,13 @@ export default function AddressAutocomplete({
             const raw = JSON.parse(JSON.stringify(s));
 
             // Try known internal keys
-            const data = raw.mh?.[0] || raw.nh?.[0] ||
-                         raw.oh?.[0] || raw.ph?.[0] ||
-                         raw.Bh?.[0] || raw.Ch?.[0];
+            const data =
+              raw.mh?.[0] ||
+              raw.nh?.[0] ||
+              raw.oh?.[0] ||
+              raw.ph?.[0] ||
+              raw.Bh?.[0] ||
+              raw.Ch?.[0];
             if (data) {
               return {
                 placeId: data?.[1] || "",
@@ -234,10 +273,12 @@ export default function AddressAutocomplete({
                 if (Array.isArray(item) && item.length >= 3) {
                   const possibleId = item[1];
                   const possibleText = item[2];
-                  if (typeof possibleId === "string" &&
-                      possibleId.length > 10 &&
-                      (typeof possibleText === "string" ||
-                       Array.isArray(possibleText))) {
+                  if (
+                    typeof possibleId === "string" &&
+                    possibleId.length > 10 &&
+                    (typeof possibleText === "string" ||
+                      Array.isArray(possibleText))
+                  ) {
                     return {
                       placeId: possibleId,
                       text: Array.isArray(possibleText)
@@ -281,7 +322,8 @@ export default function AddressAutocomplete({
     <div className={className}>
       {label && (
         <label className="block text-sm font-bold text-slate-700 mb-2">
-          {label}{required && " *"}
+          {label}
+          {required && " *"}
         </label>
       )}
       <div className="relative">
@@ -298,7 +340,10 @@ export default function AddressAutocomplete({
           autoComplete="off"
         />
         {isReady && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2" title="Google Places enabled">
+          <div
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+            title="Google Places enabled"
+          >
             <div className="size-2 bg-green-500 rounded-full" />
           </div>
         )}

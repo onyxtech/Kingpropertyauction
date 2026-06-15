@@ -1,5 +1,6 @@
 import Header from "./Header";
 import Footer from "./Footer";
+import AIChatWidget from "../components/AIChatWidget";
 
 interface PublicLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ export default function PublicLayout({ children, className }: PublicLayoutProps)
       <Header />
       {children}
       <Footer />
+      <AIChatWidget />
     </div>
   );
 }

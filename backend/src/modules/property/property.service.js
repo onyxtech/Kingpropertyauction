@@ -44,9 +44,10 @@ export const getProperties = async (query = {}) => {
 
   const filter = {};
 
-  if (status) filter.propertyStatus = status.includes(",")
-  ? { $in: status.split(",").map(s => s.trim()) }
-  : status;
+  if (status)
+    filter.propertyStatus = status.includes(",")
+      ? { $in: status.split(",").map((s) => s.trim()) }
+      : status;
   if (type) filter.propertyType = type;
 
   // If approvalStatus is 'all', don't add filter → shows all statuses
@@ -58,6 +59,23 @@ export const getProperties = async (query = {}) => {
   if (category) filter.propertyCategory = category;
   if (listingType) filter.listingType = listingType;
   if (city) filter["location.city"] = city;
+  if (query.search) {
+    const searchRegex = new RegExp(query.search, "i");
+    filter.$or = [
+      { propertyTitle: searchRegex },
+      { propertyDescription: searchRegex },
+      { propertyType: searchRegex },
+      { "location.city": searchRegex },
+      { "location.area": searchRegex },
+      { "location.postalCode": searchRegex },
+      { "location.streetAddress": searchRegex },
+      { propertyID: searchRegex },
+    ];
+  }
+  if (query.location) {
+    const locRegex = new RegExp(query.location, "i");
+    filter["location.city"] = locRegex;
+  }
   if (auctionStatus) filter["auctionDetails.auctionStatus"] = auctionStatus;
 
   if (query.auctionSlug) {
@@ -74,7 +92,7 @@ export const getProperties = async (query = {}) => {
   const [properties, total] = await Promise.all([
     Property.find(filter)
       .select(
-        "propertyTitle slug propertyType listingType propertyStatus approvalStatus location pricing specifications media auctionDetails currentBid totalBids featured soldPrice soldTo createdBy winningBidder createdAt updatedAt legalInfo",
+        "propertyTitle slug propertyType listingType propertyStatus approvalStatus location pricing specifications media auctionDetails currentBid totalBids featured soldPrice soldTo createdBy winningBidder createdAt updatedAt legalInfo propertyID propertyDescription",
       )
       .sort(sortBy)
       .skip(skip)

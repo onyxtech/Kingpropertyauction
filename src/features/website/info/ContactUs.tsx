@@ -14,7 +14,7 @@ import {
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
 import { showSuccess, showError } from "@/lib/toast";
-import AIChatWidget from "@/features/shared/components/AIChatWidget";
+// import AIChatWidget from "@/features/shared/components/AIChatWidget";
 
 export default function ContactUs() {
   const [submitted, setSubmitted] = useState(false);
@@ -371,7 +371,7 @@ export default function ContactUs() {
       </div>
 
       {/* AI Chat Widget */}
-      <AIChatWidget />
+      {/* <AIChatWidget /> */}
     </PublicLayout>
   );
 }

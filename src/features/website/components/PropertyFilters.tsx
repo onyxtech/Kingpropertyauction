@@ -17,6 +17,7 @@ interface Filters {
   maxPrice: string;
   location: string;
   minBeds: string;
+  maxBeds: string;
   minBaths: string;
   searchQuery: string;
 }
@@ -112,6 +113,7 @@ export default function PropertyFilters({
                         maxPrice: "",
                         location: "",
                         minBeds: "",
+                        maxBeds: "",
                         minBaths: "",
                         searchQuery: filters.searchQuery,
                       })
@@ -154,7 +156,10 @@ export default function PropertyFilters({
                     type="number"
                     min="0"
                     value={filters.minPrice}
-                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
+                    onKeyDown={(e) => {
+                      if (e.key === "-" || e.key === "e" || e.key === "E")
+                        e.preventDefault();
+                    }}
                     onChange={(e) =>
                       setFilters({ ...filters, minPrice: e.target.value })
                     }
@@ -172,7 +177,10 @@ export default function PropertyFilters({
                     type="number"
                     min="0"
                     value={filters.maxPrice}
-                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
+                    onKeyDown={(e) => {
+                      if (e.key === "-" || e.key === "e" || e.key === "E")
+                        e.preventDefault();
+                    }}
                     onChange={(e) =>
                       setFilters({ ...filters, maxPrice: e.target.value })
                     }
@@ -190,7 +198,13 @@ export default function PropertyFilters({
                     value={filters.location}
                     onChange={(v) => setFilters({ ...filters, location: v })}
                     onAddressSelect={(parsed: ParsedAddress) =>
-                      setFilters({ ...filters, location: parsed.city || parsed.formattedAddress || parsed.streetAddress })
+                      setFilters({
+                        ...filters,
+                        location:
+                          parsed.city ||
+                          parsed.formattedAddress ||
+                          parsed.streetAddress,
+                      })
                     }
                     placeholder="e.g. London, Manchester..."
                     inputClassName="px-4 py-3 bg-white rounded-xl focus:ring-blue-500 focus:border-blue-500 text-slate-700"
@@ -200,12 +214,34 @@ export default function PropertyFilters({
                 <div>
                   <label className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                     <Bed className="size-4 text-purple-600" />
-                    Bedrooms
+                    Min Bedrooms
                   </label>
                   <select
                     value={filters.minBeds}
                     onChange={(e) =>
                       setFilters({ ...filters, minBeds: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-700 shadow-sm hover:border-slate-300"
+                  >
+                    <option value="">Any</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6plus">6+</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <Bed className="size-4 text-purple-600" />
+                    Max Bedrooms
+                  </label>
+                  <select
+                    value={filters.maxBeds}
+                    onChange={(e) =>
+                      setFilters({ ...filters, maxBeds: e.target.value })
                     }
                     className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-700 shadow-sm hover:border-slate-300"
                   >
@@ -280,7 +316,9 @@ export default function PropertyFilters({
                       {filters.minBeds && (
                         <div className="px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg">
                           <Bed className="size-3" />
-                          {filters.minBeds === "6plus" ? "6+ beds" : `${filters.minBeds} bed${filters.minBeds === "1" ? "" : "s"}`}
+                          {filters.minBeds === "6plus"
+                            ? "6+ beds"
+                            : `${filters.minBeds} bed${filters.minBeds === "1" ? "" : "s"}`}
                           <button
                             onClick={() =>
                               setFilters({ ...filters, minBeds: "" })
@@ -294,7 +332,9 @@ export default function PropertyFilters({
                       {filters.minBaths && (
                         <div className="px-3 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg">
                           <Bath className="size-3" />
-                          {filters.minBaths === "6plus" ? "6+ baths" : `${filters.minBaths} bath${filters.minBaths === "1" ? "" : "s"}`}
+                          {filters.minBaths === "6plus"
+                            ? "6+ baths"
+                            : `${filters.minBaths} bath${filters.minBaths === "1" ? "" : "s"}`}
                           <button
                             onClick={() =>
                               setFilters({ ...filters, minBaths: "" })

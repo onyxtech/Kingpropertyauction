@@ -1,5 +1,6 @@
 import { mediaUrl } from "@/lib/mediaUrl";
-import { useNavigate, useParams } from "react-router";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import {
   Sparkles,
   Home,
@@ -14,6 +15,8 @@ import {
   Building2,
   Building,
   Car,
+  Search,
+  X,
 } from "lucide-react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { usePropertyApi } from "@/features/property/api/usePropertyApi";
@@ -25,11 +28,59 @@ export default function ViewAllLots() {
   const navigate = useNavigate();
   const { slug } = useParams();
 
+  const [urlParams] = useSearchParams();
+  const urlSearch = urlParams.get("search") || "";
+  const urlMinPrice = urlParams.get("minPrice") || "";
+  const urlMaxPrice = urlParams.get("maxPrice") || "";
+  const urlMinBeds = urlParams.get("minBeds") || "";
+  const urlMaxBeds = urlParams.get("maxBeds") || "";
+
+  const [lotsPage, setLotsPage] = useState(1);
+  const [allLots, setAllLots] = useState<any[]>([]);
+
   const { useGetProperties } = usePropertyApi();
   const { data: lotsData, isLoading: loading } = useGetProperties({
     auctionSlug: slug || undefined,
+    search: urlSearch || undefined,
+    page: lotsPage,
+    pageSize: 12,
   } as any);
+
   const lots: any[] = lotsData?.data || [];
+  const lotsTotal = lotsData?.total || 0;
+  const hasMoreLots = allLots.length < lotsTotal;
+
+  // Append new lots
+  useEffect(() => {
+    if (lots.length > 0) {
+      setAllLots((prev) => {
+        const existingIds = new Set(prev.map((p: any) => p._id));
+        const newOnes = lots.filter((p: any) => !existingIds.has(p._id));
+        return [...prev, ...newOnes];
+      });
+    }
+  }, [lots]);
+
+  const handleLoadMoreLots = () => setLotsPage((prev) => prev + 1);
+
+  // Client-side filtering
+  const displayLots = allLots.length > 0 ? allLots : lots;
+  const filteredLots = displayLots.filter((lot: any) => {
+    const price = lot.pricing?.startingAuctionPrice || 0;
+    if (urlMinPrice && price < parseInt(urlMinPrice)) return false;
+    if (urlMaxPrice && price > parseInt(urlMaxPrice)) return false;
+    if (
+      urlMinBeds &&
+      (lot.specifications?.bedrooms || 0) < parseInt(urlMinBeds)
+    )
+      return false;
+    if (
+      urlMaxBeds &&
+      (lot.specifications?.bedrooms || 0) > parseInt(urlMaxBeds)
+    )
+      return false;
+    return true;
+  });
 
   // Get all auctions to match per-lot and show correct badges/timers
   const { useGetAuctions } = useAuctionApi();
@@ -67,11 +118,12 @@ export default function ViewAllLots() {
             <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md rounded-full mb-6 border-2 border-white/30 shadow-xl">
               <Sparkles className="size-4 text-yellow-300 animate-pulse" />
               <span className="text-sm font-bold text-white">
-                📦 {lots.length} {lots.length === 1 ? "Property" : "Properties"}{" "}
+                📦 {filteredLots.length}{" "}
+                {lots.length === 1 ? "Property" : "Properties"}{" "}
                 {auction ? `in ${auction.auctionTitle}` : "Available"}
               </span>
             </div>
-                        <h1 className="text-6xl font-black text-white mb-6 leading-tight drop-shadow-lg">
+            <h1 className="text-6xl font-black text-white mb-6 leading-tight drop-shadow-lg">
               {auction ? auction.auctionTitle : "All Properties"}
               <br />
               <span className="text-cyan-300">
@@ -80,10 +132,14 @@ export default function ViewAllLots() {
                     <span className="size-3 bg-red-500 rounded-full inline-block animate-pulse" />
                     Live Auction
                   </span>
-                ) : auction ? "Browse Lots" : "Browse & Bid"}
+                ) : auction ? (
+                  "Browse Lots"
+                ) : (
+                  "Browse & Bid"
+                )}
               </span>
             </h1>
-                        {auction && (
+            {auction && (
               <div className="flex items-center justify-center gap-3 text-white font-medium mt-4">
                 <Clock className="size-5 text-white/80" />
                 <span className="text-white/90">
@@ -91,11 +147,18 @@ export default function ViewAllLots() {
                 </span>
                 {auction.status === "live" && auction.endDateTime ? (
                   <span className="text-xl font-black text-yellow-300">
-                    <CountdownTimer endDate={new Date(auction.endDateTime)} compact={true} gradient="from-yellow-300 to-yellow-300" />
+                    <CountdownTimer
+                      endDate={new Date(auction.endDateTime)}
+                      compact={true}
+                      gradient="from-yellow-300 to-yellow-300"
+                    />
                   </span>
                 ) : (
                   <span className="text-lg font-bold text-white">
-                    {new Date(auction.startDateTime).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                    {new Date(auction.startDateTime).toLocaleDateString(
+                      "en-US",
+                      { month: "long", day: "numeric", year: "numeric" },
+                    )}
                   </span>
                 )}
               </div>
@@ -106,10 +169,33 @@ export default function ViewAllLots() {
 
       {/* Properties Grid */}
       <div className="container mx-auto px-6 py-12 relative z-10">
+        {(urlSearch ||
+          urlMinPrice ||
+          urlMaxPrice ||
+          urlMinBeds ||
+          urlMaxBeds) && (
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 mb-6 flex items-center justify-between">
+            <p className="text-blue-800 font-bold text-sm">
+              Filters: {urlSearch && `"${urlSearch}"`}
+              {urlMinPrice && ` Min £${parseInt(urlMinPrice).toLocaleString()}`}
+              {urlMaxPrice && ` Max £${parseInt(urlMaxPrice).toLocaleString()}`}
+              {urlMinBeds && ` ${urlMinBeds}+ beds`}
+              {urlMaxBeds && ` Max ${urlMaxBeds} beds`}
+            </p>
+            <button
+              onClick={() => navigate("/view-all-lots")}
+              className="text-blue-600 font-bold text-sm hover:underline"
+            >
+              Clear All
+            </button>
+          </div>
+        )}
         <p className="text-slate-600 text-lg font-medium mb-8">
           Showing{" "}
-          <span className="font-black text-slate-900">{lots.length}</span>{" "}
-          {lots.length === 1 ? "property" : "properties"}
+          <span className="font-black text-slate-900">
+            {filteredLots.length}
+          </span>{" "}
+          {filteredLots.length === 1 ? "property" : "properties"}
         </p>
 
         {loading ? (
@@ -128,7 +214,7 @@ export default function ViewAllLots() {
               </div>
             ))}
           </div>
-        ) : lots.length === 0 ? (
+        ) : filteredLots.length === 0 ? (
           <div className="text-center py-20">
             <Building2 className="size-20 text-slate-300 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-slate-600 mb-2">
@@ -150,10 +236,10 @@ export default function ViewAllLots() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {lots.map((lot) => {
+            {filteredLots.map((lot) => {
               const isAuction = lot.listingType === "auction";
-              const isSold = lot.propertyStatus === 'sold';
-              const isUnsold = lot.propertyStatus === 'unsold';
+              const isSold = lot.propertyStatus === "sold";
+              const isUnsold = lot.propertyStatus === "unsold";
               const currentBid =
                 lot.currentBid || lot.pricing?.startingAuctionPrice || 0;
               const reservePrice = lot.pricing?.reservePrice || 0;
@@ -164,19 +250,22 @@ export default function ViewAllLots() {
                 ? lot.soldPrice || lot.currentBid || 0
                 : lot.currentBid || lot.pricing?.startingAuctionPrice || 0;
               const bidLabel = isSold
-                ? 'Current Bid'
+                ? "Current Bid"
                 : isUnsold
-                ? 'Highest Bid'
-                : lot.currentBid > 0
-                ? 'Current Bid'
-                : 'Starting Price';
+                  ? "Highest Bid"
+                  : lot.currentBid > 0
+                    ? "Current Bid"
+                    : "Starting Price";
 
               // Find which auction this lot belongs to
-              const lotAuction = auction || auctions.find((a: any) =>
-                a.properties?.some((p: any) =>
-                  (typeof p === 'string' ? p : p._id) === lot._id
-                )
-              ) || null;
+              const lotAuction =
+                auction ||
+                auctions.find((a: any) =>
+                  a.properties?.some(
+                    (p: any) => (typeof p === "string" ? p : p._id) === lot._id,
+                  ),
+                ) ||
+                null;
 
               return (
                 <div
@@ -188,9 +277,7 @@ export default function ViewAllLots() {
                   <div className="relative h-56 bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
                     {lot.media?.propertyImages?.length > 0 ? (
                       <img
-                        src={
-                          mediaUrl(lot.media.propertyImages[0])
-                        }
+                        src={mediaUrl(lot.media.propertyImages[0])}
                         alt={lot.propertyTitle}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
@@ -209,19 +296,19 @@ export default function ViewAllLots() {
                           LIVE
                         </div>
                       )}
-                      {lot.propertyStatus === 'sold' && (
+                      {lot.propertyStatus === "sold" && (
                         <div className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
                           🎉 Sold
                         </div>
                       )}
-                      {lot.propertyStatus === 'unsold' && (
+                      {lot.propertyStatus === "unsold" && (
                         <div className="px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-full">
                           ❌ Unsold
                         </div>
                       )}
                     </div>
                     {/* Auction type badge */}
-                    {lotAuction?.auctionType === 'online' && (
+                    {lotAuction?.auctionType === "online" && (
                       <div className="absolute top-4 right-4">
                         <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full shadow-md">
                           🖥️ Online
@@ -259,22 +346,30 @@ export default function ViewAllLots() {
                     <div className="flex items-center flex-wrap gap-3 mb-4 pb-4 border-b-2 border-slate-100">
                       <div className="flex items-center gap-2">
                         <Bed className="size-4 text-blue-600" />
-                        <span className="font-bold text-slate-900">{lot.specifications?.bedrooms ?? '-'}</span>
+                        <span className="font-bold text-slate-900">
+                          {lot.specifications?.bedrooms ?? "-"}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Bath className="size-4 text-purple-600" />
-                        <span className="font-bold text-slate-900">{lot.specifications?.bathrooms ?? '-'}</span>
+                        <span className="font-bold text-slate-900">
+                          {lot.specifications?.bathrooms ?? "-"}
+                        </span>
                       </div>
                       {(lot.specifications?.floors ?? 0) > 0 && (
                         <div className="flex items-center gap-2">
                           <Building className="size-4 text-green-600" />
-                          <span className="font-bold text-slate-900">{lot.specifications.floors} fl</span>
+                          <span className="font-bold text-slate-900">
+                            {lot.specifications.floors} fl
+                          </span>
                         </div>
                       )}
                       {(lot.specifications?.parkingSpaces ?? 0) > 0 && (
                         <div className="flex items-center gap-2">
                           <Car className="size-4 text-slate-600" />
-                          <span className="font-bold text-slate-900">{lot.specifications.parkingSpaces}P</span>
+                          <span className="font-bold text-slate-900">
+                            {lot.specifications.parkingSpaces}P
+                          </span>
                         </div>
                       )}
                     </div>
@@ -318,18 +413,26 @@ export default function ViewAllLots() {
                     ) : (
                       <div className="space-y-2 mb-4">
                         <div className="flex justify-between text-sm">
-                          <span className="text-slate-500 font-semibold">{bidLabel}</span>
-                          <span className="font-black text-emerald-600">{formatPrice(displayBid, lot.pricing?.currency)}</span>
+                          <span className="text-slate-500 font-semibold">
+                            {bidLabel}
+                          </span>
+                          <span className="font-black text-emerald-600">
+                            {formatPrice(displayBid, lot.pricing?.currency)}
+                          </span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-500">Reserve</span>
-                          <span className="font-bold text-slate-700">{formatPrice(reservePrice, lot.pricing?.currency)}</span>
+                          <span className="font-bold text-slate-700">
+                            {formatPrice(reservePrice, lot.pricing?.currency)}
+                          </span>
                         </div>
                         {(isSold || isUnsold || lot.currentBid > 0) && (
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-500">Reserve Met</span>
-                            <span className={`font-bold ${isSold ? 'text-green-600' : 'text-red-500'}`}>
-                              {isSold ? '✅ Yes' : '❌ No'}
+                            <span
+                              className={`font-bold ${isSold ? "text-green-600" : "text-red-500"}`}
+                            >
+                              {isSold ? "✅ Yes" : "❌ No"}
                             </span>
                           </div>
                         )}
@@ -368,8 +471,20 @@ export default function ViewAllLots() {
             })}
           </div>
         )}
-      </div>
 
+        {/* Load More Button */}
+        {hasMoreLots && (
+          <div className="text-center mt-10 pb-6">
+            <button
+              onClick={handleLoadMoreLots}
+              disabled={loading}
+              className="px-10 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50"
+            >
+              {loading ? "Loading..." : "Load More Properties"}
+            </button>
+          </div>
+        )}
+      </div>
     </PublicLayout>
   );
 }

@@ -48,13 +48,17 @@ import PropertyDetails from "@/features/property/pages/PropertyDetails";
 import SystemArchitecture from "@/features/website/info/SystemArchitecture";
 import AddProperty from "@/features/property/pages/AddProperty";
 const EditProperty = lazy(() => import("../features/admin/pages/EditProperty"));
-const CustomerEditProperty = lazy(() => import("../features/customer/pages/CustomerEditProperty"));
+const CustomerEditProperty = lazy(
+  () => import("../features/customer/pages/CustomerEditProperty"),
+);
 const Offers = lazy(() => import("../features/admin/pages/Offers"));
 const AuctionBids = lazy(() => import("../features/admin/pages/AuctionBids"));
 const AdminUsers = lazy(() => import("../features/admin/pages/Users"));
 const Approvals = lazy(() => import("../features/admin/pages/Approvals"));
 const Revenue = lazy(() => import("../features/admin/pages/Revenue"));
-const AdminCommissions = lazy(() => import("../features/admin/pages/Commissions"));
+const AdminCommissions = lazy(
+  () => import("../features/admin/pages/Commissions"),
+);
 const UserProfile = lazy(() => import("../features/admin/pages/UserProfile"));
 import ProtectedRoute from "@/features/shared/layout/ProtectedRoute";
 import NotFound from "@/features/shared/pages/NotFound";
@@ -63,7 +67,9 @@ const AdminProfile = lazy(() => import("../features/admin/pages/AdminProfile"));
 import Analytics from "@/features/admin/pages/Analytics";
 import Campaigns from "@/features/admin/pages/Campaigns";
 import MenuManager from "@/features/admin/pages/MenuManager";
-const CustomerDashboard = lazy(() => import("../features/customer/pages/CustomerDashboard"));
+const CustomerDashboard = lazy(
+  () => import("../features/customer/pages/CustomerDashboard"),
+);
 
 const eb = (node: React.ReactNode) => <ErrorBoundary>{node}</ErrorBoundary>;
 const lazy_eb = (node: React.ReactNode) => (
@@ -324,8 +330,9 @@ export const router = createBrowserRouter([
     element: eb(
       <ProtectedRoute
         allowedRoles={["admin", "agent", "seller"]}
-        redirectTo="/register?reason=seller"
+        redirectTo="/register?reason=agent"
         allowCanListProperties={true}
+        loginIntent="agent"
       >
         <AddProperty />
       </ProtectedRoute>,

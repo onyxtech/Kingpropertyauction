@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router";
 import { showSuccess, showError } from "@/lib/toast";
 import {
   Mail,
@@ -46,6 +46,8 @@ export default function RegisterForm() {
   const [step, setStep] = useState<"role" | "form" | "success">("role");
   const [selectedRole, setSelectedRole] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [searchParams] = useSearchParams();
+  const reasonParam = searchParams.get("reason");
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -64,6 +66,13 @@ export default function RegisterForm() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+    // Auto-select role if coming with intent from login page
+  useEffect(() => {
+    if (reasonParam === "buyer") { setSelectedRole("buyer"); setStep("form"); }
+    else if (reasonParam === "seller") { setSelectedRole("seller"); setStep("form"); }
+    else if (reasonParam === "agent") { setSelectedRole("agent"); setStep("form"); }
+  }, [reasonParam]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,

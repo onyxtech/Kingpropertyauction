@@ -3,7 +3,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { apiClient } from "@/lib/apiClient";
 import { showSuccess, showError } from "@/lib/toast";
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router";
+import { Navigate, useNavigate, useSearchParams } from "react-router";
 import {
   Mail,
   Lock,
@@ -16,15 +16,157 @@ import {
   Crown,
   ArrowRight,
   Sparkles,
+  Building2,
+  Gavel,
+  UserPlus,
 } from "lucide-react";
+
+const intentConfig: Record<
+  string,
+  {
+    title: string;
+    subtitle: string;
+    benefits: { icon: any; title: string; desc: string }[];
+    ctaText: string;
+    ctaLink: string;
+  }
+> = {
+  bid: {
+    title: "Login to Start Bidding 🏠",
+    subtitle: "Access your buyer account to place bids on premium properties",
+    benefits: [
+      {
+        icon: Gavel,
+        title: "Place Bids Instantly",
+        desc: "Bid in real-time on thousands of properties",
+      },
+      {
+        icon: Shield,
+        title: "Secure Bidding",
+        desc: "Bank-level security for every transaction",
+      },
+      {
+        icon: CheckCircle,
+        title: "Verified Platform",
+        desc: "Trusted by 10,000+ buyers",
+      },
+    ],
+    ctaText: "Create a Buyer Account →",
+    ctaLink: "/register?reason=buyer",
+  },
+  sell: {
+    title: "Login to List Properties 💰",
+    subtitle: "Access your seller account to manage your property listings",
+    benefits: [
+      {
+        icon: Building2,
+        title: "List Properties",
+        desc: "Showcase your properties to thousands of buyers",
+      },
+      {
+        icon: Users,
+        title: "Reach More Buyers",
+        desc: "Connect with verified, active property buyers",
+      },
+      {
+        icon: CheckCircle,
+        title: "Verified Platform",
+        desc: "Trusted by 10,000+ buyers",
+      },
+    ],
+    ctaText: "Create a Seller Account →",
+    ctaLink: "/register?reason=seller",
+  },
+  agent: {
+    title: "Agent Login - Manage Properties 🏢",
+    subtitle: "Access your agent account to list and manage property auctions",
+    benefits: [
+      {
+        icon: Building2,
+        title: "List & Manage",
+        desc: "Showcase and manage multiple properties easily",
+      },
+      {
+        icon: Users,
+        title: "Client Management",
+        desc: "Handle buyers and sellers from one dashboard",
+      },
+      {
+        icon: CheckCircle,
+        title: "Verified Agent Portal",
+        desc: "Trusted by thousands across the UK",
+      },
+    ],
+    ctaText: "Create an Agent Account →",
+    ctaLink: "/register?reason=agent",
+  },
+  auction: {
+    title: "Login to Join Auctions 🔨",
+    subtitle: "Sign in to participate in live and upcoming property auctions",
+    benefits: [
+      {
+        icon: Zap,
+        title: "Live Bidding",
+        desc: "Bid in real-time during live auction events",
+      },
+      {
+        icon: Users,
+        title: "Join the Community",
+        desc: "Connect with 50,000+ active bidders",
+      },
+      {
+        icon: CheckCircle,
+        title: "Verified Platform",
+        desc: "Trusted by 10,000+ buyers",
+      },
+    ],
+    ctaText: "Create a Buyer Account →",
+    ctaLink: "/register?reason=buyer",
+  },
+};
+
+const genericBenefits = [
+  {
+    icon: Gavel,
+    title: "Buy & Bid",
+    desc: "Place bids and purchase properties at auction",
+    role: "buyer",
+    cta: "Create Buyer Account →",
+    link: "/register?reason=buyer",
+  },
+  {
+    icon: Building2,
+    title: "Sell & List",
+    desc: "List your properties and reach thousands of buyers",
+    role: "seller",
+    cta: "Create Seller Account →",
+    link: "/register?reason=seller",
+  },
+  {
+    icon: UserPlus,
+    title: "Agent Portal",
+    desc: "Manage clients, listings, and commissions",
+    role: "agent",
+    cta: "Create Agent Account →",
+    link: "/register?reason=agent",
+  },
+];
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const intent = searchParams.get("intent") || "";
+  const config = intentConfig[intent] || null;
+
   const { isAuthenticated, user: authUser } = useAuthStore();
 
-  // Redirect BEFORE render — no flash!
   if (isAuthenticated && authUser) {
-    return <Navigate to={authUser.role === "admin" ? "/admin" : "/dashboard"} replace />;
+    return (
+      <Navigate
+        to={authUser.role === "admin" ? "/admin" : "/dashboard"}
+        replace
+      />
+    );
   }
 
   const [showPassword, setShowPassword] = useState(false);
@@ -47,8 +189,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       setError("Please enter a valid email address");
       return;
     }
@@ -82,19 +223,15 @@ export default function Login() {
   };
 
   const handleSocialLogin = (provider: string) => {
-    if (provider === "Google") {
-      window.location.href = "/api/auth/google";
-    } else if (provider === "GitHub") {
-      window.location.href = "/api/auth/github";
-    } else if (provider === "Facebook") {
+    if (provider === "Google") window.location.href = "/api/auth/google";
+    else if (provider === "GitHub") window.location.href = "/api/auth/github";
+    else if (provider === "Facebook")
       window.location.href = "/api/auth/facebook";
-    }
   };
 
   return (
     <PublicLayout>
       <div className="relative overflow-hidden py-20">
-        {/* Background decorations */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 size-96 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-full blur-3xl animate-pulse" />
           <div
@@ -121,52 +258,76 @@ export default function Login() {
                     </div>
                   </div>
 
-                  <h3 className="text-3xl font-black mb-6">
-                    Welcome Back to Your Property Journey! 👋
-                  </h3>
-
-                  <p className="text-white/90 mb-8 text-lg">
-                    Sign in to access exclusive auction properties, place bids,
-                    and manage your portfolio.
-                  </p>
-
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3 bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                      <div className="size-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                        <Zap className="size-5 text-yellow-300" />
+                  {config ? (
+                    <>
+                      <h3 className="text-3xl font-black mb-6">
+                        {config.title}
+                      </h3>
+                      <p className="text-white/90 mb-8 text-lg">
+                        {config.subtitle}
+                      </p>
+                      <div className="space-y-4">
+                        {config.benefits.map((benefit, idx) => {
+                          const BIcon = benefit.icon;
+                          return (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-3 bg-white/10 backdrop-blur-sm rounded-xl p-4"
+                            >
+                              <div className="size-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                                <BIcon className="size-5 text-yellow-300" />
+                              </div>
+                              <div>
+                                <h4 className="font-bold mb-1">
+                                  {benefit.title}
+                                </h4>
+                                <p className="text-sm text-white/80">
+                                  {benefit.desc}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div>
-                        <h4 className="font-bold mb-1">Live Bidding Access</h4>
-                        <p className="text-sm text-white/80">
-                          Bid in real-time on premium properties
-                        </p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-3xl font-black mb-6">
+                        Welcome to King Property! 👋
+                      </h3>
+                      <p className="text-white/90 mb-8 text-lg">
+                        Sign in to access auctions, place bids, and manage your
+                        property portfolio. New here? Choose your path below.
+                      </p>
+                      <div className="space-y-3">
+                        {genericBenefits.map((item, idx) => {
+                          const BIcon = item.icon;
+                          return (
+                            <div
+                              key={idx}
+                              className="flex items-start gap-3 bg-white/10 backdrop-blur-sm rounded-xl p-4"
+                            >
+                              <div className="size-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                                <BIcon className="size-5 text-yellow-300" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-bold mb-1">{item.title}</h4>
+                                <p className="text-sm text-white/80">
+                                  {item.desc}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => navigate(item.link)}
+                                className="text-xs font-bold text-yellow-300 hover:text-white bg-white/10 px-3 py-1.5 rounded-lg hover:bg-white/20 transition-all whitespace-nowrap"
+                              >
+                                {item.cta}
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                      <div className="size-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                        <Shield className="size-5 text-emerald-300" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold mb-1">Secure & Protected</h4>
-                        <p className="text-sm text-white/80">
-                          Your data is encrypted and safe
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                      <div className="size-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                        <CheckCircle className="size-5 text-cyan-300" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold mb-1">Verified Platform</h4>
-                        <p className="text-sm text-white/80">
-                          Trusted by 10,000+ buyers
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                    </>
+                  )}
 
                   <div className="mt-8 pt-8 border-t border-white/20">
                     <div className="flex items-center gap-4">
@@ -198,6 +359,49 @@ export default function Login() {
               {/* Right Side - Login Form */}
               <div>
                 <div className="bg-white rounded-3xl shadow-2xl p-8 border-2 border-slate-200">
+                  {/* CTA Banner */}
+                  {intent ? (
+                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-4 mb-6 text-center">
+                      <p className="text-amber-800 font-bold text-sm">
+                        New here?{" "}
+                        <button
+                          onClick={() =>
+                            navigate(config?.ctaLink || "/register")
+                          }
+                          className="text-orange-600 font-black hover:underline"
+                        >
+                          {config?.ctaText || "Create Account →"}
+                        </button>
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-4 mb-6">
+                      <p className="text-blue-800 font-bold text-sm text-center mb-2">
+                        New to King Property?
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          onClick={() => navigate("/register?reason=buyer")}
+                          className="py-2 px-3 bg-white border border-blue-200 rounded-xl text-xs font-bold text-blue-700 hover:bg-blue-50 transition-all"
+                        >
+                          🏠 Buyer
+                        </button>
+                        <button
+                          onClick={() => navigate("/register?reason=seller")}
+                          className="py-2 px-3 bg-white border border-emerald-200 rounded-xl text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-all"
+                        >
+                          💰 Seller
+                        </button>
+                        <button
+                          onClick={() => navigate("/register?reason=agent")}
+                          className="py-2 px-3 bg-white border border-orange-200 rounded-xl text-xs font-bold text-orange-700 hover:bg-orange-50 transition-all"
+                        >
+                          🏢 Agent
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center size-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 mb-4 shadow-lg">
                       <Users className="size-8 text-white" />
@@ -206,12 +410,17 @@ export default function Login() {
                       Sign In
                     </h3>
                     <p className="text-slate-600">
-                      Access your account and start bidding
+                      {intent === "agent"
+                        ? "Access your agent dashboard"
+                        : intent === "sell"
+                          ? "Access your seller account"
+                          : intent === "bid"
+                            ? "Access your buyer account"
+                            : "Access your account and start bidding"}
                     </p>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Email */}
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
                         Email Address
@@ -229,8 +438,6 @@ export default function Login() {
                         />
                       </div>
                     </div>
-
-                    {/* Password */}
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">
                         Password
@@ -259,8 +466,6 @@ export default function Login() {
                         </button>
                       </div>
                     </div>
-
-                    {/* Remember Me & Forgot Password */}
                     <div className="flex items-center justify-between">
                       <label className="flex items-center gap-2">
                         <input
@@ -282,8 +487,6 @@ export default function Login() {
                         Forgot Password?
                       </button>
                     </div>
-
-                    {/* Submit Button */}
                     {error && (
                       <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
                         {error}
@@ -299,7 +502,6 @@ export default function Login() {
                     </button>
                   </form>
 
-                  {/* Social Login */}
                   <div className="relative my-6">
                     <div className="absolute inset-0 flex items-center">
                       <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
@@ -363,20 +565,8 @@ export default function Login() {
                       Facebook
                     </button>
                   </div>
-
-                  {/* Sign Up Link */}
-                  <div className="mt-6 pt-6 border-t border-slate-200 text-center text-sm text-slate-600">
-                    Don't have an account?{" "}
-                    <button
-                      onClick={() => navigate("/register")}
-                      className="font-semibold text-blue-600 hover:text-blue-800 transition-colors"
-                    >
-                      Create Account
-                    </button>
-                  </div>
                 </div>
 
-                {/* Mobile Stats */}
                 <div className="md:hidden mt-6 grid grid-cols-3 gap-4">
                   <div className="bg-white rounded-xl p-4 text-center shadow-lg border-2 border-slate-100">
                     <div className="text-2xl font-black text-blue-600">
@@ -405,7 +595,6 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Trust Badges */}
       <div className="bg-white border-t border-slate-200 py-12">
         <div className="container mx-auto px-6">
           <div className="text-center mb-8">
@@ -425,7 +614,6 @@ export default function Login() {
           </div>
         </div>
       </div>
-
     </PublicLayout>
   );
 }

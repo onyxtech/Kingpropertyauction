@@ -21,6 +21,14 @@ export interface PropertyLocation {
   postalCode: string;
   latitude?: string;
   longitude?: string;
+  createdBy?: User | string | { _id: string; name: string; email: string };
+  sellerInfo?: {
+    sellerName?: string;
+    sellerContact?: string;
+    sellerEmail?: string;
+    agentName?: string;
+    agentContact?: string;
+  };
 }
 
 export interface PropertyPricing {
@@ -62,6 +70,7 @@ export interface Property {
   media: PropertyMedia;
   auctionDetails: PropertyAuctionDetails;
   features?: Record<string, boolean>;
+  createdBy?: User | string | { _id: string; name?: string; email?: string };
   legalInfo?: {
     ownershipType?: string;
     titleDeedNumber?: string;

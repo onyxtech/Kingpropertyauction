@@ -1,5 +1,5 @@
 import { mediaUrl } from "@/lib/mediaUrl";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { showSuccess, showError } from "@/lib/toast";
 import { CheckCircle, AlertCircle, Search } from "lucide-react";
@@ -19,6 +19,7 @@ import VirtualTourModal from "../components/VirtualTourModal";
 import ShareModal from "../components/ShareModal";
 import PropertyGrid from "../components/PropertyGrid";
 import BidModalWrapper from "../components/BidModalWrapper";
+import UniversalSearch from "../components/UniversalSearch";
 
 export default function Website() {
   const navigate = useNavigate();
@@ -44,6 +45,7 @@ export default function Website() {
     maxPrice: "",
     location: "",
     minBeds: "",
+    maxBeds: "",
     minBaths: "",
     searchQuery: "",
   });
@@ -71,10 +73,27 @@ export default function Website() {
     setTimeout(() => setNotification(null), 4000);
   };
 
+  const [propertyPage, setPropertyPage] = useState(1);
+  const [allProperties, setAllProperties] = useState<any[]>([]);
+
   const { useGetProperties } = usePropertyApi();
   const { data: propertiesData, isLoading: propertiesLoading } =
-    useGetProperties({ pageSize: 50 });
+    useGetProperties({ page: propertyPage, pageSize: 12 });
   const properties = propertiesData?.data || [];
+  const totalPropertiesCount = propertiesData?.total || 0;
+  const hasMore = allProperties.length < totalPropertiesCount;
+
+  useEffect(() => {
+    if (properties.length > 0) {
+      setAllProperties((prev) => {
+        const existingIds = new Set(prev.map((p: any) => p._id));
+        const newOnes = properties.filter((p: any) => !existingIds.has(p._id));
+        return [...prev, ...newOnes];
+      });
+    }
+  }, [properties]);
+
+  const handleLoadMore = () => setPropertyPage((prev) => prev + 1);
 
   const { useGetAuctions } = useAuctionApi();
   const { data: auctionsData } = useGetAuctions({});
@@ -185,20 +204,24 @@ export default function Website() {
       return;
     }
     const userPermissions = (user as any)?.permissions;
-    const userCanBid = user?.role !== "admin" && userPermissions?.canBid === true;
+    const userCanBid =
+      user?.role !== "admin" && userPermissions?.canBid === true;
     if (!userCanBid) {
       showNotification(
         user?.role === "admin"
           ? "Administrators cannot place bids."
           : "You don't have bidding permissions. Apply to become a buyer from your dashboard.",
-        "error"
+        "error",
       );
       return;
     }
     const propertyOwnerId = property?.createdBy?._id || property?.createdBy;
     const currentUserId = user?.id || (user as any)?._id;
-    if (propertyOwnerId && currentUserId &&
-        propertyOwnerId.toString() === currentUserId.toString()) {
+    if (
+      propertyOwnerId &&
+      currentUserId &&
+      propertyOwnerId.toString() === currentUserId.toString()
+    ) {
       showNotification("You cannot bid on your own property.", "error");
       return;
     }
@@ -254,7 +277,10 @@ export default function Website() {
         amount: newBidValue,
       });
       setBidSuccess(true);
-      showSuccess("Bid placed! 🎉", "Your bid has been submitted successfully.");
+      showSuccess(
+        "Bid placed! 🎉",
+        "Your bid has been submitted successfully.",
+      );
       showNotification("Bid placed successfully! 🎉", "success");
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       queryClient.invalidateQueries({ queryKey: ["auctions"] });
@@ -358,6 +384,7 @@ export default function Website() {
 
       <AuthModal
         show={showAuthModal}
+        intent="bid"
         onClose={() => setShowAuthModal(false)}
         isLogin={isLogin}
         onToggleLogin={() => {
@@ -387,12 +414,8 @@ export default function Website() {
         />
       </div>
 
-      <PropertyFilters
-        filters={filters}
-        setFilters={setFilters}
-        showFilters={showFilters}
-        setShowFilters={setShowFilters}
-      />
+      
+      <UniversalSearch />
 
       <HeroSlider
         totalProperties={totalProperties}
@@ -402,11 +425,22 @@ export default function Website() {
         totalBidders={totalUsers}
       />
 
+      <PropertyFilters
+        filters={filters}
+        setFilters={setFilters}
+        showFilters={showFilters}
+        setShowFilters={setShowFilters}
+      />
+
       <div id="property-grid">
         <PropertyGrid
-          properties={properties}
+          properties={allProperties.length > 0 ? allProperties : properties}
+          hasMore={hasMore}
+          onLoadMore={handleLoadMore}
+          isLoadingMore={propertiesLoading && propertyPage > 1}
           allAuctions={allAuctions}
           filters={filters}
+          setFilters={setFilters}
           isLoading={propertiesLoading}
           activeTab={activeTab}
           setActiveTab={setActiveTab}

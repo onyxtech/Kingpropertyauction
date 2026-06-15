@@ -154,6 +154,9 @@ app.use("/api/commissions", commissionRoutes);
 import paymentRoutes from "./modules/payment/payment.routes.js";
 app.use("/api/payments", paymentRoutes);
 
+import searchRoutes from "./modules/search/search.routes.js";
+app.use("/api/search", searchRoutes);
+
 app.use(notFound);
 app.use(errorHandler);
 

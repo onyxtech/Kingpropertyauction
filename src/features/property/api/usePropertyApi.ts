@@ -16,8 +16,14 @@ export const usePropertyApi = () => {
         if (params?.approvalStatus)
           query.set("approvalStatus", params.approvalStatus);
         if (params?.auctionSlug) query.set("auctionSlug", params.auctionSlug);
-        if (params?.listingType) query.set("listingType", params.listingType);
-        const result = await apiClient.fetch(`/properties?${query}`);
+          if (params?.listingType) query.set("listingType", params.listingType);
+          if (params?.search) query.set("search", params.search);
+          if (params?.location) query.set("city", params.location);
+          if (params?.minPrice) query.set("minPrice", params.minPrice);
+          if (params?.maxPrice) query.set("maxPrice", params.maxPrice);
+          if (params?.minBeds) query.set("minBeds", params.minBeds);
+          if (params?.maxBeds) query.set("maxBeds", params.maxBeds);
+          const result = await apiClient.fetch(`/properties?${query}`);
         if (!result.success) throw new Error(result.message);
         return {
           success: true,

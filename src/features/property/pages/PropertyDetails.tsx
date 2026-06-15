@@ -3,7 +3,14 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import type { Property, Auction, Bid } from "@/types";
 import { useAuctionSocket } from "@/hooks/useAuctionSocket";
-import { ArrowLeft, CheckCircle, AlertCircle, X, MapPin, MessageSquare } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle,
+  AlertCircle,
+  X,
+  MapPin,
+  MessageSquare,
+} from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
@@ -128,7 +135,9 @@ export default function PropertyDetails() {
     if (property && user) {
       const userId = user.id || (user as any)._id;
       const savedBy: string[] = (property as any).savedBy || [];
-      setIsFavorite(savedBy.some((id: any) => id?.toString() === userId?.toString()));
+      setIsFavorite(
+        savedBy.some((id: any) => id?.toString() === userId?.toString()),
+      );
     }
   }, [property, user]);
 
@@ -269,20 +278,28 @@ export default function PropertyDetails() {
       return;
     }
     const userPermissions = (user as any)?.permissions;
-    const userCanBid = user?.role !== "admin" && userPermissions?.canBid === true;
+    const userCanBid =
+      user?.role !== "admin" && userPermissions?.canBid === true;
     if (!userCanBid) {
       showNotification(
         user?.role === "admin"
           ? "Administrators cannot place bids."
           : "You don't have bidding permissions. Apply to become a buyer from your dashboard.",
-        "error"
+        "error",
       );
       return;
     }
-    const propertyOwnerId = property?.createdBy?._id || property?.createdBy;
+    const propertyOwnerId =
+      typeof property?.createdBy === "object"
+        ? (property.createdBy as any)._id ||
+          (property.createdBy as any).toString()
+        : property?.createdBy;
     const currentUserId = user?.id || (user as any)?._id;
-    if (propertyOwnerId && currentUserId &&
-        propertyOwnerId.toString() === currentUserId.toString()) {
+    if (
+      propertyOwnerId &&
+      currentUserId &&
+      propertyOwnerId.toString() === currentUserId.toString()
+    ) {
       showNotification("You cannot bid on your own property.", "error");
       return;
     }
@@ -316,7 +333,10 @@ export default function PropertyDetails() {
         maxBid: useAutoBid ? parseFloat(maxBidAmount) : null,
       });
       setBidSuccess(true);
-      showSuccess("Bid placed! 🎉", "Your bid has been submitted successfully.");
+      showSuccess(
+        "Bid placed! 🎉",
+        "Your bid has been submitted successfully.",
+      );
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       queryClient.invalidateQueries({ queryKey: ["auctions"] });
       setBidHistory(null);
@@ -415,6 +435,7 @@ export default function PropertyDetails() {
 
       <AuthModal
         show={showAuthModal}
+        intent="bid"
         onClose={() => setShowAuthModal(false)}
         isLogin={isLogin}
         onToggleLogin={() => {
@@ -474,15 +495,23 @@ export default function PropertyDetails() {
             features={features}
             isFavorite={isFavorite}
             onToggleFavorite={async () => {
-              if (!isAuthenticated) { setShowAuthModal(true); return; }
+              if (!isAuthenticated) {
+                setShowAuthModal(true);
+                return;
+              }
               if (togglingWatchlist || !property?._id) return;
               setTogglingWatchlist(true);
               try {
-                const result = await apiClient.fetch(`/properties/${property._id}/watchlist`, { method: "POST" });
+                const result = await apiClient.fetch(
+                  `/properties/${property._id}/watchlist`,
+                  { method: "POST" },
+                );
                 if (result.success) {
                   const saved = result.data?.saved ?? !isFavorite;
                   setIsFavorite(saved);
-                  showSuccess(saved ? "Added to watchlist" : "Removed from watchlist");
+                  showSuccess(
+                    saved ? "Added to watchlist" : "Removed from watchlist",
+                  );
                   queryClient.invalidateQueries({ queryKey: ["my-watchlist"] });
                 }
               } catch {
@@ -513,12 +542,17 @@ export default function PropertyDetails() {
             onPlaceBid={handlePlaceBidClick}
             onNavigate={navigate}
             onEnquire={() => setShowInquiryModal(true)}
-            isOwnProperty={!!(
-              property?.createdBy &&
-              (user?.id || (user as any)?._id) &&
-              (property.createdBy._id || property.createdBy)?.toString() ===
-                (user?.id || (user as any)?._id)?.toString()
-            )}
+            isOwnProperty={
+              !!(
+                property?.createdBy &&
+                (user?.id || (user as any)?._id) &&
+                (typeof property.createdBy === "object"
+                  ? (property.createdBy as any)._id ||
+                    (property.createdBy as any).toString()
+                  : property.createdBy) ===
+                  (user?.id || (user as any)?._id)?.toString()
+              )
+            }
           />
         </div>
       </div>
@@ -530,46 +564,61 @@ export default function PropertyDetails() {
             {inquirySuccess ? (
               <div className="text-center py-8">
                 <CheckCircle className="size-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-xl font-black text-slate-900 mb-2">Enquiry Sent!</h3>
+                <h3 className="text-xl font-black text-slate-900 mb-2">
+                  Enquiry Sent!
+                </h3>
                 <p className="text-slate-600">We'll get back to you shortly.</p>
               </div>
             ) : (
               <>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-black text-slate-900">Property Enquiry</h3>
+                  <h3 className="text-xl font-black text-slate-900">
+                    Property Enquiry
+                  </h3>
                   <button onClick={() => setShowInquiryModal(false)}>
                     <X className="size-5 text-slate-400" />
                   </button>
                 </div>
                 <p className="text-sm text-slate-500 mb-4 font-medium">
-                  Enquiring about: <span className="font-bold text-slate-900">{property?.propertyTitle}</span>
+                  Enquiring about:{" "}
+                  <span className="font-bold text-slate-900">
+                    {property?.propertyTitle}
+                  </span>
                 </p>
                 <div className="space-y-4">
                   <input
                     type="text"
                     placeholder="Your Name *"
                     value={inquiryForm.name}
-                    onChange={e => setInquiryForm(f => ({ ...f, name: e.target.value }))}
+                    onChange={(e) =>
+                      setInquiryForm((f) => ({ ...f, name: e.target.value }))
+                    }
                     className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <input
                     type="email"
                     placeholder="Email Address *"
                     value={inquiryForm.email}
-                    onChange={e => setInquiryForm(f => ({ ...f, email: e.target.value }))}
+                    onChange={(e) =>
+                      setInquiryForm((f) => ({ ...f, email: e.target.value }))
+                    }
                     className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <input
                     type="tel"
                     placeholder="Phone Number (optional)"
                     value={inquiryForm.phone}
-                    onChange={e => setInquiryForm(f => ({ ...f, phone: e.target.value }))}
+                    onChange={(e) =>
+                      setInquiryForm((f) => ({ ...f, phone: e.target.value }))
+                    }
                     className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <textarea
                     placeholder="Your message - What would you like to know? *"
                     value={inquiryForm.message}
-                    onChange={e => setInquiryForm(f => ({ ...f, message: e.target.value }))}
+                    onChange={(e) =>
+                      setInquiryForm((f) => ({ ...f, message: e.target.value }))
+                    }
                     rows={4}
                     className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />

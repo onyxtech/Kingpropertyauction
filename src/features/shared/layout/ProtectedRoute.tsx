@@ -6,16 +6,20 @@ export default function ProtectedRoute({
   allowedRoles = [],
   redirectTo,
   allowCanListProperties = false,
+  loginIntent,
 }: {
   children: React.ReactNode;
   allowedRoles?: string[];
   redirectTo?: string;
   allowCanListProperties?: boolean;
+  loginIntent?: string;
 }) {
   const { isAuthenticated, user } = useAuthStore();
 
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
+    // Pass intent to login page so it shows relevant content
+    const loginUrl = loginIntent ? `/login?intent=${loginIntent}` : "/login";
+    return <Navigate to={loginUrl} replace />;
   }
 
   const hasRole = allowedRoles.length === 0 || allowedRoles.includes(user.role);

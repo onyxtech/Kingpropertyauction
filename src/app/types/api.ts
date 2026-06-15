@@ -152,7 +152,13 @@ export interface Campaign extends CampaignFormData {
 
 // Report Types
 export interface ReportFormData {
-  reportType: "sales" | "auction" | "user" | "property" | "financial" | "marketing";
+  reportType:
+    | "sales"
+    | "auction"
+    | "user"
+    | "property"
+    | "financial"
+    | "marketing";
   startDate: string;
   endDate: string;
   format: "pdf" | "excel" | "csv";
@@ -239,7 +245,13 @@ export interface QueryParams {
   category?: string;
   dateFrom?: string;
   dateTo?: string;
-  approvalStatus?: string; 
+  approvalStatus?: string;
   auctionSlug?: string;
-    listingType?: string;
+  listingType?: string;
+  location?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  minBeds?: string;
+  maxBeds?: string;
+  auctionStatus?: string;
 }

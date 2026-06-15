@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { mediaUrl } from "@/lib/mediaUrl";
@@ -25,19 +26,43 @@ import { formatUKDateTime } from "@/features/shared/utils/dateUtils";
 export default function Auctions() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [urlParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(
+    urlParams.get("search") || urlParams.get("location") || "",
+  );
   const [filterType, setFilterType] = useState("All Types");
   const [filterStatus, setFilterStatus] = useState("All Status");
 
+  const [auctionPage, setAuctionPage] = useState(1);
+  const [allAuctions, setAllAuctions] = useState<any[]>([]);
+
   const { useGetAuctions } = useAuctionApi();
-  const { data, isLoading } = useGetAuctions({});
-  const auctions = data?.data || [];
+  const { data: auctionsData, isLoading } = useGetAuctions({
+    page: auctionPage,
+    limit: 12,
+  });
+  const auctions = auctionsData?.data || [];
+  const auctionsTotal = auctionsData?.pagination?.total || 0;
+  const hasMoreAuctions = allAuctions.length < auctionsTotal;
+
+  useEffect(() => {
+    if (auctions.length > 0) {
+      setAllAuctions((prev) => {
+        const existingIds = new Set(prev.map((a: any) => a._id));
+        const newOnes = auctions.filter((a: any) => !existingIds.has(a._id));
+        return [...prev, ...newOnes];
+      });
+    }
+  }, [auctions]);
+
+  const handleLoadMoreAuctions = () => setAuctionPage((prev) => prev + 1);
   const queryClient = useQueryClient();
 
   useAuctionSocket();
 
   // Map backend data to exact static design format
-  const auctionLots = auctions.map((a: any, index: number) => {
+  const displayAuctions = allAuctions.length > 0 ? allAuctions : auctions;
+  const auctionLots = displayAuctions.map((a: any, index: number) => {
     const category = a.property?.propertyCategory || "residential";
     const typeMap: Record<string, string> = {
       residential: "Residential",
@@ -117,7 +142,19 @@ export default function Auctions() {
 
     autoTable(doc, {
       startY: 42,
-      head: [["Lot", "Title", "Type", "Start", "End", "Props", "Est. Value", "Status", "Bidders"]],
+      head: [
+        [
+          "Lot",
+          "Title",
+          "Type",
+          "Start",
+          "End",
+          "Props",
+          "Est. Value",
+          "Status",
+          "Bidders",
+        ],
+      ],
       body: filteredLots.map((l) => [
         l.lotNumber,
         l.title,
@@ -130,7 +167,11 @@ export default function Auctions() {
         String(l.registeredBidders),
       ]),
       styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: "bold" },
+      headStyles: {
+        fillColor: [16, 185, 129],
+        textColor: 255,
+        fontStyle: "bold",
+      },
       alternateRowStyles: { fillColor: [245, 247, 250] },
       margin: { left: 14, right: 14 },
     });
@@ -139,13 +180,34 @@ export default function Auctions() {
   };
 
   const handleExportCSV = () => {
-    const headers = ["Lot Number", "Title", "Type", "Location", "Start Date", "End Date", "Properties", "Estimated Value", "Status", "Registered Bidders"];
+    const headers = [
+      "Lot Number",
+      "Title",
+      "Type",
+      "Location",
+      "Start Date",
+      "End Date",
+      "Properties",
+      "Estimated Value",
+      "Status",
+      "Registered Bidders",
+    ];
     const rows = filteredLots.map((l) => [
-      l.lotNumber, l.title, l.type, l.location, l.startDate, l.endDate,
-      l.totalProperties, l.estimatedValue, l.status, l.registeredBidders,
+      l.lotNumber,
+      l.title,
+      l.type,
+      l.location,
+      l.startDate,
+      l.endDate,
+      l.totalProperties,
+      l.estimatedValue,
+      l.status,
+      l.registeredBidders,
     ]);
     const csv = [headers, ...rows]
-      .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .map((r) =>
+        r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+      )
       .join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -323,11 +385,17 @@ export default function Auctions() {
               auction lots
             </p>
             <div className="flex items-center gap-2">
-              <button onClick={handleExportPDF} className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-bold hover:shadow-lg transition-all flex items-center gap-2">
+              <button
+                onClick={handleExportPDF}
+                className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-bold hover:shadow-lg transition-all flex items-center gap-2"
+              >
                 <Download className="size-5" />
                 Export PDF
               </button>
-              <button onClick={handleExportCSV} className="px-5 py-3 bg-white border-2 border-emerald-500 text-emerald-600 rounded-2xl font-bold hover:bg-emerald-50 transition-all flex items-center gap-2">
+              <button
+                onClick={handleExportCSV}
+                className="px-5 py-3 bg-white border-2 border-emerald-500 text-emerald-600 rounded-2xl font-bold hover:bg-emerald-50 transition-all flex items-center gap-2"
+              >
                 <Download className="size-5" />
                 CSV
               </button>
@@ -615,6 +683,17 @@ export default function Auctions() {
             </button>
           </div>
         </div>
+        {/* Load More Button */}
+        {hasMoreAuctions && (
+          <div className="text-center mt-10 pb-6">
+            <button
+              onClick={handleLoadMoreAuctions}
+              className="px-10 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all"
+            >
+              Load More Auctions
+            </button>
+          </div>
+        )}
       </div>
     </PublicLayout>
   );

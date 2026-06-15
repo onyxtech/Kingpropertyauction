@@ -295,20 +295,24 @@ export default function AuctionDetail() {
     }
 
     const userPermissions = (user as any)?.permissions;
-    const userCanBid = user?.role !== "admin" && userPermissions?.canBid === true;
+    const userCanBid =
+      user?.role !== "admin" && userPermissions?.canBid === true;
     if (!userCanBid) {
       showNotification(
         user?.role === "admin"
           ? "Administrators cannot place bids."
           : "You don't have bidding permissions. Apply to become a buyer from your dashboard.",
-        "error"
+        "error",
       );
       return;
     }
     const propertyOwnerId = property?.createdBy?._id || property?.createdBy;
     const currentUserId = user?.id || (user as any)?._id;
-    if (propertyOwnerId && currentUserId &&
-        propertyOwnerId.toString() === currentUserId.toString()) {
+    if (
+      propertyOwnerId &&
+      currentUserId &&
+      propertyOwnerId.toString() === currentUserId.toString()
+    ) {
       showNotification("You cannot bid on your own property.", "error");
       return;
     }
@@ -354,7 +358,10 @@ export default function AuctionDetail() {
         maxBid: useAutoBid ? parseFloat(maxBidAmount) : null,
       });
       setBidSuccess(true);
-      showSuccess("Bid placed! 🎉", "Your bid has been submitted successfully.");
+      showSuccess(
+        "Bid placed! 🎉",
+        "Your bid has been submitted successfully.",
+      );
       queryClient.invalidateQueries({ queryKey: ["auctions"] });
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       setLotHistories((prev) => ({ ...prev, [selectedLot._id]: null }));
@@ -471,6 +478,7 @@ export default function AuctionDetail() {
       {/* ─── AUTH MODAL ─── */}
       <AuthModal
         show={showAuthModal}
+        intent="bid"
         onClose={() => setShowAuthModal(false)}
         isLogin={isLogin}
         onToggleLogin={() => {

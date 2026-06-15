@@ -26,6 +26,28 @@ interface PropertyActionCardProps {
   isOwnProperty?: boolean;
 }
 
+// Helper: Load image from URL as base64 for PDF
+const loadImageAsBase64 = (url: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Canvas failed"));
+        return;
+      }
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/jpeg", 0.8));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+};
+
 export default function PropertyActionCard({
   property,
   matchingAuction,
@@ -43,234 +65,349 @@ export default function PropertyActionCard({
   onEnquire,
   isOwnProperty = false,
 }: PropertyActionCardProps) {
-  const handleDownloadBrochure = () => {
+  const handleDownloadBrochure = async () => {
     const doc = new jsPDF();
-    let y = 20;
+    let y = 15;
+    const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
-    const margin = 20;
-    const maxY = pageHeight - margin;
+    const m = 18;
+    const cw = pageWidth - m * 2;
+    const maxY = pageHeight - m;
 
-    const line = (text: string, size = 11, bold = false) => {
-      // Check if we need a new page
-      if (y > maxY) {
+    const np = (h = 20) => {
+      if (y + h > maxY) {
         doc.addPage();
-        y = margin;
+        y = m;
       }
-      doc.setFontSize(size);
-      doc.setFont("helvetica", bold ? "bold" : "normal");
-      const split = doc.splitTextToSize(text || "N/A", 170);
-      doc.text(split, 20, y);
-      y += split.length * size * 0.5;
-      y += 4;
     };
-
-    const divider = () => {
-      if (y > maxY) {
-        doc.addPage();
-        y = margin;
-      }
-      doc.setDrawColor(180);
-      doc.setLineWidth(0.5);
-      doc.line(20, y, 190, y);
-      y += 6;
+    const ln = (t: string, s = 9, b = false, c = "#334155") => {
+      np(12);
+      doc.setFontSize(s);
+      doc.setFont("helvetica", b ? "bold" : "normal");
+      doc.setTextColor(c);
+      const l = doc.splitTextToSize(t || "N/A", cw);
+      doc.text(l, m, y);
+      y += l.length * s * 0.4 + 3;
     };
-
-    const sectionTitle = (title: string) => {
-      if (y + 15 > maxY) {
+    const dv = () => {
+      np(8);
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.2);
+      doc.line(m, y, pageWidth - m, y);
+      y += 5;
+    };
+    const st = (t: string) => {
+      if (y + 30 > maxY) {
         doc.addPage();
-        y = margin;
+        y = m;
       }
       y += 2;
-      doc.setFillColor(37, 99, 235);
-      doc.roundedRect(20, y - 2, 170, 8, 2, 2, "F");
+      doc.setFillColor(30, 64, 175);
+      doc.roundedRect(m, y, cw, 7, 2, 2, "F");
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(12);
+      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(title, 25, y + 4);
-      doc.setTextColor(0, 0, 0);
+      doc.text(t, m + 5, y + 5);
+      doc.setTextColor(51, 65, 85);
       y += 14;
     };
+    const clickableLine = (label: string, url: string, s = 8) => {
+      np(10);
+      doc.setFontSize(s);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(37, 99, 235);
+      doc.textWithLink(label, m, y, { url });
+      y += s * 0.5 + 3;
+    };
 
-    // ─── HEADER ────────────────────────────────
-    doc.setFontSize(22);
+    // Load images
+    const imgs = property?.media?.propertyImages || [];
+    const loaded: string[] = [];
+    for (const img of imgs.slice(0, 6)) {
+      try {
+        const url = img.startsWith("http")
+          ? img
+          : `${window.location.origin}${img}`;
+        loaded.push(await loadImageAsBase64(url));
+      } catch {}
+    }
+
+    // ─── HEADER BAR ────────────────────────────
+    doc.setFillColor(30, 64, 175);
+    doc.rect(0, 0, pageWidth, 40, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(37, 99, 235);
-    doc.text("KING PROPERTY AUCTION", 20, y);
-    y += 8;
-    doc.setFontSize(14);
-    doc.setTextColor(100);
-    doc.text("Property Brochure", 20, y);
-    y += 12;
-    doc.setTextColor(0);
-    divider();
+    doc.text("KING PROPERTY AUCTION", m, 22);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("Property Brochure", m, 32);
+    y = 48;
 
-    // ─── BASIC INFO ────────────────────────────
-    sectionTitle("PROPERTY DETAILS");
-    line(`Title: ${property?.propertyTitle || "N/A"}`, 13, true);
-    line(
-      `Property ID: ${property?.propertyID || property?._id?.slice(-6) || "N/A"}`,
-    );
-    line(
-      `Type: ${property?.propertyType ? property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1) : "N/A"}`,
-    );
-    line(
-      `Category: ${property?.propertyCategory ? property.propertyCategory.charAt(0).toUpperCase() + property.propertyCategory.slice(1) : "N/A"}`,
-    );
-    line(
-      `Listing Type: ${property?.listingType === "auction" ? "Auction" : "Direct Sale"}`,
-    );
-    line(
-      `Status: ${property?.propertyStatus ? property.propertyStatus.charAt(0).toUpperCase() + property.propertyStatus.slice(1) : "N/A"}`,
-    );
-    divider();
+    // ─── TITLE + STATUS ────────────────────────
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    const tl = doc.splitTextToSize(property?.propertyTitle || "Property", cw);
+    doc.text(tl, m, y);
+    y += tl.length * 9 + 6;
 
-    // ─── LOCATION ──────────────────────────────
-    sectionTitle("LOCATION");
-    const loc = property?.location || {};
-    line(`Address: ${loc.streetAddress || "N/A"}`);
-    line(`Area: ${loc.area || "N/A"}`);
-    line(`City: ${loc.city || "N/A"}`);
-    line(`State: ${loc.state || "N/A"}`);
-    line(`Postcode: ${loc.postalCode || "N/A"}`);
-    line(`Country: ${loc.country || "N/A"}`);
-    if (loc.latitude && loc.longitude)
-      line(`Coordinates: ${loc.latitude}, ${loc.longitude}`);
-    divider();
+    const sc =
+      property?.propertyStatus === "sold"
+        ? [5, 150, 105]
+        : property?.propertyStatus === "unsold"
+          ? [220, 38, 38]
+          : [37, 99, 235];
+    doc.setFillColor(sc[0], sc[1], sc[2]);
+    const stx = (property?.propertyStatus || "available").toUpperCase();
+    doc.roundedRect(m, y, doc.getTextWidth(stx) + 10, 6, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.text(stx, m + 5, y + 4.5);
+    y += 14;
 
-    // ─── SPECIFICATIONS ────────────────────────
-    sectionTitle("SPECIFICATIONS");
-    const specs = property?.specifications || {};
-    line(`Total Area: ${specs.totalArea ? specs.totalArea + " sq ft" : "N/A"}`);
-    line(`Bedrooms: ${specs.bedrooms || "N/A"}`);
-    line(`Bathrooms: ${specs.bathrooms || "N/A"}`);
-    line(`Floors: ${specs.floors || "N/A"}`);
-    line(`Year Built: ${specs.yearBuilt || "N/A"}`);
-    line(`Parking: ${specs.parkingSpaces || "N/A"} spaces`);
-    line(`Furnished: ${specs.furnishedStatus || "N/A"}`);
-    divider();
-
-    // ─── PRICING ───────────────────────────────
-    sectionTitle("PRICING");
-    const pricing = property?.pricing || {};
-    line(`Currency: ${pricing.currency || "GBP"}`);
-    line(
-      `Starting Price: £${(pricing.startingAuctionPrice || 0).toLocaleString()}`,
-    );
-    line(`Reserve Price: £${(pricing.reservePrice || 0).toLocaleString()}`);
-    if (pricing.buyNowPrice)
-      line(`Buy Now Price: £${pricing.buyNowPrice.toLocaleString()}`);
-    line(
-      `Minimum Bid Increment: £${(pricing.minimumBidIncrement || 0).toLocaleString()}`,
-    );
-    if (pricing.estimatedMarketValue)
-      line(
-        `Est. Market Value: £${pricing.estimatedMarketValue.toLocaleString()}`,
-      );
-    divider();
-
-    // ─── AUCTION DETAILS ───────────────────────
-    const auction = property?.auctionDetails || {};
-    if (auction.auctionStartDate || auction.auctionEndDate) {
-      sectionTitle("AUCTION DETAILS");
-      if (auction.auctionStartDate)
-        line(
-          `Start Date: ${new Date(auction.auctionStartDate).toLocaleString()}`,
+    // ─── IMAGE GALLERY ─────────────────────────
+    if (loaded.length > 0) {
+      st("PROPERTY IMAGES");
+      const iw = (cw - 6) / 3;
+      const ih = 55;
+      let col = 0;
+      let ry = y;
+      for (let i = 0; i < loaded.length; i++) {
+        if (col === 0) np(ih + 10);
+        doc.addImage(
+          loaded[i],
+          "JPEG",
+          m + col * (iw + 3),
+          ry,
+          iw,
+          ih,
+          undefined,
+          "FAST",
         );
-      if (auction.auctionEndDate)
-        line(`End Date: ${new Date(auction.auctionEndDate).toLocaleString()}`);
-      line(`Status: ${auction.auctionStatus || "N/A"}`);
-      if (auction.bidDepositAmount)
-        line(`Bid Deposit: £${auction.bidDepositAmount.toLocaleString()}`);
-      line(`Auto Bidding: ${auction.autoBidEnabled ? "Enabled" : "Disabled"}`);
-      divider();
+        col++;
+        if (col === 3) {
+          col = 0;
+          ry += ih + 3;
+        }
+      }
+      y = ry + (col > 0 ? ih + 3 : 0) + 6;
+      dv();
+    }
+
+    // ─── PRICE CARD ────────────────────────────
+    const price =
+      property?.soldPrice ||
+      property?.currentBid ||
+      property?.pricing?.startingAuctionPrice ||
+      0;
+    const pl = property?.soldPrice
+      ? "SOLD PRICE"
+      : property?.currentBid > 0
+        ? "CURRENT BID"
+        : "STARTING PRICE";
+    np(30);
+    doc.setFillColor(239, 246, 255);
+    doc.roundedRect(m, y, cw, 26, 3, 3, "F");
+    doc.setDrawColor(30, 64, 175);
+    doc.setLineWidth(0.8);
+    doc.roundedRect(m, y, cw, 26, 3, 3, "D");
+    doc.setTextColor(30, 64, 175);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text(pl, m + 7, y + 9);
+    doc.setFontSize(20);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`GBP ${price.toLocaleString()}`, m + 7, y + 22);
+    y += 34;
+
+    // ─── KEY DETAILS ───────────────────────────
+    st("KEY DETAILS");
+    const kd: [string, string][] = [
+      [
+        "Location",
+        `${property?.location?.city || "-"}, ${property?.location?.state || ""}`,
+      ],
+      ["Type", property?.propertyType || "-"],
+      ["Bedrooms", String(property?.specifications?.bedrooms || "-")],
+      ["Bathrooms", String(property?.specifications?.bathrooms || "-")],
+      ["Year Built", String(property?.specifications?.yearBuilt || "-")],
+      ["Furnished", property?.specifications?.furnishedStatus || "-"],
+    ];
+    const kw = cw / 2;
+    kd.forEach(([l, v], i) => {
+      const cx = m + (i % 2) * kw,
+        cy = y + Math.floor(i / 2) * 14;
+      np(14);
+      doc.setFontSize(7);
+      doc.setTextColor(100, 116, 139);
+      doc.setFont("helvetica", "normal");
+      doc.text(l, cx, cy);
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      doc.setFont("helvetica", "bold");
+      doc.text(v, cx, cy + 5);
+    });
+    y += Math.ceil(kd.length / 2) * 14 + 4;
+    dv();
+
+    // ─── DESCRIPTION ───────────────────────────
+    if (property?.propertyDescription) {
+      st("DESCRIPTION");
+      ln(property.propertyDescription, 9, false, "#475569");
+      dv();
     }
 
     // ─── FEATURES ──────────────────────────────
-    const features = property?.features || {};
-    const featureKeys = Object.keys(features);
-    if (featureKeys.length > 0) {
-      sectionTitle("FEATURES & AMENITIES");
-      featureKeys.forEach((key) => {
-        const label = key
+    const feats = property?.features || {};
+    const fk = Object.keys(feats).filter((k: string) => feats[k]);
+    if (fk.length > 0) {
+      st("FEATURES AND AMENITIES");
+      const fw = cw / 2;
+      fk.forEach((k, i) => {
+        const cx = m + (i % 2) * fw,
+          cy = y + Math.floor(i / 2) * 7;
+        np(7);
+        doc.setFontSize(8);
+        doc.setTextColor(71, 85, 105);
+        doc.setFont("helvetica", "normal");
+        const label = k
           .replace(/([A-Z])/g, " $1")
-          .replace(/^./, (s) => s.toUpperCase());
-        line(`${features[key] ? "✔" : "✘"} ${label}`);
+          .replace(/^./, (s: string) => s.toUpperCase());
+        doc.text(`- ${label}`, cx, cy);
       });
-      divider();
+      y += Math.ceil(fk.length / 2) * 7 + 4;
+      dv();
     }
 
-    // ─── LEGAL INFO ────────────────────────────
-    const legal = property?.legalInfo || {};
-    if (legal.ownershipType || legal.titleDeedNumber) {
-      sectionTitle("LEGAL INFORMATION");
-      line(
-        `Ownership: ${legal.ownershipType ? legal.ownershipType.charAt(0).toUpperCase() + legal.ownershipType.slice(1) : "N/A"}`,
-      );
-      line(`Title Deed: ${legal.titleDeedNumber || "N/A"}`);
-      if (legal.propertyTaxInfo) line(`Tax Info: ${legal.propertyTaxInfo}`);
-      line(`Mortgage Status: ${legal.mortgageStatus || "N/A"}`);
-      if (legal.zoningType) line(`Zoning: ${legal.zoningType}`);
-      divider();
+    // ─── PRICING ───────────────────────────────
+    st("PRICING DETAILS");
+    const pr = property?.pricing || {};
+    const prs: [string, string][] = [
+      [
+        "Starting Price",
+        `GBP ${(pr.startingAuctionPrice || 0).toLocaleString()}`,
+      ],
+      ["Reserve Price", `GBP ${(pr.reservePrice || 0).toLocaleString()}`],
+    ];
+    if (pr.buyNowPrice)
+      prs.push(["Buy Now", `GBP ${pr.buyNowPrice.toLocaleString()}`]);
+    if (pr.minimumBidIncrement)
+      prs.push([
+        "Bid Increment",
+        `GBP ${pr.minimumBidIncrement.toLocaleString()}`,
+      ]);
+    prs.forEach(([l, v]) => {
+      np(9);
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.setFont("helvetica", "normal");
+      doc.text(l, m, y);
+      doc.setFontSize(9);
+      doc.setTextColor(15, 23, 42);
+      doc.setFont("helvetica", "bold");
+      doc.text(v, m + cw - doc.getTextWidth(v), y);
+      y += 7;
+    });
+    y += 2;
+    dv();
+
+    // ─── CONTACT ───────────────────────────────
+    const si = property?.sellerInfo || {};
+    if (si.agentName || si.agentContact) {
+      st("CONTACT");
+      if (si.agentName) ln(`Agent: ${si.agentName}`, 9, true);
+      if (si.agentContact) ln(`Phone: ${si.agentContact}`, 9, false, "#2563eb");
+      if (si.sellerEmail) ln(`Email: ${si.sellerEmail}`, 9, false, "#2563eb");
+      dv();
     }
 
-    // ─── SELLER/AGENT INFO ─────────────────────
-    const seller = property?.sellerInfo || {};
-    if (seller.sellerName || seller.agentName) {
-      sectionTitle("CONTACT INFORMATION");
-      if (seller.agentName) line(`Agent: ${seller.agentName}`);
-      if (seller.agentContact) line(`Agent Contact: ${seller.agentContact}`);
-      if (seller.sellerName) line(`Seller: ${seller.sellerName}`);
-      if (seller.sellerEmail) line(`Seller Email: ${seller.sellerEmail}`);
-      divider();
-    }
-
-    // ─── MEDIA ─────────────────────────────────
+    // ─── MEDIA (Floor Plan, Video, Virtual Tour) ──
     const media = property?.media || {};
-    const images = media.propertyImages || [];
-    if (images.length > 0 || media.propertyVideo || media.floorPlan) {
-      sectionTitle("MEDIA");
-      if (images.length > 0) line(`Property Images: ${images.length} image(s)`);
-      if (media.propertyVideo) line(`Video Tour: Available`);
-      if (media.virtualTour) line(`Virtual Tour: ${media.virtualTour}`);
-      if (media.floorPlan) line(`Floor Plan: Available`);
-      const docs = media.legalDocuments
-        ? Array.isArray(media.legalDocuments)
-          ? media.legalDocuments
-          : [media.legalDocuments]
-        : [];
-      if (docs.length > 0) line(`Legal Documents: ${docs.length} document(s)`);
-      divider();
+
+    // Floor Plan - check both singular and plural
+    const floorPlan =
+      media.floorPlan || (media.floorPlans && media.floorPlans[0]);
+    if (floorPlan) {
+      st("FLOOR PLAN");
+      const fpUrl = floorPlan.startsWith("http")
+        ? floorPlan
+        : `${window.location.origin}${floorPlan}`;
+      clickableLine(
+        `View Floor Plan: ${floorPlan.split("/").pop() || "floor-plan"}`,
+        fpUrl,
+        8,
+      );
+      y += 2;
+      dv();
     }
 
-    // ─── DESCRIPTION ───────────────────────────
-    sectionTitle("DESCRIPTION");
-    line(property?.propertyDescription || "No description provided.", 11);
-    divider();
+    // Video Tour - check both singular and plural
+    const video =
+      media.propertyVideo || (media.propertyVideos && media.propertyVideos[0]);
+    if (video) {
+      st("VIDEO TOUR");
+      const vidUrl = video.startsWith("http")
+        ? video
+        : `${window.location.origin}${video}`;
+      clickableLine(
+        `Watch Video: ${video.split("/").pop() || "property-video"}`,
+        vidUrl,
+        8,
+      );
+      y += 2;
+      dv();
+    }
 
-    // ─── BIDDING INFO ──────────────────────────
-    sectionTitle("CURRENT BIDDING STATUS");
-    line(`Current Bid: £${(property?.currentBid || 0).toLocaleString()}`);
-    line(`Total Bids: ${property?.totalBids || 0}`);
-    divider();
+    // Virtual Tour
+    if (media.virtualTour) {
+      st("VIRTUAL TOUR");
+      clickableLine("View Virtual Tour", media.virtualTour, 8);
+      y += 2;
+      dv();
+    }
+
+    // ─── LEGAL DOCUMENTS ───────────────────────
+    const docs = media.legalDocuments
+      ? Array.isArray(media.legalDocuments)
+        ? media.legalDocuments
+        : [media.legalDocuments]
+      : [];
+    if (docs.length > 0) {
+      st("LEGAL DOCUMENTS");
+      docs.forEach((d: string, i: number) => {
+        const docUrl = d.startsWith("http")
+          ? d
+          : `${window.location.origin}${d}`;
+        clickableLine(
+          `Document ${i + 1}: ${d.split("/").pop() || `doc-${i + 1}`}`,
+          docUrl,
+          7,
+        );
+      });
+      y += 2;
+      dv();
+    }
 
     // ─── FOOTER ────────────────────────────────
-    doc.setFontSize(9);
-    doc.setTextColor(128);
-    doc.text(
-      "King Property Auction - kingpropertyauction.com",
-      20,
-      pageHeight - 15,
-    );
-    doc.text(
-      `Generated: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}`,
-      20,
-      pageHeight - 10,
-    );
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(6.5);
+      doc.setTextColor(148, 163, 184);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `Page ${i}/${pages} | King Property Auction | ${new Date().toLocaleDateString("en-GB")}`,
+        m,
+        pageHeight - 6,
+      );
+    }
 
-    const filename = `${(property?.propertyTitle || "property").replace(/\s+/g, "-").toLowerCase()}-brochure.pdf`;
-    doc.save(filename);
+    doc.save(
+      `${(property?.propertyTitle || "property").replace(/\s+/g, "-").toLowerCase()}-brochure.pdf`,
+    );
   };
-
   return (
     <div className="lg:col-span-1 space-y-6">
       {/* Gradient Action Card */}
