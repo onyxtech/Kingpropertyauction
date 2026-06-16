@@ -243,7 +243,7 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
 
       {/* Content Grid */}
       <div className="grid md:grid-cols-2 gap-3 lg:gap-4">
-        {/* Recent Properties - seller view */}
+        {/* Recent Properties - Owner View */}
         {showSellerView && canAddProperty && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-slate-100">

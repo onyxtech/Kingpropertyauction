@@ -77,7 +77,7 @@ export default function AuctionGuide() {
   const faqs = [
     {
       question: "What is a reserve price?",
-      answer: "The reserve price is the minimum price a seller is willing to accept. If bidding doesn't reach this amount, the property may not be sold.",
+      answer: "The reserve price is the minimum price an Owner is willing to accept. If bidding doesn't reach this amount, the property may not be sold.",
     },
     {
       question: "Do I need to pay a buyer's premium?",

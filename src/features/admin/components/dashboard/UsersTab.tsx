@@ -25,11 +25,11 @@ const getUserRoleLabel = (user: any) => {
     return { label: "Agent", color: "bg-orange-100 text-orange-700" };
   }
   if (user.role === "seller") {
-    if (canBid && canList) return { label: "Buyer & Seller", color: "bg-teal-100 text-teal-700" };
+    if (canBid && canList) return { label: "Buyer & Owner", color: "bg-teal-100 text-teal-700" };
     return { label: "Seller", color: "bg-blue-100 text-blue-700" };
   }
   if (user.role === "buyer" || user.role === "user") {
-    if (canBid && canList) return { label: "Buyer & Seller", color: "bg-teal-100 text-teal-700" };
+    if (canBid && canList) return { label: "Buyer & Owner", color: "bg-teal-100 text-teal-700" };
     return { label: "Buyer", color: "bg-green-100 text-green-700" };
   }
   return { label: user.role, color: "bg-slate-100 text-slate-700" };

@@ -70,7 +70,7 @@ export default function GuideFAQ() {
       gradient: "from-blue-500 to-indigo-600",
       faqs: [
         { q: "How does a property auction work?", a: "Property auctions involve properties being sold to the highest bidder. The auction is legally binding once the hammer falls. You'll need to pay a 10% deposit on the day and complete within 28 days." },
-        { q: "Do I need to register before bidding?", a: "Yes, you must register at least 24 hours before the auction. After winning the bid, you will be required to pay a 10% deposit along with the auctioneer's fee, which is non-refundable under any circumstances. The remaining balance must be paid on the settlement date, which is within 28 days from the date your offer is accepted. Failure to complete the purchase within the specified timeframe may result in the seller pursuing recovery of the outstanding balance and any losses incurred." },
+        { q: "Do I need to register before bidding?", a: "Yes, you must register at least 24 hours before the auction. After winning the bid, you will be required to pay a 10% deposit along with the auctioneer's fee, which is non-refundable under any circumstances. The remaining balance must be paid on the settlement date, which is within 28 days from the date your offer is accepted. Failure to complete the purchase within the specified timeframe may result in the owner pursuing recovery of the outstanding balance and any losses incurred." },
         { q: "Can I view properties before bidding?", a: "Yes, open viewings are available for properties before bidding. Our team will advise you of the next available viewing slot." },
         { q: "What happens after I win?", a: "Upon acceptance of the successful bid, the purchaser will be required to immediately pay a 10% deposit & auctioneer fee immediately. The remaining balance must be settled within 28 days in accordance with the terms and conditions of the sale, at which point legal completion of the purchase will take place." }
       ]
@@ -81,7 +81,7 @@ export default function GuideFAQ() {
       gradient: "from-purple-500 to-pink-600",
       faqs: [
         { q: "How long does it take to sell?", a: "From instruction to completion typically takes 6-8 weeks. This includes marketing time (3-4 weeks) and the 28-day completion period after auction." },
-        { q: "What are the fees?", a: "Our standard seller's fee is 2.5% + VAT or £3000+ plus whichever is greater with no upfront costs. We also offer a 'No Sale, No Fee' policy." },
+        { q: "What are the fees?", a: "Our standard owner's fee is 2.5% + VAT or £3000+ plus whichever is greater with no upfront costs. We also offer a 'No Sale, No Fee' policy." },
         { q: "What is a reserve price?", a: "The reserve is the minimum price you're willing to accept. It remains confidential and is typically set at 85-90% of the guide price." },
         { q: "Can I withdraw before the auction?", a: "Yes, you can withdraw after 3 months agreement period has expired." }
       ]

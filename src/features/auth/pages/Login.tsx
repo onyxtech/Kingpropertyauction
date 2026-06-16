@@ -56,7 +56,7 @@ const intentConfig: Record<
   },
   sell: {
     title: "Login to List Properties 💰",
-    subtitle: "Access your seller account to manage your property listings",
+    subtitle: "Access your Owner Account to manage your property listings",
     benefits: [
       {
         icon: Building2,
@@ -74,7 +74,7 @@ const intentConfig: Record<
         desc: "Trusted by 10,000+ buyers",
       },
     ],
-    ctaText: "Create a Seller Account →",
+    ctaText: "Create an Owner Account →",
     ctaLink: "/register?reason=seller",
   },
   agent: {
@@ -89,7 +89,7 @@ const intentConfig: Record<
       {
         icon: Users,
         title: "Client Management",
-        desc: "Handle buyers and sellers from one dashboard",
+        desc: "Handle buyers and owners from one dashboard",
       },
       {
         icon: CheckCircle,
@@ -99,6 +99,29 @@ const intentConfig: Record<
     ],
     ctaText: "Create an Agent Account →",
     ctaLink: "/register?reason=agent",
+  },
+  "add-property": {
+    title: "Login to Add Property 🏠",
+    subtitle: "Sign in as an agent or seller to list your property",
+    benefits: [
+      {
+        icon: Building2,
+        title: "List Properties",
+        desc: "Showcase properties to thousands of buyers",
+      },
+      {
+        icon: Users,
+        title: "Agent or Seller",
+        desc: "Both agents and owners can list properties",
+      },
+      {
+        icon: CheckCircle,
+        title: "Verified Platform",
+        desc: "Trusted by thousands across the UK",
+      },
+    ],
+    ctaText: "Create an Account →",
+    ctaLink: "/register",
   },
   auction: {
     title: "Login to Join Auctions 🔨",
@@ -139,8 +162,8 @@ const genericBenefits = [
     title: "Sell & List",
     desc: "List your properties and reach thousands of buyers",
     role: "seller",
-    cta: "Create Seller Account →",
-    link: "/register?reason=seller",
+    cta: "Create Owner Account →",
+    link: "/register?reason=owner",
   },
   {
     icon: UserPlus,
@@ -364,14 +387,33 @@ export default function Login() {
                     <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-4 mb-6 text-center">
                       <p className="text-amber-800 font-bold text-sm">
                         New here?{" "}
-                        <button
-                          onClick={() =>
-                            navigate(config?.ctaLink || "/register")
-                          }
-                          className="text-orange-600 font-black hover:underline"
-                        >
-                          {config?.ctaText || "Create Account →"}
-                        </button>
+                        {intent === "add-property" ? (
+                          <div className="flex flex-col gap-2 mt-2">
+                            <button
+                              onClick={() =>
+                                navigate("/register?reason=owner")
+                              }
+                              className="w-full py-3 px-4 border-2 border-emerald-200 rounded-xl font-bold text-emerald-700 hover:bg-emerald-50 transition-all text-sm"
+                            >
+                              Create an Owner Account →
+                            </button>
+                            <button
+                              onClick={() => navigate("/register?reason=agent")}
+                              className="w-full py-3 px-4 border-2 border-orange-200 rounded-xl font-bold text-orange-700 hover:bg-orange-50 transition-all text-sm"
+                            >
+                              Create an Agent Account →
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              navigate(config?.ctaLink || "/register")
+                            }
+                            className="text-orange-600 font-black hover:underline"
+                          >
+                            {config?.ctaText || "Create an account →"}
+                          </button>
+                        )}
                       </p>
                     </div>
                   ) : (
@@ -379,22 +421,26 @@ export default function Login() {
                       <p className="text-blue-800 font-bold text-sm text-center mb-2">
                         New to King Property?
                       </p>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div
+                        className={`grid ${intent === "add-property" ? "grid-cols-2" : "grid-cols-3"} gap-2`}
+                      >
+                        {intent !== "add-property" && (
+                          <button
+                            onClick={() => navigate("/register?reason=buyer")}
+                            className="py-2 px-3 bg-white border border-blue-200 rounded-xl text-xs font-bold text-blue-700 hover:bg-blue-50 transition-all"
+                          >
+                            🏠 Buyer
+                          </button>
+                        )}
                         <button
-                          onClick={() => navigate("/register?reason=buyer")}
-                          className="py-2 px-3 bg-white border border-blue-200 rounded-xl text-xs font-bold text-blue-700 hover:bg-blue-50 transition-all"
+                          onClick={() => navigate("/register?reason=owner")}
+                          className={`py-2 px-3 bg-white border rounded-xl text-xs font-bold hover:bg-emerald-50 transition-all ${intent === "add-property" ? "border-emerald-400 text-emerald-700 bg-emerald-50" : "border-emerald-200 text-emerald-700"}`}
                         >
-                          🏠 Buyer
-                        </button>
-                        <button
-                          onClick={() => navigate("/register?reason=seller")}
-                          className="py-2 px-3 bg-white border border-emerald-200 rounded-xl text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-all"
-                        >
-                          💰 Seller
+                          💰 Owner
                         </button>
                         <button
                           onClick={() => navigate("/register?reason=agent")}
-                          className="py-2 px-3 bg-white border border-orange-200 rounded-xl text-xs font-bold text-orange-700 hover:bg-orange-50 transition-all"
+                          className={`py-2 px-3 bg-white border rounded-xl text-xs font-bold hover:bg-orange-50 transition-all ${intent === "add-property" ? "border-orange-400 text-orange-700 bg-orange-50" : "border-orange-200 text-orange-700"}`}
                         >
                           🏢 Agent
                         </button>
@@ -413,7 +459,7 @@ export default function Login() {
                       {intent === "agent"
                         ? "Access your agent dashboard"
                         : intent === "sell"
-                          ? "Access your seller account"
+                          ? "Access your Owner Account"
                           : intent === "bid"
                             ? "Access your buyer account"
                             : "Access your account and start bidding"}

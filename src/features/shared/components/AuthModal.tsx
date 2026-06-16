@@ -20,7 +20,7 @@ interface AuthModalProps {
 
 const intentLabels: Record<string, { loginTitle: string; loginSubtitle: string; registerTitle: string; registerSubtitle: string; reason: string }> = {
   bid: { loginTitle: "Login to Place Bids 🏠", loginSubtitle: "Sign in to start bidding on properties", registerTitle: "Register to Start Bidding", registerSubtitle: "Create an account to place bids", reason: "buyer" },
-  sell: { loginTitle: "Login to List Properties 🏢", loginSubtitle: "Sign in to manage your listings", registerTitle: "Register as a Seller", registerSubtitle: "Create an account to list properties", reason: "seller" },
+  sell: { loginTitle: "Login to List Properties 🏢", loginSubtitle: "Sign in to manage your listings", registerTitle: "Register as an Owner", registerSubtitle: "Create an account to list properties", reason: "seller" },
   auction: { loginTitle: "Login to Join Auction 🔨", loginSubtitle: "Sign in to participate in auctions", registerTitle: "Register for Auctions", registerSubtitle: "Create an account to join auctions", reason: "buyer" },
 };
 

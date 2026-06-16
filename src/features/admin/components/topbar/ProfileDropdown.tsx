@@ -20,9 +20,9 @@ export default function ProfileDropdown() {
     : user?.role === "agent"
     ? (user?.permissions?.canBid ? "Agent & Buyer" : "Agent")
     : user?.role === "seller"
-    ? (user?.permissions?.canBid ? "Seller & Buyer" : "Seller")
+    ? (user?.permissions?.canBid ? "Owner & Buyer" : "Seller")
     : user?.role === "buyer"
-    ? (user?.permissions?.canListProperties ? "Buyer & Seller" : "Buyer")
+    ? (user?.permissions?.canListProperties ? "Buyer & Owner" : "Buyer")
     : "User";
 
   const initials = user?.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase() || "AD";

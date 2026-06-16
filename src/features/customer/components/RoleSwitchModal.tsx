@@ -47,10 +47,10 @@ export default function RoleSwitchModal({ onClose }: RoleSwitchModalProps) {
             </div>
             <div>
               <h3 className="font-black text-slate-900">
-                {canApplyToBid ? "Apply for Buyer Permissions" : "Become a Seller"}
+                {canApplyToBid ? "Apply for Buyer Permissions" : "Become an Owner"}
               </h3>
               <p className="text-xs text-slate-500">
-                {canApplyToBid ? "Request bidding access" : "Request seller access"}
+                {canApplyToBid ? "Request bidding access" : "Request owner access"}
               </p>
             </div>
           </div>
@@ -89,13 +89,13 @@ export default function RoleSwitchModal({ onClose }: RoleSwitchModalProps) {
                 <div className="space-y-4">
                   <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
                     <p className="text-sm font-medium text-blue-800">
-                      As a seller, you'll be able to list properties for auction and track
+                      As an Owner, you'll be able to list properties for auction and track
                       your listings. Your bidding permissions are kept.
                     </p>
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
-                      Why do you want to become a seller? (optional)
+                      Why do you want to become an Owner? (optional)
                     </label>
                     <textarea
                       value={message}
@@ -119,13 +119,13 @@ export default function RoleSwitchModal({ onClose }: RoleSwitchModalProps) {
                     {requestRoleSwitch.isPending ? (
                       <><Loader2 className="size-4 animate-spin" /> Submitting...</>
                     ) : (
-                      "Submit Seller Request"
+                      "Submit Owner Request"
                     )}
                   </button>
                 </div>
               )}
 
-              {/* Buyer section — for sellers/agents */}
+              {/* Buyer section — For Owners/agents */}
               {canApplyToBid && (
                 <div className="space-y-4">
                   <div className="bg-green-50 border border-green-200 rounded-2xl p-4">

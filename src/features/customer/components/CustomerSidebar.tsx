@@ -30,7 +30,12 @@ interface CustomerSidebarProps {
   onMobileClose?: () => void;
 }
 
-export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = false, onMobileClose }: CustomerSidebarProps) {
+export default function CustomerSidebar({
+  activeTab,
+  onTabChange,
+  mobileOpen = false,
+  onMobileClose,
+}: CustomerSidebarProps) {
   const navigate = useNavigate();
   const theme = useTheme();
   const { logout, user } = useAuthStore();
@@ -124,7 +129,7 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
       id: "enquiries",
       icon: Mail,
       label: "My Enquiries",
-      show: true,
+      show: !showSellerView,
     },
     {
       id: "messages",
@@ -162,13 +167,22 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
         `}
       >
         <div className="p-3 border-b-2 border-slate-100 flex items-center gap-2">
-          <button onClick={() => navigate("/")} className="flex items-center gap-3 group flex-1 min-w-0">
-            <div className={`size-8 rounded-lg bg-gradient-to-br ${theme.primary} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0`}>
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-3 group flex-1 min-w-0"
+          >
+            <div
+              className={`size-8 rounded-lg bg-gradient-to-br ${theme.primary} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0`}
+            >
               <LayoutDashboard className="size-4 text-white" />
             </div>
             <div className="text-left min-w-0">
-              <h1 className="font-black text-slate-900 text-[13px] leading-tight truncate">King Property Auction</h1>
-              <p className="text-[11px] text-slate-600 font-bold">My Dashboard</p>
+              <h1 className="font-black text-slate-900 text-[13px] leading-tight truncate">
+                King Property Auction
+              </h1>
+              <p className="text-[11px] text-slate-600 font-bold">
+                My Dashboard
+              </p>
             </div>
           </button>
           <button
@@ -183,12 +197,18 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
         {/* Active View Indicator */}
         {canSwitchView && (
           <div className="px-4 pt-4">
-            <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold ${
-              showSellerView
-                ? "bg-blue-50 text-blue-700 border border-blue-200"
-                : "bg-green-50 text-green-700 border border-green-200"
-            }`}>
-              {showSellerView ? <Building2 className="size-4" /> : <ShoppingBag className="size-4" />}
+            <div
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold ${
+                showSellerView
+                  ? "bg-blue-50 text-blue-700 border border-blue-200"
+                  : "bg-green-50 text-green-700 border border-green-200"
+              }`}
+            >
+              {showSellerView ? (
+                <Building2 className="size-4" />
+              ) : (
+                <ShoppingBag className="size-4" />
+              )}
               <span>{getActiveViewLabel()}</span>
             </div>
           </div>
@@ -238,7 +258,9 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
               className="w-full flex items-center gap-2.5 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-[13px] font-bold transition-all disabled:opacity-50"
             >
               <ArrowLeftRight className="size-4" />
-              {showSellerView ? "Switch to Buyer View" : "Switch to Seller View"}
+              {showSellerView
+                ? "Switch to Buyer View"
+                : "Switch to Owner View"}
             </button>
           )}
 
@@ -249,7 +271,7 @@ export default function CustomerSidebar({ activeTab, onTabChange, mobileOpen = f
               className="w-full flex items-center gap-2.5 px-3 py-2 text-purple-600 hover:bg-purple-50 rounded-lg text-[13px] font-bold transition-all"
             >
               <Building2 className="size-4" />
-              Become a Seller
+              Become an Owner
             </button>
           )}
 

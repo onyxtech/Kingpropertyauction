@@ -34,6 +34,7 @@ interface PropertyInfoProps {
   buyNowPrice: number;
   features: string[];
   isFavorite: boolean;
+  onShare?: () => void;
   onToggleFavorite: () => void;
   formatPrice: (val: number) => string;
   showBidHistory: boolean;
@@ -59,6 +60,7 @@ export default function PropertyInfo({
   buyNowPrice,
   features,
   isFavorite,
+  onShare,
   onToggleFavorite,
   formatPrice,
   showBidHistory,
@@ -119,7 +121,10 @@ export default function PropertyInfo({
                 }`}
               />
             </button>
-            <button className="size-12 bg-white/90 rounded-full flex items-center justify-center transition-all shadow-lg">
+            <button
+              onClick={onShare}
+              className="size-12 bg-white/90 rounded-full flex items-center justify-center transition-all shadow-lg hover:bg-blue-50 hover:scale-110"
+            >
               <Share2 className="size-5 text-slate-600" />
             </button>
           </div>
@@ -347,30 +352,30 @@ export default function PropertyInfo({
       )}
 
       {/* Property Videos */}
-      {(property?.media?.propertyVideos?.length > 0 || property?.media?.propertyVideo) && (
+      {(property?.media?.propertyVideos?.length > 0 ||
+        property?.media?.propertyVideo) && (
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
           <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
             <FileText className="size-6 text-blue-600" />
             Property Videos
           </h2>
           <div className="space-y-4">
-            {(property.media?.propertyVideos || (property.media?.propertyVideo ? [property.media.propertyVideo] : [])).map((vid: string, i: number) => (
+            {(
+              property.media?.propertyVideos ||
+              (property.media?.propertyVideo
+                ? [property.media.propertyVideo]
+                : [])
+            ).map((vid: string, i: number) => (
               <div
                 key={i}
                 className="relative w-full rounded-2xl overflow-hidden border-2 border-slate-200"
               >
                 {/* Video player */}
-                <video
-                  src={mediaUrl(vid)}
-                  controls
-                  className="w-full"
-                />
+                <video src={mediaUrl(vid)} controls className="w-full" />
 
                 {/* Watermark overlay - bottom right */}
                 {/* Pointer events none so video controls work */}
-                <div
-                  className="absolute bottom-12 right-4 pointer-events-none select-none z-10"
-                >
+                <div className="absolute bottom-12 right-4 pointer-events-none select-none z-10">
                   <div
                     className="flex flex-col items-end"
                     style={{ opacity: 0.75 }}
@@ -418,14 +423,18 @@ export default function PropertyInfo({
       )}
 
       {/* Floor Plans */}
-      {(property?.media?.floorPlans?.length > 0 || property?.media?.floorPlan) && (
+      {(property?.media?.floorPlans?.length > 0 ||
+        property?.media?.floorPlan) && (
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
           <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
             <FileText className="size-6 text-green-600" />
             Floor Plans
           </h2>
           <div className="space-y-4">
-            {(property.media?.floorPlans || (property.media?.floorPlan ? [property.media.floorPlan] : [])).map((fp: string, i: number) => (
+            {(
+              property.media?.floorPlans ||
+              (property.media?.floorPlan ? [property.media.floorPlan] : [])
+            ).map((fp: string, i: number) =>
               fp.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                 <img
                   key={i}
@@ -443,8 +452,8 @@ export default function PropertyInfo({
                 >
                   <FileText className="size-5" /> Floor Plan {i + 1}
                 </a>
-              )
-            ))}
+              ),
+            )}
           </div>
         </div>
       )}

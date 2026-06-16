@@ -339,6 +339,9 @@ export default function ViewAllLots() {
                     </h3>
                     <div className="flex items-center gap-2 text-slate-600 mb-4 font-medium">
                       <MapPin className="size-4 text-emerald-600" />
+                      {lot.location?.streetAddress
+                        ? `${lot.location.streetAddress}, `
+                        : ""}
                       {lot.location?.city}, {lot.location?.area}
                     </div>
 

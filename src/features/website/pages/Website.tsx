@@ -20,6 +20,7 @@ import ShareModal from "../components/ShareModal";
 import PropertyGrid from "../components/PropertyGrid";
 import BidModalWrapper from "../components/BidModalWrapper";
 import UniversalSearch from "../components/UniversalSearch";
+import { apiClient } from "@/lib/apiClient";
 
 export default function Website() {
   const navigate = useNavigate();
@@ -141,6 +142,7 @@ export default function Website() {
             name: result.data.user.fullName,
             email: result.data.user.email,
             role: result.data.user.role,
+            permissions: result.data.user.permissions,  
           });
           setShowAuthModal(false);
           showNotification("Logged in successfully!", "success");
@@ -176,6 +178,7 @@ export default function Website() {
             name: result.data.user.fullName,
             email: result.data.user.email,
             role: result.data.user.role,
+            permissions: result.data.user.permissions, 
           });
           setShowAuthModal(false);
           showNotification("Account created successfully!", "success");
@@ -197,6 +200,23 @@ export default function Website() {
       setAuthLoading(false);
     }
   };
+
+  // Load wishlist on mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      apiClient
+        .fetch("/properties/watchlist")
+        .then((res) => {
+          if (res.success && res.data) {
+            const ids = Array.isArray(res.data)
+              ? res.data.map((p: any) => p._id || p)
+              : [];
+            setWishlistedProperties(ids);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isAuthenticated]);
 
   const handlePlaceBid = (property: any) => {
     if (!isAuthenticated) {
@@ -315,13 +335,36 @@ export default function Website() {
       "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBob3VzZSUyMGV4dGVyaW9yfGVufDF8fHx8MTc0MDAwMDAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
   };
 
-  const handleToggleWishlist = (e: React.MouseEvent, propertyId: string) => {
+  const handleToggleWishlist = async (
+    e: React.MouseEvent,
+    propertyId: string,
+  ) => {
     e.stopPropagation();
-    setWishlistedProperties((prev) =>
-      prev.includes(propertyId)
-        ? prev.filter((id) => id !== propertyId)
-        : [...prev, propertyId],
-    );
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+    try {
+      const result = await apiClient.fetch(
+        `/properties/${propertyId}/watchlist`,
+        { method: "POST" },
+      );
+      if (result.success) {
+        const isAdding = !wishlistedProperties.includes(propertyId);
+        setWishlistedProperties((prev) =>
+          prev.includes(propertyId)
+            ? prev.filter((id) => id !== propertyId)
+            : [...prev, propertyId],
+        );
+        setNotification({
+          message: isAdding ? "Added to wishlist! ❤️" : "Removed from wishlist",
+          type: "success",
+        });
+        setTimeout(() => setNotification(null), 3000);
+      }
+    } catch (err) {
+      console.error("Wishlist toggle failed:", err);
+    }
   };
 
   const handleShareProperty = (e: React.MouseEvent, property: any) => {
@@ -414,7 +457,6 @@ export default function Website() {
         />
       </div>
 
-      
       <UniversalSearch />
 
       <HeroSlider

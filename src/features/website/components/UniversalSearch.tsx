@@ -314,7 +314,15 @@ export default function UniversalSearch() {
                     </button>
                   </div>
                   {results.properties.map((p: any) => {
-                    const img = p.media?.propertyImages?.[0];
+                    const getFirstImage = (p: any) => {
+                      const imgs = p.media?.propertyImages;
+                      if (!imgs) return null;
+                      if (Array.isArray(imgs)) return imgs[0];
+                      if (typeof imgs === "string")
+                        return imgs.split("\n")[0].trim();
+                      return null;
+                    };
+                    const img = getFirstImage(p);
                     return (
                       <button
                         key={p._id}
@@ -330,7 +338,7 @@ export default function UniversalSearch() {
                               src={
                                 img.startsWith("http")
                                   ? img
-                                  : `http://localhost:5000${img}`
+                                  : `${window.location.origin}${img}`
                               }
                               alt=""
                               className="w-full h-full object-cover"

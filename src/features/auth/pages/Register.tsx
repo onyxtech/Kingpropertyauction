@@ -65,7 +65,7 @@ const agentBenefits = [
   {
     icon: Users,
     title: "Client Management",
-    desc: "Manage buyers and sellers efficiently",
+    desc: "Manage buyers and owners efficiently",
   },
   {
     icon: Shield,
@@ -100,7 +100,8 @@ const genericBenefits = [
 export default function Register() {
   const { isAuthenticated } = useAuthStore();
   const [searchParams] = useSearchParams();
-  const reason = searchParams.get("reason") || "";
+  const rawReason = searchParams.get("reason") || "";
+  const reason = rawReason === "owner" ? "seller" : rawReason;
   const navigate = useNavigate();
 
   if (isAuthenticated && reason !== "seller" && reason !== "agent")
@@ -126,7 +127,7 @@ export default function Register() {
     reason === "buyer"
       ? "Join as a Buyer"
       : reason === "seller"
-        ? "Join as a Seller"
+        ? "Join as an Owner"
         : reason === "agent"
           ? "Join as an Agent"
           : "Join King Property Auction";
@@ -183,7 +184,7 @@ export default function Register() {
                 {reason === "seller" && (
                   <>
                     🏠 Want to list your properties? Register as a{" "}
-                    <span className="text-orange-600">Seller</span> to get
+                    <span className="text-orange-600">Owner</span> to get
                     started!
                   </>
                 )}

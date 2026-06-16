@@ -94,7 +94,7 @@ export default function ReferralFee() {
 
   const howItWorks = [
     { step: "1", title: "Register", desc: "Sign up for free to our referral program" },
-    { step: "2", title: "Refer", desc: "Share your unique link with sellers" },
+    { step: "2", title: "Refer", desc: "Share your unique link with owners" },
     { step: "3", title: "Track", desc: "Monitor referrals in your dashboard" },
     { step: "4", title: "Earn", desc: "Get paid when properties sell" }
   ];
@@ -136,7 +136,7 @@ export default function ReferralFee() {
             </h1>
             
             <p className="text-2xl text-white/90 mb-10 font-medium">
-              Refer property sellers and earn generous commissions
+              Refer property owners and earn generous commissions
               <br />
               <span className="text-yellow-200">✨ Up to £1,500 per successful sale</span>
             </p>
@@ -584,7 +584,7 @@ export default function ReferralFee() {
                   Program Overview
                 </h2>
                 <p className="text-slate-700 font-medium leading-relaxed">
-                  Our referral program is designed to reward you for introducing new property sellers to our platform. The more successful sales you refer, the more you earn. Join thousands of successful referrers already benefiting from our program.
+                  Our referral program is designed to reward you for introducing new property owners to our platform. The more successful sales you refer, the more you earn. Join thousands of successful referrers already benefiting from our program.
                 </p>
               </div>
 
@@ -662,7 +662,7 @@ export default function ReferralFee() {
                     </div>
                     <div>
                       <p className="font-black text-slate-900">Refer</p>
-                      <p className="text-sm text-slate-600 font-medium">Share your unique link with sellers</p>
+                      <p className="text-sm text-slate-600 font-medium">Share your unique link with owners</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">

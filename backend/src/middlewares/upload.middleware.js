@@ -143,3 +143,28 @@ export const uploadSingleImage = multer({
   },
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single('image');
+
+const idDocumentStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = "uploads/id-documents";
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `id-doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`);
+  },
+});
+
+export const uploadIdDocument = multer({
+  storage: idDocumentStorage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only JPG, PNG, WebP, and PDF files are allowed"));
+    }
+  },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+}).single("idDocument");

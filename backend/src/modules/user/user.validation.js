@@ -15,6 +15,20 @@ export const registerSchema = Joi.object({
     commissionRate: Joi.number().optional(),
     specialization: Joi.string().optional(),
   }).optional(),
+  idDocuments: Joi.array()
+    .items(
+      Joi.object({
+        docType: Joi.string()
+          .valid("driving_license", "passport", "other_id")
+          .optional(),
+        fileName: Joi.string().optional(),
+        originalName: Joi.string().optional(),
+        mimeType: Joi.string().optional(),
+        fileSize: Joi.number().optional(),
+        fileData: Joi.string().optional(),
+      }),
+    )
+    .optional(),
   permissions: Joi.object({
     canBid: Joi.boolean().optional(),
     canListProperties: Joi.boolean().optional(),

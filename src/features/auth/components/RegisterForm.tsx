@@ -28,7 +28,7 @@ const roles = [
   {
     key: "seller",
     icon: "💰",
-    title: "Seller",
+    title: "Owner",
     desc: "I want to list and sell my property",
     gradient: "from-emerald-500 to-teal-600",
   },
@@ -48,6 +48,7 @@ export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [searchParams] = useSearchParams();
   const reasonParam = searchParams.get("reason");
+  const { login } = useAuthStore();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -64,14 +65,25 @@ export default function RegisterForm() {
     marketingConsent: true,
     acceptTerms: false,
   });
+  const [idDocuments, setIdDocuments] = useState<File[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-    // Auto-select role if coming with intent from login page
+  // Auto-select role if coming with intent from login page
   useEffect(() => {
-    if (reasonParam === "buyer") { setSelectedRole("buyer"); setStep("form"); }
-    else if (reasonParam === "seller") { setSelectedRole("seller"); setStep("form"); }
-    else if (reasonParam === "agent") { setSelectedRole("agent"); setStep("form"); }
+    if (reasonParam === "buyer") {
+      setSelectedRole("buyer");
+      setStep("form");
+    } else if (reasonParam === "owner") {
+      setSelectedRole("seller");
+      setStep("form");
+    } else if (reasonParam === "seller") {
+      setSelectedRole("seller");
+      setStep("form");
+    } else if (reasonParam === "agent") {
+      setSelectedRole("agent");
+      setStep("form");
+    }
   }, [reasonParam]);
 
   const handleInputChange = (
@@ -83,6 +95,17 @@ export default function RegisterForm() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  const handleIdDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      setIdDocuments((prev) => [...prev, ...filesArray]);
+    }
+  };
+
+  const removeIdDocument = (index: number) => {
+    setIdDocuments((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleRoleSelect = (role: string) => {
@@ -157,6 +180,30 @@ export default function RegisterForm() {
         };
       }
 
+      // Add ID documents for agent and seller/owner
+      if (
+        (selectedRole === "agent" || selectedRole === "seller") &&
+        idDocuments.length > 0
+      ) {
+        body.idDocuments = await Promise.all(
+          idDocuments.map(async (file) => {
+            const base64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.readAsDataURL(file);
+            });
+            return {
+              docType: "other_id",
+              fileName: `id-doc-${Date.now()}-${file.name}`,
+              originalName: file.name,
+              mimeType: file.type,
+              fileSize: file.size,
+              fileData: base64,
+            };
+          }),
+        );
+      }
+
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -165,7 +212,14 @@ export default function RegisterForm() {
       const data = await response.json();
 
       if (data.success) {
-        showSuccess("Account created! 🎉", "Please wait for admin approval.");
+        const needsApproval =
+          selectedRole === "buyer" || selectedRole === "user";
+        showSuccess(
+          "Account created! 🎉",
+          needsApproval
+            ? "Please wait for admin approval."
+            : "You can now sign in and start using your account.",
+        );
         setStep("success");
       } else {
         setError(data.message || "Registration failed");
@@ -189,31 +243,55 @@ export default function RegisterForm() {
         <h2 className="text-2xl font-black text-slate-900 mb-2">
           Account Created!
         </h2>
-        <p className="text-slate-600 mb-2">
-          Your account has been submitted for review.
-        </p>
-        {selectedRole === "seller" ? (
-          <p className="text-sm text-slate-500 mb-6">
-            Once approved, you'll be able to list and manage your properties for
-            auction.
+        {selectedRole === "seller" || selectedRole === "agent" ? (
+          <p className="text-slate-600 mb-2">Your account is ready to use!</p>
+        ) : (
+          <p className="text-slate-600 mb-2">
+            Your account has been submitted for review.
           </p>
-        ) : selectedRole === "agent" ? (
-          <p className="text-sm text-slate-500 mb-6">
-            Once approved, you'll be able to manage properties and clients on
-            the platform.
-          </p>
+        )}
+        {selectedRole === "seller" || selectedRole === "agent" ? (
+          <>
+            <p className="text-sm text-slate-500 mb-2">
+              Your account is ready! Redirecting to your dashboard...
+            </p>
+            <button
+              onClick={async () => {
+                const res = await fetch("/api/auth/login", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    email: formData.email,
+                    password: formData.password,
+                  }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                  useAuthStore.getState().login(data.accessToken, data.user);
+                  navigate(
+                    data.user.role === "admin" ? "/admin" : "/dashboard",
+                  );
+                }
+              }}
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
+            >
+              Go to Dashboard →
+            </button>
+          </>
         ) : (
           <p className="text-sm text-slate-500 mb-6">
             You'll receive an email once your account is approved. You can then
             login and start bidding.
           </p>
         )}
-        <button
-          onClick={() => navigate("/login")}
-          className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
-        >
-          Go to Login
-        </button>
+        {selectedRole !== "seller" && selectedRole !== "agent" && (
+          <button
+            onClick={() => (window.location.href = "/login")}
+            className="..."
+          >
+            Go to Login
+          </button>
+        )}
       </div>
     );
   }
@@ -423,11 +501,16 @@ export default function RegisterForm() {
               <AddressAutocomplete
                 label="Street Address"
                 value={formData.street}
-                onChange={(val) => setFormData((prev) => ({ ...prev, street: val }))}
+                onChange={(val) =>
+                  setFormData((prev) => ({ ...prev, street: val }))
+                }
                 onAddressSelect={(addr) => {
                   setFormData((prev) => ({
                     ...prev,
-                    street: addr.streetAddress || addr.formattedAddress || prev.street,
+                    street:
+                      addr.streetAddress ||
+                      addr.formattedAddress ||
+                      prev.street,
                     city: addr.city || prev.city,
                     postcode: addr.postalCode || prev.postcode,
                     country: addr.country || prev.country,
@@ -509,7 +592,8 @@ export default function RegisterForm() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">
-                  License Number <span className="font-normal text-slate-400">(Optional)</span>
+                  License Number{" "}
+                  <span className="font-normal text-slate-400">(Optional)</span>
                 </label>
                 <input
                   type="text"
@@ -521,6 +605,65 @@ export default function RegisterForm() {
                 />
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ID Document Upload - for Agent and Owner */}
+        {(selectedRole === "agent" || selectedRole === "seller") && (
+          <div className="space-y-3">
+            <label className="block text-sm font-bold text-slate-700">
+              📄 ID Verification
+            </label>
+            <p className="text-xs text-slate-500">
+              Upload Driving License, Passport, or ID Card (JPG, PNG, PDF)
+            </p>
+
+            <label className="flex py-3 px-4 border-2 border-dashed border-slate-300 rounded-xl text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                onChange={handleIdDocumentUpload}
+                className="hidden"
+                multiple
+              />
+              <span className="text-sm font-semibold text-blue-600">
+                + Add ID Document
+              </span>
+            </label>
+
+            {/* Preview uploaded docs */}
+            {idDocuments.length > 0 && (
+              <div className="space-y-2">
+                {idDocuments.map((file, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span>🪪</span>
+                      <div>
+                        <p
+                          className="text-sm font-semibold text-slate-700 truncate"
+                          style={{ maxWidth: "200px" }}
+                        >
+                          {file.name}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {(file.size / 1024).toFixed(0)} KB
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeIdDocument(idx)}
+                      className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

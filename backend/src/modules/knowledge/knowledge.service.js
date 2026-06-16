@@ -23,7 +23,7 @@ const DEFAULT_KNOWLEDGE = [
 7. Completion within 28 days
 8. We handle all marketing, catalogue, and auction day management
 There are no upfront fees to list. We earn a small commission on successful sales only.
-If you are an agent or have a seller account, you can also submit properties directly via the admin panel at /admin/properties/new after logging in with an agent or admin account.`,
+If you are an agent or have a Owner Account, you can also submit properties directly via the admin panel at /admin/properties/new after logging in with an agent or admin account.`,
   },
   {
     key: 'buying_process',

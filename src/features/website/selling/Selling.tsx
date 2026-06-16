@@ -164,7 +164,7 @@ export default function Selling() {
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-slate-900 mb-4">Why Sell at Auction?</h2>
           <p className="text-xl text-slate-600">
-            The auction method offers unmatched advantages for property sellers
+            The auction method offers unmatched advantages for property owners
           </p>
         </div>
 

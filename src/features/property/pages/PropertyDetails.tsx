@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import type { Property, Auction, Bid } from "@/types";
 import { useAuctionSocket } from "@/hooks/useAuctionSocket";
+import ShareModal from "@/features/website/components/ShareModal";
 import {
   ArrowLeft,
   CheckCircle,
@@ -53,6 +54,16 @@ export default function PropertyDetails() {
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const handleShare = () => setShowShareModal(true);
+
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/properties/${property?.slug || property?._id}`;
+    navigator.clipboard.writeText(url);
+    showNotification("Property link copied to clipboard!", "success");
+  };
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState("");
@@ -494,6 +505,7 @@ export default function PropertyDetails() {
             buyNowPrice={buyNowPrice}
             features={features}
             isFavorite={isFavorite}
+            onShare={handleShare}
             onToggleFavorite={async () => {
               if (!isAuthenticated) {
                 setShowAuthModal(true);
@@ -742,6 +754,12 @@ export default function PropertyDetails() {
           </div>
         </div>
       )}
+      <ShareModal
+        show={showShareModal}
+        property={property}
+        onClose={() => setShowShareModal(false)}
+        onCopyLink={handleCopyLink}
+      />
     </PublicLayout>
   );
 }

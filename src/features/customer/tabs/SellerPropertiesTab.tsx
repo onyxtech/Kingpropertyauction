@@ -74,7 +74,7 @@ export default function SellerPropertiesTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-black text-slate-900">My Properties</h2>
-          <p className="text-slate-600 font-medium">{properties.length} listing{properties.length !== 1 ? "s" : ""} as seller</p>
+          <p className="text-slate-600 font-medium">{properties.length} listing{properties.length !== 1 ? "s" : ""} as owner</p>
         </div>
         <button
           onClick={() => navigate("/add-property")}

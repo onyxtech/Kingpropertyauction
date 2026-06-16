@@ -20,6 +20,7 @@ import {
   AlertCircle,
   Percent,
   Crown,
+  FileText,
 } from "lucide-react";
 
 export default function UserProfile() {
@@ -130,7 +131,9 @@ export default function UserProfile() {
         method: "PATCH",
         body: JSON.stringify({ status: newStatus }),
       });
-      showSuccess(`User ${newStatus === "active" ? "activated" : "deactivated"}!`);
+      showSuccess(
+        `User ${newStatus === "active" ? "activated" : "deactivated"}!`,
+      );
       fetchUser();
     } catch {
       showError("Failed to update status");
@@ -139,7 +142,10 @@ export default function UserProfile() {
 
   if (loading) {
     return (
-      <AdminLayout activeTab="users" onTabChange={(tab) => navigate(`/admin/${tab}`)}>
+      <AdminLayout
+        activeTab="users"
+        onTabChange={(tab) => navigate(`/admin/${tab}`)}
+      >
         <div className="flex items-center justify-center h-96">
           <Loader2 className="size-10 text-blue-500 animate-spin" />
         </div>
@@ -149,7 +155,10 @@ export default function UserProfile() {
 
   if (!userData) {
     return (
-      <AdminLayout activeTab="users" onTabChange={(tab) => navigate(`/admin/${tab}`)}>
+      <AdminLayout
+        activeTab="users"
+        onTabChange={(tab) => navigate(`/admin/${tab}`)}
+      >
         <div className="text-center py-20">
           <p className="text-slate-500 font-bold">User not found</p>
         </div>
@@ -178,6 +187,7 @@ export default function UserProfile() {
         { id: "activity", label: "Activity", icon: TrendingUp },
         { id: "commissions", label: "Commissions", icon: Percent },
         { id: "payments", label: "Payments Received", icon: PoundSterling },
+        { id: "documents", label: "ID Docs", icon: User },
       );
       return tabs;
     }
@@ -189,6 +199,7 @@ export default function UserProfile() {
         { id: "activity", label: "Activity", icon: TrendingUp },
         { id: "commissions", label: "Commissions", icon: Percent },
         { id: "payments", label: "Payments Received", icon: PoundSterling },
+        { id: "documents", label: "ID Docs", icon: User },
       );
       return tabs;
     }
@@ -224,9 +235,11 @@ export default function UserProfile() {
   const labelClass = "block text-sm font-bold text-slate-700 mb-1";
 
   return (
-    <AdminLayout activeTab="users" onTabChange={(tab) => navigate(`/admin/${tab}`)}>
+    <AdminLayout
+      activeTab="users"
+      onTabChange={(tab) => navigate(`/admin/${tab}`)}
+    >
       <div className="space-y-6">
-
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -241,33 +254,52 @@ export default function UserProfile() {
                 {userData.name?.charAt(0)?.toUpperCase()}
               </div>
               <div>
-                <h2 className="text-2xl font-black text-slate-900">{userData.name}</h2>
+                <h2 className="text-2xl font-black text-slate-900">
+                  {userData.name}
+                </h2>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
-                    userData.role === "admin" ? "bg-purple-100 text-purple-700" :
-                    userData.role === "agent" ? "bg-blue-100 text-blue-700" :
-                    userData.role === "seller" ? "bg-emerald-100 text-emerald-700" :
-                    "bg-green-100 text-green-700"
-                  }`}>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
+                      userData.role === "admin"
+                        ? "bg-purple-100 text-purple-700"
+                        : userData.role === "agent"
+                          ? "bg-blue-100 text-blue-700"
+                          : userData.role === "seller"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-green-100 text-green-700"
+                    }`}
+                  >
                     {userData.role === "admin" && <Crown className="size-3" />}
                     {isSuperAdmin
                       ? "Super Admin"
                       : role === "admin"
-                      ? "Administrator"
-                      : role === "agent"
-                      ? (canBid ? "Agent & Buyer" : "Agent")
-                      : role === "seller"
-                      ? (canBid ? "Seller & Buyer" : "Seller")
-                      : role === "buyer"
-                      ? (canList ? "Buyer & Seller" : "Buyer")
-                      : role}
+                        ? "Administrator"
+                        : role === "agent"
+                          ? canBid
+                            ? "Agent & Buyer"
+                            : "Agent"
+                          : role === "seller"
+                            ? canBid
+                              ? "Owner & Buyer"
+                              : "Seller"
+                            : role === "buyer"
+                              ? canList
+                                ? "Buyer & Owner"
+                                : "Buyer"
+                              : role}
                   </span>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                    userData.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                  }`}>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                      userData.isActive
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
                     {userData.isActive ? "Active" : "Inactive"}
                   </span>
-                  <span className="text-xs text-slate-400">{userData.email}</span>
+                  <span className="text-xs text-slate-400">
+                    {userData.email}
+                  </span>
                 </div>
               </div>
             </div>
@@ -286,29 +318,64 @@ export default function UserProfile() {
 
         {/* Stats */}
         {(() => {
-          const cards: { label: string; value: any; gradient: string; Icon: any }[] = [];
+          const cards: {
+            label: string;
+            value: any;
+            gradient: string;
+            Icon: any;
+          }[] = [];
 
           if (role === "admin") {
-            cards.push({ label: "Properties", value: stats.totalProperties ?? 0, gradient: "from-blue-500 to-indigo-600", Icon: Home });
+            cards.push({
+              label: "Properties",
+              value: stats.totalProperties ?? 0,
+              gradient: "from-blue-500 to-indigo-600",
+              Icon: Home,
+            });
           } else {
             if (canList || role === "seller" || role === "agent") {
-              cards.push({ label: "Properties Listed", value: stats.totalProperties ?? 0, gradient: "from-blue-500 to-indigo-600", Icon: Home });
+              cards.push({
+                label: "Properties Listed",
+                value: stats.totalProperties ?? 0,
+                gradient: "from-blue-500 to-indigo-600",
+                Icon: Home,
+              });
             }
             if (canBid || role === "buyer") {
               cards.push(
-                { label: "Total Bids", value: stats.totalBids ?? 0, gradient: "from-purple-500 to-violet-600", Icon: Gavel },
-                { label: "Auctions Won", value: stats.wonBids ?? 0, gradient: "from-amber-500 to-orange-500", Icon: CheckCircle },
+                {
+                  label: "Total Bids",
+                  value: stats.totalBids ?? 0,
+                  gradient: "from-purple-500 to-violet-600",
+                  Icon: Gavel,
+                },
+                {
+                  label: "Auctions Won",
+                  value: stats.wonBids ?? 0,
+                  gradient: "from-amber-500 to-orange-500",
+                  Icon: CheckCircle,
+                },
               );
             }
             if (role === "agent" || role === "seller" || canList) {
-              cards.push({ label: "Commission Due", value: `£${(stats.pendingCommission ?? 0).toLocaleString()}`, gradient: "from-emerald-500 to-teal-600", Icon: PoundSterling });
+              cards.push({
+                label: "Commission Due",
+                value: `£${(stats.pendingCommission ?? 0).toLocaleString()}`,
+                gradient: "from-emerald-500 to-teal-600",
+                Icon: PoundSterling,
+              });
             }
           }
 
           return (
-            <div className={`grid gap-4 ${cards.length === 1 ? "grid-cols-1 max-w-xs" : cards.length <= 3 ? "grid-cols-2 md:grid-cols-3" : "grid-cols-2 md:grid-cols-4"}`}>
+            <div
+              className={`grid gap-4 ${cards.length === 1 ? "grid-cols-1 max-w-xs" : cards.length <= 3 ? "grid-cols-2 md:grid-cols-3" : "grid-cols-2 md:grid-cols-4"}`}
+            >
               {cards.map(({ label, value, gradient, Icon }) => (
-                <div key={label} className={`bg-gradient-to-br ${gradient} rounded-2xl p-4 text-white shadow-lg`}>
+                <div
+                  key={label}
+                  className={`bg-gradient-to-br ${gradient} rounded-2xl p-4 text-white shadow-lg`}
+                >
                   <Icon className="size-6 text-white/80 mb-2" />
                   <p className="text-2xl font-black">{value}</p>
                   <p className="text-xs text-white/80 font-bold">{label}</p>
@@ -339,14 +406,18 @@ export default function UserProfile() {
         {/* ── Profile Tab ── */}
         {activeTab === "profile" && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
-            <h3 className="font-black text-slate-900 text-lg">Personal Information</h3>
+            <h3 className="font-black text-slate-900 text-lg">
+              Personal Information
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className={labelClass}>Full Name</label>
                 <input
                   className={inputClass}
                   value={profileForm.name}
-                  onChange={(e) => setProfileForm((f: any) => ({ ...f, name: e.target.value }))}
+                  onChange={(e) =>
+                    setProfileForm((f: any) => ({ ...f, name: e.target.value }))
+                  }
                 />
               </div>
               <div>
@@ -355,7 +426,12 @@ export default function UserProfile() {
                   className={inputClass}
                   type="email"
                   value={profileForm.email}
-                  onChange={(e) => setProfileForm((f: any) => ({ ...f, email: e.target.value }))}
+                  onChange={(e) =>
+                    setProfileForm((f: any) => ({
+                      ...f,
+                      email: e.target.value,
+                    }))
+                  }
                 />
               </div>
               <div>
@@ -363,7 +439,12 @@ export default function UserProfile() {
                 <input
                   className={inputClass}
                   value={profileForm.phone || ""}
-                  onChange={(e) => setProfileForm((f: any) => ({ ...f, phone: e.target.value }))}
+                  onChange={(e) =>
+                    setProfileForm((f: any) => ({
+                      ...f,
+                      phone: e.target.value,
+                    }))
+                  }
                 />
               </div>
               <div>
@@ -371,21 +452,33 @@ export default function UserProfile() {
                 {userData.isSuperAdmin ? (
                   <div className="flex items-center gap-2 px-4 py-3 bg-purple-50 border-2 border-purple-200 rounded-xl">
                     <Crown className="size-4 text-purple-600" />
-                    <span className="font-bold text-purple-700">Super Admin</span>
-                    <span className="text-xs text-purple-500 ml-1">(cannot be changed)</span>
+                    <span className="font-bold text-purple-700">
+                      Super Admin
+                    </span>
+                    <span className="text-xs text-purple-500 ml-1">
+                      (cannot be changed)
+                    </span>
                   </div>
                 ) : (
                   <select
                     className={inputClass}
                     value={profileForm.role}
-                    onChange={(e) => setProfileForm((f: any) => ({ ...f, role: e.target.value }))}
+                    onChange={(e) =>
+                      setProfileForm((f: any) => ({
+                        ...f,
+                        role: e.target.value,
+                      }))
+                    }
                   >
                     {["buyer", "seller", "agent", "admin"].map((r) => (
                       <option key={r} value={r}>
-                        {r === "admin" ? "Administrator" :
-                         r === "agent" ? "Agent" :
-                         r === "seller" ? "Seller" :
-                         "Buyer"}
+                        {r === "admin"
+                          ? "Administrator"
+                          : r === "agent"
+                            ? "Agent"
+                            : r === "seller"
+                              ? "Seller"
+                              : "Buyer"}
                       </option>
                     ))}
                   </select>
@@ -397,7 +490,10 @@ export default function UserProfile() {
                   className={inputClass}
                   value={profileForm.isActive ? "active" : "inactive"}
                   onChange={(e) =>
-                    setProfileForm((f: any) => ({ ...f, isActive: e.target.value === "active" }))
+                    setProfileForm((f: any) => ({
+                      ...f,
+                      isActive: e.target.value === "active",
+                    }))
                   }
                 >
                   <option value="active">Active</option>
@@ -409,11 +505,14 @@ export default function UserProfile() {
                 <input
                   className={`${inputClass} bg-slate-50`}
                   readOnly
-                  value={new Date(userData.createdAt).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  value={new Date(userData.createdAt).toLocaleDateString(
+                    "en-GB",
+                    {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    },
+                  )}
                 />
               </div>
             </div>
@@ -423,7 +522,11 @@ export default function UserProfile() {
                 disabled={saving}
                 className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
               >
-                {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                {saving ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
                 Save Profile
               </button>
             </div>
@@ -434,10 +537,14 @@ export default function UserProfile() {
         {activeTab === "agent" && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-black text-slate-900 text-lg">Agent / Company Details</h3>
+              <h3 className="font-black text-slate-900 text-lg">
+                Agent / Company Details
+              </h3>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-xl">
                 <Percent className="size-4 text-amber-600" />
-                <span className="text-xs font-bold text-amber-700">Commission Rate</span>
+                <span className="text-xs font-bold text-amber-700">
+                  Commission Rate
+                </span>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -446,7 +553,12 @@ export default function UserProfile() {
                 <input
                   className={inputClass}
                   value={agentForm.companyName}
-                  onChange={(e) => setAgentForm((f: any) => ({ ...f, companyName: e.target.value }))}
+                  onChange={(e) =>
+                    setAgentForm((f: any) => ({
+                      ...f,
+                      companyName: e.target.value,
+                    }))
+                  }
                   placeholder="Company or agency name"
                 />
               </div>
@@ -455,7 +567,12 @@ export default function UserProfile() {
                 <input
                   className={inputClass}
                   value={agentForm.licenseNumber}
-                  onChange={(e) => setAgentForm((f: any) => ({ ...f, licenseNumber: e.target.value }))}
+                  onChange={(e) =>
+                    setAgentForm((f: any) => ({
+                      ...f,
+                      licenseNumber: e.target.value,
+                    }))
+                  }
                   placeholder="Professional license"
                 />
               </div>
@@ -464,14 +581,21 @@ export default function UserProfile() {
                 <input
                   className={inputClass}
                   value={agentForm.specialization}
-                  onChange={(e) => setAgentForm((f: any) => ({ ...f, specialization: e.target.value }))}
+                  onChange={(e) =>
+                    setAgentForm((f: any) => ({
+                      ...f,
+                      specialization: e.target.value,
+                    }))
+                  }
                   placeholder="e.g. Residential, Commercial"
                 />
               </div>
               <div>
                 <label className={labelClass}>
                   Commission Rate (%)
-                  <span className="ml-2 text-amber-600 font-black">★ Set by Admin</span>
+                  <span className="ml-2 text-amber-600 font-black">
+                    ★ Set by Admin
+                  </span>
                 </label>
                 <input
                   className={`${inputClass} border-amber-300 focus:ring-amber-500`}
@@ -481,7 +605,10 @@ export default function UserProfile() {
                   step="0.1"
                   value={agentForm.commissionRate}
                   onChange={(e) =>
-                    setAgentForm((f: any) => ({ ...f, commissionRate: parseFloat(e.target.value) || 0 }))
+                    setAgentForm((f: any) => ({
+                      ...f,
+                      commissionRate: parseFloat(e.target.value) || 0,
+                    }))
                   }
                   placeholder="e.g. 5.5"
                 />
@@ -495,7 +622,12 @@ export default function UserProfile() {
                   className={inputClass}
                   rows={2}
                   value={agentForm.companyAddress}
-                  onChange={(e) => setAgentForm((f: any) => ({ ...f, companyAddress: e.target.value }))}
+                  onChange={(e) =>
+                    setAgentForm((f: any) => ({
+                      ...f,
+                      companyAddress: e.target.value,
+                    }))
+                  }
                   placeholder="Company registered address"
                 />
               </div>
@@ -506,10 +638,70 @@ export default function UserProfile() {
                 disabled={saving}
                 className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
               >
-                {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                {saving ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
                 Save Agent Details
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ── ID Documents Tab ── */}
+        {activeTab === "documents" && (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+            <h3 className="font-black text-slate-900 text-lg">
+              ID Verification Documents
+            </h3>
+            {userData.agentDetails?.idDocuments?.length > 0 ||
+            userData.ownerDocuments?.length > 0 ? (
+              <div className="space-y-3">
+                {(
+                  userData.agentDetails?.idDocuments ||
+                  userData.ownerDocuments ||
+                  []
+                ).map((doc: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="size-6 text-purple-600" />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">
+                          {doc.originalName || doc.fileName}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {doc.docType?.replace(/_/g, " ")} •{" "}
+                          {(doc.fileSize / 1024).toFixed(0)} KB •{" "}
+                          {new Date(doc.uploadedAt).toLocaleDateString("en-GB")}
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href={doc.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline text-sm font-medium"
+                    >
+                      View
+                    </a>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <span className="text-4xl">🪪</span>
+                <p className="text-slate-500 font-bold mt-3">
+                  No ID documents uploaded
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  User has not submitted verification documents
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -519,17 +711,44 @@ export default function UserProfile() {
             <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
               <AlertCircle className="size-5 text-amber-600 flex-shrink-0" />
               <p className="text-sm font-bold text-amber-700">
-                Bank details are stored securely and used for commission payments and property sale proceeds.
+                Bank details are stored securely and used for commission
+                payments and property sale proceeds.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
-                { key: "accountHolderName", label: "Account Holder Name", placeholder: "Full legal name" },
-                { key: "bankName", label: "Bank Name", placeholder: "e.g. Barclays, HSBC" },
-                { key: "accountNumber", label: "Account Number", placeholder: "8 digit number", maxLen: 8 },
-                { key: "sortCode", label: "Sort Code", placeholder: "XX-XX-XX", maxLen: 8 },
-                { key: "iban", label: "IBAN (Optional)", placeholder: "International bank number" },
-                { key: "bankAddress", label: "Bank Address (Optional)", placeholder: "Branch address" },
+                {
+                  key: "accountHolderName",
+                  label: "Account Holder Name",
+                  placeholder: "Full legal name",
+                },
+                {
+                  key: "bankName",
+                  label: "Bank Name",
+                  placeholder: "e.g. Barclays, HSBC",
+                },
+                {
+                  key: "accountNumber",
+                  label: "Account Number",
+                  placeholder: "8 digit number",
+                  maxLen: 8,
+                },
+                {
+                  key: "sortCode",
+                  label: "Sort Code",
+                  placeholder: "XX-XX-XX",
+                  maxLen: 8,
+                },
+                {
+                  key: "iban",
+                  label: "IBAN (Optional)",
+                  placeholder: "International bank number",
+                },
+                {
+                  key: "bankAddress",
+                  label: "Bank Address (Optional)",
+                  placeholder: "Branch address",
+                },
               ].map((field) => (
                 <div key={field.key}>
                   <label className={labelClass}>{field.label}</label>
@@ -537,7 +756,12 @@ export default function UserProfile() {
                     className={inputClass}
                     value={bankForm[field.key] || ""}
                     maxLength={field.maxLen}
-                    onChange={(e) => setBankForm((f: any) => ({ ...f, [field.key]: e.target.value }))}
+                    onChange={(e) =>
+                      setBankForm((f: any) => ({
+                        ...f,
+                        [field.key]: e.target.value,
+                      }))
+                    }
                     placeholder={field.placeholder}
                   />
                 </div>
@@ -549,7 +773,11 @@ export default function UserProfile() {
                 disabled={saving}
                 className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
               >
-                {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                {saving ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
                 Save Bank Details
               </button>
             </div>
@@ -559,31 +787,63 @@ export default function UserProfile() {
         {/* ── Activity Tab ── */}
         {activeTab === "activity" && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
-            <h3 className="font-black text-slate-900 text-lg">User Activity Summary</h3>
+            <h3 className="font-black text-slate-900 text-lg">
+              User Activity Summary
+            </h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {(() => {
-                const items: { label: string; value: any; color: string }[] = [];
+                const items: { label: string; value: any; color: string }[] =
+                  [];
                 if (canList || role === "agent" || role === "seller") {
-                  items.push({ label: "Properties Listed", value: stats.totalProperties ?? 0, color: "text-blue-600" });
+                  items.push({
+                    label: "Properties Listed",
+                    value: stats.totalProperties ?? 0,
+                    color: "text-blue-600",
+                  });
                 }
                 if (canBid || role === "buyer") {
                   items.push(
-                    { label: "Total Bids Placed", value: stats.totalBids ?? 0, color: "text-purple-600" },
-                    { label: "Auctions Won", value: stats.wonBids ?? 0, color: "text-amber-600" },
+                    {
+                      label: "Total Bids Placed",
+                      value: stats.totalBids ?? 0,
+                      color: "text-purple-600",
+                    },
+                    {
+                      label: "Auctions Won",
+                      value: stats.wonBids ?? 0,
+                      color: "text-amber-600",
+                    },
                   );
                 }
                 if (role === "agent" || role === "seller" || canList) {
                   items.push(
-                    { label: "Total Commissions", value: stats.totalCommissions ?? 0, color: "text-emerald-600" },
-                    { label: "Commission Paid", value: `£${(stats.paidCommission ?? 0).toLocaleString()}`, color: "text-green-600" },
-                    { label: "Commission Pending", value: `£${(stats.pendingCommission ?? 0).toLocaleString()}`, color: "text-orange-600" },
+                    {
+                      label: "Total Commissions",
+                      value: stats.totalCommissions ?? 0,
+                      color: "text-emerald-600",
+                    },
+                    {
+                      label: "Commission Paid",
+                      value: `£${(stats.paidCommission ?? 0).toLocaleString()}`,
+                      color: "text-green-600",
+                    },
+                    {
+                      label: "Commission Pending",
+                      value: `£${(stats.pendingCommission ?? 0).toLocaleString()}`,
+                      color: "text-orange-600",
+                    },
                   );
                 }
                 return items;
               })().map((s) => (
-                <div key={s.label} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <div
+                  key={s.label}
+                  className="bg-slate-50 rounded-xl p-4 border border-slate-200"
+                >
                   <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
-                  <p className="text-xs text-slate-500 font-bold mt-1">{s.label}</p>
+                  <p className="text-xs text-slate-500 font-bold mt-1">
+                    {s.label}
+                  </p>
                 </div>
               ))}
             </div>
@@ -593,23 +853,41 @@ export default function UserProfile() {
                   <Mail className="size-3.5" /> Contact
                 </p>
                 <p className="font-bold text-slate-900">{userData.email}</p>
-                <p className="text-slate-500 text-sm">{userData.phone || "No phone"}</p>
+                <p className="text-slate-500 text-sm">
+                  {userData.phone || "No phone"}
+                </p>
               </div>
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-2">
                   <Phone className="size-3.5" /> Role & Permissions
                 </p>
                 <p className="font-bold text-slate-900">
-                  {isSuperAdmin ? "Super Admin" :
-                   role === "admin" ? "Administrator" :
-                   role === "agent" ? (canBid ? "Agent & Buyer" : "Agent") :
-                   role === "seller" ? (canBid ? "Seller & Buyer" : "Seller") :
-                   role === "buyer" ? (canList ? "Buyer & Seller" : "Buyer") :
-                   role}
+                  {isSuperAdmin
+                    ? "Super Admin"
+                    : role === "admin"
+                      ? "Administrator"
+                      : role === "agent"
+                        ? canBid
+                          ? "Agent & Buyer"
+                          : "Agent"
+                        : role === "seller"
+                          ? canBid
+                            ? "Owner & Buyer"
+                            : "Seller"
+                          : role === "buyer"
+                            ? canList
+                              ? "Buyer & Owner"
+                              : "Buyer"
+                            : role}
                 </p>
                 <p className="text-slate-500 text-xs mt-1">
-                  {userData.permissions?.canBid ? "✅ Can bid" : "❌ Cannot bid"} ·{" "}
-                  {userData.permissions?.canListProperties ? "✅ Can list" : "❌ Cannot list"}
+                  {userData.permissions?.canBid
+                    ? "✅ Can bid"
+                    : "❌ Cannot bid"}{" "}
+                  ·{" "}
+                  {userData.permissions?.canListProperties
+                    ? "✅ Can list"
+                    : "❌ Cannot list"}
                 </p>
               </div>
             </div>
@@ -635,24 +913,47 @@ export default function UserProfile() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 border-b border-slate-100">
                     <tr>
-                      {["Property", "Sale Price", "Rate", "Amount", "Status", "Withdrawal", "Date"].map((h) => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase">{h}</th>
+                      {[
+                        "Property",
+                        "Sale Price",
+                        "Rate",
+                        "Amount",
+                        "Status",
+                        "Withdrawal",
+                        "Date",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase"
+                        >
+                          {h}
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {(userData.commissions || []).map((c: any) => (
                       <tr key={c._id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-bold text-slate-900">{c.property?.propertyTitle || "—"}</td>
-                        <td className="px-4 py-3">£{c.salePrice?.toLocaleString()}</td>
-                        <td className="px-4 py-3">{c.commissionRate}%</td>
-                        <td className="px-4 py-3 font-black text-emerald-700">£{c.commissionAmount?.toLocaleString()}</td>
+                        <td className="px-4 py-3 font-bold text-slate-900">
+                          {c.property?.propertyTitle || "—"}
+                        </td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            c.status === "paid" ? "bg-green-100 text-green-700" :
-                            c.status === "approved" ? "bg-blue-100 text-blue-700" :
-                            "bg-amber-100 text-amber-700"
-                          }`}>
+                          £{c.salePrice?.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3">{c.commissionRate}%</td>
+                        <td className="px-4 py-3 font-black text-emerald-700">
+                          £{c.commissionAmount?.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-bold ${
+                              c.status === "paid"
+                                ? "bg-green-100 text-green-700"
+                                : c.status === "approved"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-amber-100 text-amber-700"
+                            }`}
+                          >
                             {c.status}
                           </span>
                         </td>
@@ -682,7 +983,11 @@ export default function UserProfile() {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-5 border-b border-slate-100">
               <h3 className="font-black text-slate-900">
-                {role === "buyer" && !canList ? "Payments Made" : role === "buyer" && canList ? "Payment History" : "Payments Received"}
+                {role === "buyer" && !canList
+                  ? "Payments Made"
+                  : role === "buyer" && canList
+                    ? "Payment History"
+                    : "Payments Received"}
               </h3>
             </div>
             {(userData.payments || []).length === 0 ? (
@@ -695,29 +1000,54 @@ export default function UserProfile() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 border-b border-slate-100">
                     <tr>
-                      {["Property", "Amount", "Method", "Status", "Due Date", "Date"].map((h) => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase">{h}</th>
+                      {[
+                        "Property",
+                        "Amount",
+                        "Method",
+                        "Status",
+                        "Due Date",
+                        "Date",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase"
+                        >
+                          {h}
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {(userData.payments || []).map((p: any) => (
                       <tr key={p._id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-bold text-slate-900">{p.property?.propertyTitle || "—"}</td>
-                        <td className="px-4 py-3 font-black text-slate-900">£{p.amount?.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-slate-500 capitalize">{p.method?.replace("_", " ") || "—"}</td>
+                        <td className="px-4 py-3 font-bold text-slate-900">
+                          {p.property?.propertyTitle || "—"}
+                        </td>
+                        <td className="px-4 py-3 font-black text-slate-900">
+                          £{p.amount?.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 capitalize">
+                          {p.method?.replace("_", " ") || "—"}
+                        </td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            p.status === "paid" ? "bg-green-100 text-green-700" :
-                            p.status === "overdue" ? "bg-red-100 text-red-700" :
-                            p.status === "withdrawn" ? "bg-orange-100 text-orange-700" :
-                            "bg-amber-100 text-amber-700"
-                          }`}>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-bold ${
+                              p.status === "paid"
+                                ? "bg-green-100 text-green-700"
+                                : p.status === "overdue"
+                                  ? "bg-red-100 text-red-700"
+                                  : p.status === "withdrawn"
+                                    ? "bg-orange-100 text-orange-700"
+                                    : "bg-amber-100 text-amber-700"
+                            }`}
+                          >
                             {p.status}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-slate-400 text-xs">
-                          {p.dueDate ? new Date(p.dueDate).toLocaleDateString("en-GB") : "—"}
+                          {p.dueDate
+                            ? new Date(p.dueDate).toLocaleDateString("en-GB")
+                            : "—"}
                         </td>
                         <td className="px-4 py-3 text-slate-400 text-xs">
                           {new Date(p.createdAt).toLocaleDateString("en-GB")}
@@ -730,7 +1060,6 @@ export default function UserProfile() {
             )}
           </div>
         )}
-
       </div>
     </AdminLayout>
   );

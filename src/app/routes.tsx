@@ -332,12 +332,16 @@ export const router = createBrowserRouter([
         allowedRoles={["admin", "agent", "seller"]}
         redirectTo="/register?reason=agent"
         allowCanListProperties={true}
-        loginIntent="agent"
+        loginIntent="add-property"
       >
         <AddProperty />
       </ProtectedRoute>,
     ),
   },
+  // {
+  //   path: "/register/owner",
+  //   element: <Navigate to="/register?reason=seller" replace />,
+  // },
   {
     path: "/admin/properties/:id/edit",
     element: lazy_eb(

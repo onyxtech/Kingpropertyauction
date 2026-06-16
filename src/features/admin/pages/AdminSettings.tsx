@@ -548,9 +548,9 @@ export default function AdminSettings() {
     paymentDue: { label: "Payment Due (Buyer)", icon: "💳", category: "Payment" },
     paymentOverdue: { label: "Payment Overdue (Buyer)", icon: "⚠️", category: "Payment" },
     paymentWithdrawn: { label: "Payment Withdrawn (Buyer)", icon: "❌", category: "Payment" },
-    commissionEarned: { label: "Commission Earned (Seller)", icon: "💰", category: "Commission" },
-    withdrawalRequested: { label: "Withdrawal Requested (Seller)", icon: "✅", category: "Commission" },
-    fundsTransferred: { label: "Funds Transferred (Seller)", icon: "🎉", category: "Commission" },
+    commissionEarned: { label: "Commission Earned (Owner)", icon: "💰", category: "Commission" },
+    withdrawalRequested: { label: "Withdrawal Requested (Owner)", icon: "✅", category: "Commission" },
+    fundsTransferred: { label: "Funds Transferred (Owner)", icon: "🎉", category: "Commission" },
     propertyAvailableAgain: { label: "Property Available Again (Next Bidders)", icon: "🏠", category: "Payment" },
   };
 
@@ -602,9 +602,9 @@ export default function AdminSettings() {
     paymentDue: "Payment Due (Buyer)",
     paymentOverdue: "Payment Overdue (Buyer)",
     paymentWithdrawn: "Payment Withdrawn (Buyer)",
-    commissionEarned: "Commission Earned (Seller)",
-    withdrawalRequested: "Withdrawal Requested (Seller)",
-    fundsTransferred: "Funds Transferred (Seller)",
+    commissionEarned: "Commission Earned (Owner)",
+    withdrawalRequested: "Withdrawal Requested (Owner)",
+    fundsTransferred: "Funds Transferred (Owner)",
     propertyAvailableAgain: "Property Available Again (Next Bidders)",
   };
 
@@ -723,7 +723,7 @@ export default function AdminSettings() {
                       className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     <p className="text-xs text-slate-500 mt-1">
-                      Used when an agent/seller has no individual commission rate set.
+                      Used when an agent/owner has no individual commission rate set.
                     </p>
                   </div>
                   <div>

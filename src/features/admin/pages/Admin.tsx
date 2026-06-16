@@ -172,7 +172,7 @@ export default function Admin() {
     {
       id: "users",
       title: "User Management",
-      description: "Manage buyers, sellers and agents",
+      description: "Manage buyers, owners and agents",
       icon: Users,
       gradient: "from-pink-500 to-rose-600",
       stats: {

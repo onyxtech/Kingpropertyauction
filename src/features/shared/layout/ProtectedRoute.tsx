@@ -30,7 +30,7 @@ export default function ProtectedRoute({
       return <Navigate to={redirectTo} replace />;
     }
     if (["buyer", "investor"].includes(user.role) && !["admin", "agent", "seller"].includes(user.role)) {
-      return <Navigate to="/register" replace state={{ message: "Want to list properties? Register as a seller to get started." }} />;
+      return <Navigate to="/register" replace state={{ message: "Want to list properties? Register as an Owner to get started." }} />;
     }
     return <Navigate to="/" replace />;
   }

@@ -205,9 +205,9 @@ export default function Users() {
                               : user.role === "agent"
                               ? (user.permissions?.canBid ? "Agent & Buyer" : "Agent")
                               : user.role === "seller"
-                              ? (user.permissions?.canBid ? "Seller & Buyer" : "Seller")
+                              ? (user.permissions?.canBid ? "Owner & Buyer" : "Seller")
                               : user.role === "buyer"
-                              ? (user.permissions?.canListProperties ? "Buyer & Seller" : "Buyer")
+                              ? (user.permissions?.canListProperties ? "Buyer & Owner" : "Buyer")
                               : user.role}
                           </span>
                           {user.roleRequest?.status === "pending" && (

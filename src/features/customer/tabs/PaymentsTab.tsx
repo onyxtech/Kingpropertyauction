@@ -56,7 +56,7 @@ export default function PaymentsTab() {
       refetchOnWindowFocus: true,
     });
 
-  // Fetch commissions for sellers/agents
+  // Fetch commissions For Owners/agents
   const {
     data: commissionsRes,
     isLoading: commissionsLoading,

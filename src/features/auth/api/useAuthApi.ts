@@ -32,6 +32,12 @@ export interface User {
   emailVerified: boolean;
   createdAt: string;
   lastLogin: string;
+  permissions?: {
+    canBid?: boolean;
+    canListProperties?: boolean;
+    emailNotifications?: boolean;
+    smsAlerts?: boolean;
+  };
 }
 
 export interface AuthResponse {
@@ -64,8 +70,28 @@ export const useAuthApi = () => {
         throw new Error(result.message || 'Registration failed');
       }
 
+      const authResponse: AuthResponse = {
+        user: {
+          id: result.user.id,
+          firstName: result.user.name?.split(' ')[0] || '',
+          lastName: result.user.name?.split(' ').slice(1).join(' ') || '',
+          fullName: result.user.name,
+          email: result.user.email,
+          phoneNumber: '',
+          userType: result.user.role,
+          role: result.user.role,
+          permissions: result.user.permissions,
+          emailVerified: true,
+          createdAt: new Date().toISOString(),
+          lastLogin: new Date().toISOString(),
+        },
+        token: result.accessToken,
+        refreshToken: '',
+        expiresIn: 900,
+      };
+
       setLoading(false);
-      return { success: true, data: result, message: result.message };
+      return { success: true, data: authResponse, message: result.message };
     } catch (err: any) {
       const errorMessage = err?.message || 'Registration failed';
       setError(errorMessage);
@@ -98,6 +124,7 @@ export const useAuthApi = () => {
           phoneNumber: '',
           userType: result.user.role,
           role: result.user.role,
+          permissions: result.user.permissions,
           emailVerified: true,
           createdAt: new Date().toISOString(),
           lastLogin: new Date().toISOString(),

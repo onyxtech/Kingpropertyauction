@@ -154,7 +154,7 @@ export default function ProfileTab() {
   const isSellerOrAgent = role === "agent" || role === "seller";
 
   const sections = [
-    { id: "profile", label: isSellerOrAgent ? "Agent Profile" : "My Profile" },
+    { id: "profile", label: isSellerOrAgent ? "Owner Profile" : "My Profile" },
     ...(isSellerOrAgent ? [{ id: "company", label: "Company Details" }] : []),
     ...(isSellerOrAgent ? [{ id: "bank", label: "Bank Details" }] : []),
     { id: "notifications", label: "Notification Settings" },

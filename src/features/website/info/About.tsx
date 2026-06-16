@@ -36,7 +36,7 @@ export default function About() {
     {
       icon: Globe,
       title: "Global Reach",
-      description: "Connecting buyers and sellers across the UK and internationally",
+      description: "Connecting buyers and owners across the UK and internationally",
     },
   ];
 
@@ -119,7 +119,7 @@ export default function About() {
             </p>
             <p className="text-lg text-slate-600">
               Our mission is to provide a secure, efficient marketplace where buyers find
-              their perfect property and sellers achieve the best possible price, all while
+              their perfect property and owners achieve the best possible price, all while
               maintaining the highest standards of service and integrity.
             </p>
           </div>
@@ -203,7 +203,7 @@ export default function About() {
 
             <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
               <Award className="size-12 text-blue-600 mb-4" />
-              <h3 className="text-2xl font-semibold text-slate-900 mb-3">For Sellers</h3>
+              <h3 className="text-2xl font-semibold text-slate-900 mb-3">For Owners</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   <CheckCircle className="size-5 text-green-500 flex-shrink-0 mt-0.5" />

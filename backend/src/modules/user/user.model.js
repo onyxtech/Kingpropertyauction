@@ -57,7 +57,53 @@ const userSchema = new mongoose.Schema(
       commissionRate: Number,
       specialization: String,
       companyAddress: String,
+      // ID Verification Documents
+      idDocuments: [
+        {
+          docType: {
+            type: String,
+            enum: ["driving_license", "passport", "other_id"],
+          },
+          fileUrl: String,
+          fileName: String,
+          originalName: String,
+          mimeType: String,
+          fileSize: Number,
+          uploadedAt: { type: Date, default: Date.now },
+          verificationStatus: {
+            type: String,
+            enum: ["pending", "verified", "rejected"],
+            default: "pending",
+          },
+          verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+          verifiedAt: Date,
+          rejectionReason: String,
+        },
+      ],
     },
+    // Owner (Seller) ID Documents - same structure
+    ownerDocuments: [
+      {
+        docType: {
+          type: String,
+          enum: ["driving_license", "passport", "other_id"],
+        },
+        fileUrl: String,
+        fileName: String,
+        originalName: String,
+        mimeType: String,
+        fileSize: Number,
+        uploadedAt: { type: Date, default: Date.now },
+        verificationStatus: {
+          type: String,
+          enum: ["pending", "verified", "rejected"],
+          default: "pending",
+        },
+        verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        verifiedAt: Date,
+        rejectionReason: String,
+      },
+    ],
     bankDetails: {
       accountHolderName: { type: String, default: "" },
       bankName: { type: String, default: "" },

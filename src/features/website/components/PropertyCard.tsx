@@ -1,5 +1,20 @@
 import { mediaUrl } from "@/lib/mediaUrl";
-import { Heart, MapPin, Bed, Bath, Clock, Video, Share2, Award, ChevronRight, CheckCircle, AlertCircle, Gavel, Building, Car } from "lucide-react";
+import {
+  Heart,
+  MapPin,
+  Bed,
+  Bath,
+  Clock,
+  Video,
+  Share2,
+  Award,
+  ChevronRight,
+  CheckCircle,
+  AlertCircle,
+  Gavel,
+  Building,
+  Car,
+} from "lucide-react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 import AuctionTimer from "@/features/shared/components/AuctionTimer";
 import CountdownTimer from "../../shared/ui/CountdownTimer";
@@ -17,7 +32,11 @@ interface PropertyCardProps {
 }
 
 const formatPrice = (value: number) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(value);
+  new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  }).format(value);
 
 const getPropertyImage = (property: any) => {
   if (property.media?.propertyImages?.length > 0) {
@@ -26,22 +45,50 @@ const getPropertyImage = (property: any) => {
   return "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600";
 };
 
-export default function PropertyCard({ property, auctionInfo, wishlisted, onBid, onWishlist, onShare, onTour, onNavigate, onAuctionEnded }: PropertyCardProps) {
-  const isAuction = property.listingType === "auction" && auctionInfo !== null && auctionInfo?.status === "live";
-  const isScheduledAuction = property.listingType === "auction" && auctionInfo !== null && auctionInfo?.status === "scheduled";
-  const auctionEndDate = isAuction && auctionInfo ? auctionInfo.endDateTime : null;
-  const gradient = isAuction ? "from-red-500 to-orange-500" : "from-blue-500 to-cyan-500";
+export default function PropertyCard({
+  property,
+  auctionInfo,
+  wishlisted,
+  onBid,
+  onWishlist,
+  onShare,
+  onTour,
+  onNavigate,
+  onAuctionEnded,
+}: PropertyCardProps) {
+  const isAuction =
+    property.listingType === "auction" &&
+    auctionInfo !== null &&
+    auctionInfo?.status === "live";
+  const isScheduledAuction =
+    property.listingType === "auction" &&
+    auctionInfo !== null &&
+    auctionInfo?.status === "scheduled";
+  const auctionEndDate =
+    isAuction && auctionInfo ? auctionInfo.endDateTime : null;
+  const gradient = isAuction
+    ? "from-red-500 to-orange-500"
+    : "from-blue-500 to-cyan-500";
   const displayPrice = isAuction
-    ? formatPrice(property.currentBid || property.pricing?.startingAuctionPrice || 0)
-    : formatPrice(property.pricing?.reservePrice || property.pricing?.startingAuctionPrice || 0);
+    ? formatPrice(
+        property.currentBid || property.pricing?.startingAuctionPrice || 0,
+      )
+    : formatPrice(
+        property.pricing?.reservePrice ||
+          property.pricing?.startingAuctionPrice ||
+          0,
+      );
   const nextMinBid = isAuction
-    ? (property.currentBid || property.pricing?.startingAuctionPrice || 0) + (property.pricing?.minimumBidIncrement || 1000)
+    ? (property.currentBid || property.pricing?.startingAuctionPrice || 0) +
+      (property.pricing?.minimumBidIncrement || 1000)
     : 0;
-  const reserveMet = isAuction ? (property.currentBid || 0) >= (property.pricing?.reservePrice || 0) : false;
+  const reserveMet = isAuction
+    ? (property.currentBid || 0) >= (property.pricing?.reservePrice || 0)
+    : false;
   const reservePrice = property.pricing?.reservePrice || 0;
   const imageUrl = getPropertyImage(property);
-  const isSold = property.propertyStatus === 'sold';
-  const isUnsold = property.propertyStatus === 'unsold';
+  const isSold = property.propertyStatus === "sold";
+  const isUnsold = property.propertyStatus === "unsold";
 
   return (
     <div
@@ -97,17 +144,28 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
         )}
 
         <div className="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={(e) => onWishlist(e, property._id)} className="size-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-xl hover:bg-white hover:scale-110 transition-all">
-            <Heart className={`size-5 ${wishlisted.includes(property._id) ? "fill-red-500 text-red-500" : "text-red-500"}`} />
+          <button
+            onClick={(e) => onWishlist(e, property._id)}
+            className="size-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-xl hover:bg-white hover:scale-110 transition-all"
+          >
+            <Heart
+              className={`size-5 ${wishlisted.includes(property._id) ? "fill-red-500 text-red-500" : "text-red-500"}`}
+            />
           </button>
-          <button onClick={(e) => onShare(e, property)} className="size-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-xl hover:bg-white hover:scale-110 transition-all">
+          <button
+            onClick={(e) => onShare(e, property)}
+            className="size-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-xl hover:bg-white hover:scale-110 transition-all"
+          >
             <Share2 className="size-5 text-blue-600" />
           </button>
         </div>
 
         <div className="absolute bottom-4 left-4">
           <button
-            onClick={(e) => { e.stopPropagation(); onTour(property); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onTour(property);
+            }}
             className="px-3 py-2 bg-black/70 backdrop-blur-md hover:bg-black/90 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xl transition-all hover:scale-110 cursor-pointer"
           >
             <Video className="size-4" /> 360° Virtual Tour
@@ -116,7 +174,12 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
 
         {auctionEndDate && (
           <div className="absolute bottom-4 right-4">
-            <CountdownTimer endDate={new Date(auctionEndDate)} compact={true} gradient={gradient} onEnded={onAuctionEnded} />
+            <CountdownTimer
+              endDate={new Date(auctionEndDate)}
+              compact={true}
+              gradient={gradient}
+              onEnded={onAuctionEnded}
+            />
           </div>
         )}
       </div>
@@ -131,7 +194,13 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
         <div className="flex items-center gap-2 text-slate-600 mb-4">
           <MapPin className="size-4 text-blue-600" />
           <span className="text-sm font-medium">
-            {property.location?.city || property.location?.area || "Location TBD"}, {property.location?.state || "UK"}
+            {property.location?.streetAddress
+              ? `${property.location.streetAddress}, `
+              : ""}
+            {property.location?.city ||
+              property.location?.area ||
+              "Location TBD"}
+            , {property.location?.state || property.location?.country || "UK"}
           </span>
         </div>
 
@@ -140,20 +209,26 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
             <div className="size-9 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
               <Bed className="size-4 text-blue-600" />
             </div>
-            <span className="text-sm font-bold text-slate-900">{property.specifications?.bedrooms ?? '-'}</span>
+            <span className="text-sm font-bold text-slate-900">
+              {property.specifications?.bedrooms ?? "-"}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="size-9 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
               <Bath className="size-4 text-purple-600" />
             </div>
-            <span className="text-sm font-bold text-slate-900">{property.specifications?.bathrooms ?? '-'}</span>
+            <span className="text-sm font-bold text-slate-900">
+              {property.specifications?.bathrooms ?? "-"}
+            </span>
           </div>
           {(property.specifications?.floors ?? 0) > 0 && (
             <div className="flex items-center gap-2">
               <div className="size-9 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
                 <Building className="size-4 text-green-600" />
               </div>
-              <span className="text-sm font-bold text-slate-900">{property.specifications.floors} fl</span>
+              <span className="text-sm font-bold text-slate-900">
+                {property.specifications.floors} fl
+              </span>
             </div>
           )}
 
@@ -162,7 +237,9 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
               <div className="size-9 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
                 <Car className="size-4 text-slate-600" />
               </div>
-              <span className="text-sm font-bold text-slate-900">{property.specifications.parkingSpaces}P</span>
+              <span className="text-sm font-bold text-slate-900">
+                {property.specifications.parkingSpaces}P
+              </span>
             </div>
           )}
         </div>
@@ -171,27 +248,70 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
           isAuction ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-600">Current Bid</span>
-                {property.totalBids > 0 && <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded-full">{property.totalBids} bids</span>}
+                <span className="text-xs font-semibold text-slate-600">
+                  Current Bid
+                </span>
+                {property.totalBids > 0 && (
+                  <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded-full">
+                    {property.totalBids} bids
+                  </span>
+                )}
               </div>
-              <p className="text-2xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{displayPrice}</p>
+              <p className="text-2xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {displayPrice}
+              </p>
               {reservePrice > 0 && (
-                <div className={`flex items-center gap-1.5 text-xs font-bold ${reserveMet ? "text-green-600" : "text-amber-600"}`}>
-                  {reserveMet ? <CheckCircle className="size-3.5" /> : <AlertCircle className="size-3.5" />}
+                <div
+                  className={`flex items-center gap-1.5 text-xs font-bold ${reserveMet ? "text-green-600" : "text-amber-600"}`}
+                >
+                  {reserveMet ? (
+                    <CheckCircle className="size-3.5" />
+                  ) : (
+                    <AlertCircle className="size-3.5" />
+                  )}
                   {reserveMet ? "Reserve Met" : "Reserve Not Met"}
                 </div>
               )}
-              {nextMinBid > 0 && <p className="text-xs text-slate-500">Next min bid: <span className="font-bold text-slate-700">£{nextMinBid.toLocaleString()}</span></p>}
-              <button className="w-full py-3.5 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2" onClick={(e) => { e.stopPropagation(); onBid(property); }}>
+              {nextMinBid > 0 && (
+                <p className="text-xs text-slate-500">
+                  Next min bid:{" "}
+                  <span className="font-bold text-slate-700">
+                    £{nextMinBid.toLocaleString()}
+                  </span>
+                </p>
+              )}
+              <button
+                className="w-full py-3.5 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onBid(property);
+                }}
+              >
                 <Gavel className="size-4" /> Place Bid
               </button>
             </div>
           ) : isScheduledAuction ? (
             <div className="space-y-3">
-              <p className="text-xs text-blue-600 font-semibold flex items-center gap-1"><Clock className="size-3" /> Auction Starting Soon</p>
-              <p className="text-3xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{formatPrice(property.pricing?.startingAuctionPrice || 0)}</p>
-              {auctionInfo && <AuctionTimer startDateTime={auctionInfo.startDateTime} endDateTime={auctionInfo.endDateTime} status={auctionInfo.status} />}
-              <button className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-2" onClick={(e) => { e.stopPropagation(); onNavigate(`/properties/${property.slug || property._id}`); }}>
+              <p className="text-xs text-blue-600 font-semibold flex items-center gap-1">
+                <Clock className="size-3" /> Auction Starting Soon
+              </p>
+              <p className="text-3xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {formatPrice(property.pricing?.startingAuctionPrice || 0)}
+              </p>
+              {auctionInfo && (
+                <AuctionTimer
+                  startDateTime={auctionInfo.startDateTime}
+                  endDateTime={auctionInfo.endDateTime}
+                  status={auctionInfo.status}
+                />
+              )}
+              <button
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate(`/properties/${property.slug || property._id}`);
+                }}
+              >
                 View Details <ChevronRight className="size-4" />
               </button>
             </div>
@@ -200,72 +320,130 @@ export default function PropertyCard({ property, auctionInfo, wishlisted, onBid,
               {isSold ? (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">Current Bid</span>
-                    <span className="font-black text-green-600">{formatPrice(property.soldPrice || property.currentBid || 0)}</span>
+                    <span className="text-slate-500 font-medium">
+                      Current Bid
+                    </span>
+                    <span className="font-black text-green-600">
+                      {formatPrice(
+                        property.soldPrice || property.currentBid || 0,
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">Reserve Price</span>
-                    <span className="font-bold text-slate-700">{formatPrice(property.pricing?.reservePrice || 0)}</span>
+                    <span className="text-slate-500 font-medium">
+                      Reserve Price
+                    </span>
+                    <span className="font-bold text-slate-700">
+                      {formatPrice(property.pricing?.reservePrice || 0)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">Reserve Met</span>
+                    <span className="text-slate-500 font-medium">
+                      Reserve Met
+                    </span>
                     <span className="font-bold text-green-600">✅ Yes</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500 font-medium">Bids</span>
-                    <span className="font-bold text-slate-700">{property.totalBids || 0}</span>
+                    <span className="font-bold text-slate-700">
+                      {property.totalBids || 0}
+                    </span>
                   </div>
                 </div>
               ) : isUnsold ? (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">Highest Bid</span>
-                    <span className="font-black text-orange-600">{formatPrice(property.currentBid || 0)}</span>
+                    <span className="text-slate-500 font-medium">
+                      Highest Bid
+                    </span>
+                    <span className="font-black text-orange-600">
+                      {formatPrice(property.currentBid || 0)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">Reserve Price</span>
-                    <span className="font-bold text-slate-700">{formatPrice(property.pricing?.reservePrice || 0)}</span>
+                    <span className="text-slate-500 font-medium">
+                      Reserve Price
+                    </span>
+                    <span className="font-bold text-slate-700">
+                      {formatPrice(property.pricing?.reservePrice || 0)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">Reserve Met</span>
+                    <span className="text-slate-500 font-medium">
+                      Reserve Met
+                    </span>
                     <span className="font-bold text-red-600">❌ No</span>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">{property.currentBid > 0 ? 'Current Bid' : 'Starting Price'}</span>
-                    <span className="font-black text-emerald-600">{formatPrice(property.currentBid || property.pricing?.startingAuctionPrice || 0)}</span>
+                    <span className="text-slate-500 font-medium">
+                      {property.currentBid > 0
+                        ? "Current Bid"
+                        : "Starting Price"}
+                    </span>
+                    <span className="font-black text-emerald-600">
+                      {formatPrice(
+                        property.currentBid ||
+                          property.pricing?.startingAuctionPrice ||
+                          0,
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">Reserve Price</span>
-                    <span className="font-bold text-slate-700">{formatPrice(property.pricing?.reservePrice || 0)}</span>
+                    <span className="text-slate-500 font-medium">
+                      Reserve Price
+                    </span>
+                    <span className="font-bold text-slate-700">
+                      {formatPrice(property.pricing?.reservePrice || 0)}
+                    </span>
                   </div>
                   {property.currentBid > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-500 font-medium">Reserve Met</span>
-                      <span className={`font-bold ${property.currentBid >= (property.pricing?.reservePrice || 0) ? 'text-green-600' : 'text-red-500'}`}>
-                        {property.currentBid >= (property.pricing?.reservePrice || 0) ? '✅ Yes' : '❌ No'}
+                      <span className="text-slate-500 font-medium">
+                        Reserve Met
+                      </span>
+                      <span
+                        className={`font-bold ${property.currentBid >= (property.pricing?.reservePrice || 0) ? "text-green-600" : "text-red-500"}`}
+                      >
+                        {property.currentBid >=
+                        (property.pricing?.reservePrice || 0)
+                          ? "✅ Yes"
+                          : "❌ No"}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500 font-medium">Bids</span>
-                    <span className="font-bold text-slate-700">{property.totalBids || 0}</span>
+                    <span className="font-bold text-slate-700">
+                      {property.totalBids || 0}
+                    </span>
                   </div>
                 </div>
               )}
-              <button className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-bold hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2" onClick={(e) => { e.stopPropagation(); onNavigate(`/properties/${property.slug || property._id}`); }}>
+              <button
+                className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-bold hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate(`/properties/${property.slug || property._id}`);
+                }}
+              >
                 View Details <ChevronRight className="size-4" />
               </button>
             </div>
           )
         ) : (
           <div className="space-y-3">
-            <p className="text-3xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{displayPrice}</p>
+            <p className="text-3xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              {displayPrice}
+            </p>
             <button
               className="w-full py-3.5 border-gradient bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-border text-slate-900 rounded-xl font-bold hover:bg-gradient-to-r hover:text-white transition-all flex items-center justify-center gap-2 border-2"
-              onClick={(e) => { e.stopPropagation(); onNavigate(`/properties/${property.slug || property._id}`); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigate(`/properties/${property.slug || property._id}`);
+              }}
             >
               View Details <ChevronRight className="size-4" />
             </button>

@@ -39,14 +39,14 @@ export const useCustomerRole = () => {
     if (role === "admin")
       return (user as any)?.isSuperAdmin ? "Super Admin" : "Administrator";
     if (role === "agent") return canBid ? "Agent & Buyer" : "Agent";
-    if (role === "seller") return canBid ? "Seller & Buyer" : "Seller";
-    return canListProperties ? "Buyer & Seller" : "Buyer";
+        if (role === "seller") return canBid ? "Owner & Buyer" : "Owner";
+    return canListProperties ? "Buyer & Owner" : "Buyer";
   };
 
   const getActiveViewLabel = () => {
     if (activeView === "seller") {
       if (role === "agent") return "Agent View";
-      return "Seller View";
+      return "Owner View";
     }
     return "Buyer View";
   };

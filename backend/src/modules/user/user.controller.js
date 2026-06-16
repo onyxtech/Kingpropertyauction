@@ -74,7 +74,7 @@ export const updateUserStatus = async (req, res) => {
   }
 };
 
-// Buyer requests to become a seller
+// Buyer requests to become an Owner
 export const requestRoleSwitch = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -314,6 +314,97 @@ export const updateUser = async (req, res) => {
   } catch (error) {
     console.error('[User] updateUser error:', error.message);
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+// Upload ID document for agent or owner
+export const uploadIdDocument = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+
+    const { docType } = req.body;
+    if (!docType || !["driving_license", "passport", "other_id"].includes(docType)) {
+      return res.status(400).json({ success: false, message: "Invalid document type" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const docEntry = {
+      docType,
+      fileUrl: `/uploads/id-documents/${req.file.filename}`,
+      fileName: req.file.filename,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      fileSize: req.file.size,
+      uploadedAt: new Date(),
+      verificationStatus: "pending",
+    };
+
+    // Store in the right place based on role
+    if (user.role === "agent") {
+      if (!user.agentDetails) user.agentDetails = {};
+      if (!user.agentDetails.idDocuments) user.agentDetails.idDocuments = [];
+      user.agentDetails.idDocuments.push(docEntry);
+    } else if (user.role === "seller") {
+      if (!user.ownerDocuments) user.ownerDocuments = [];
+      user.ownerDocuments.push(docEntry);
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      data: docEntry,
+      message: "ID document uploaded successfully",
+    });
+  } catch (error) {
+    console.error("ID document upload error:", error);
+    res.status(500).json({ success: false, message: "Failed to upload document" });
+  }
+};
+
+// Verify/Reject ID document (Admin only)
+export const verifyIdDocument = async (req, res) => {
+  try {
+    const { userId, docIndex, status, rejectionReason } = req.body;
+
+    if (!["verified", "rejected"].includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Find the document in agentDetails or ownerDocuments
+    let docArray = user.agentDetails?.idDocuments || user.ownerDocuments || [];
+    if (!docArray[docIndex]) {
+      return res.status(404).json({ success: false, message: "Document not found" });
+    }
+
+    docArray[docIndex].verificationStatus = status;
+    docArray[docIndex].verifiedBy = req.user._id;
+    docArray[docIndex].verifiedAt = new Date();
+    if (rejectionReason) {
+      docArray[docIndex].rejectionReason = rejectionReason;
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `Document ${status === "verified" ? "verified" : "rejected"} successfully`,
+    });
+  } catch (error) {
+    console.error("Verify ID document error:", error);
+    res.status(500).json({ success: false, message: "Failed to verify document" });
   }
 };
 

@@ -120,7 +120,7 @@ export default function Properties() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search title, location, seller..."
+              placeholder="Search title, location, owner..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
