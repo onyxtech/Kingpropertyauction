@@ -189,7 +189,7 @@ export default function PropertyInfo({
           </div>
 
           {/* Current Bid - only shown when bids exist */}
-          {property.totalBids > 0 ? (
+          {property.totalBids > 0 && (
             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-emerald-200">
               <div className="text-sm font-bold text-emerald-900 mb-2">
                 Current Bid
@@ -198,15 +198,16 @@ export default function PropertyInfo({
                 {formatPrice(currentBid)}
               </div>
             </div>
-          ) : (
+          )}
+
+          {/* Buy Now Price - only for direct sale with no bids */}
+          {isDirectSale && property.totalBids === 0 && (
             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-emerald-200">
               <div className="text-sm font-bold text-emerald-900 mb-2">
-                {isDirectSale ? "Buy Now Price" : "Opening Price"}
+                Buy Now Price
               </div>
               <div className="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                {isDirectSale
-                  ? formatPrice(buyNowPrice || startingPrice)
-                  : formatPrice(startingPrice)}
+                {formatPrice(buyNowPrice || startingPrice)}
               </div>
             </div>
           )}
