@@ -25,8 +25,11 @@ export const useCustomerApi = () => {
       staleTime: 10 * 1000,
       refetchInterval: (query) => {
         const data = query.state.data;
-        const hasActiveBids = Array.isArray(data) &&
-          data.some((b: any) => ["active", "winning", "outbid"].includes(b.status));
+        const hasActiveBids =
+          Array.isArray(data) &&
+          data.some((b: any) =>
+            ["active", "winning", "outbid"].includes(b.status),
+          );
         return hasActiveBids ? 30 * 1000 : false;
       },
     });
@@ -46,7 +49,7 @@ export const useCustomerApi = () => {
       queryKey: ["my-profile"],
       queryFn: async () => {
         const result = await apiClient.fetch("/auth/me");
-        return result.success ? result.data : null;
+        return result.success ? result.user : null;
       },
       staleTime: 0,
     });
@@ -117,12 +120,16 @@ export const useCustomerApi = () => {
   const useRequestRoleSwitch = () => {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: async (payload: { requestedRole: string; message?: string }) => {
+      mutationFn: async (payload: {
+        requestedRole: string;
+        message?: string;
+      }) => {
         const result = await apiClient.fetch("/users/request-role", {
           method: "POST",
           body: JSON.stringify(payload),
         });
-        if (!result.success) throw new Error(result.message || "Request failed");
+        if (!result.success)
+          throw new Error(result.message || "Request failed");
         return result.data;
       },
       onSuccess: (data) => {
@@ -148,9 +155,12 @@ export const useCustomerApi = () => {
     const queryClient = useQueryClient();
     return useMutation({
       mutationFn: async (propertyId: string) => {
-        const result = await apiClient.fetch(`/properties/${propertyId}/watchlist`, {
-          method: "POST",
-        });
+        const result = await apiClient.fetch(
+          `/properties/${propertyId}/watchlist`,
+          {
+            method: "POST",
+          },
+        );
         if (!result.success) throw new Error(result.message || "Toggle failed");
         return result;
       },

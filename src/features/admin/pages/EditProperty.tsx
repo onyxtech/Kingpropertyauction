@@ -41,7 +41,7 @@ const STEPS = [
   { number: 5, title: "Auction", icon: Gavel },
   { number: 6, title: "Features", icon: Star },
   { number: 7, title: "Legal", icon: Scale },
-  { number: 8, title: "Seller", icon: UserCheck },
+  { number: 8, title: "Owner", icon: UserCheck },
   { number: 9, title: "Media", icon: Camera },
 ];
 

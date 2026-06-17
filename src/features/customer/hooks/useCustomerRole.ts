@@ -6,7 +6,7 @@ export const useCustomerRole = () => {
   const { user, activeView: storedActiveView } = useAuthStore();
 
   const rawRole = user?.role || "buyer";
-  const role = rawRole === "user" ? "buyer" : rawRole as CustomerRole;
+  const role = rawRole === "user" ? "buyer" : (rawRole as CustomerRole);
   const permissions = user?.permissions || {};
 
   const canBid = role !== "admin" && permissions.canBid === true;
@@ -32,14 +32,15 @@ export const useCustomerRole = () => {
   const canSwitchView = canBid && canListProperties;
 
   const hasPendingRequest = user?.roleRequest?.status === "pending";
-  const canApplyToSell = !canListProperties && role !== "admin" && !hasPendingRequest;
+  const canApplyToSell =
+    !canListProperties && role !== "admin" && !hasPendingRequest;
   const canApplyToBid = !canBid && role !== "admin" && !hasPendingRequest;
 
   const getCombinedRoleLabel = () => {
     if (role === "admin")
       return (user as any)?.isSuperAdmin ? "Super Admin" : "Administrator";
     if (role === "agent") return canBid ? "Agent & Buyer" : "Agent";
-        if (role === "seller") return canBid ? "Owner & Buyer" : "Owner";
+    if (role === "seller") return canBid ? "Owner & Buyer" : "Owner";
     return canListProperties ? "Buyer & Owner" : "Buyer";
   };
 

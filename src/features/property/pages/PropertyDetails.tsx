@@ -420,6 +420,36 @@ export default function PropertyDetails() {
     );
   }
 
+    // If property is sold and user is not admin, show sold message
+  const isSold = property?.propertyStatus === "sold";
+  const isAdmin = user?.role === "admin";
+
+  if (isSold && !isAdmin) {
+    return (
+      <PublicLayout>
+        <div className="container mx-auto px-6 py-20 text-center">
+          <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-xl rounded-3xl p-12 shadow-xl border-2 border-white/60">
+            <div className="size-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="size-10 text-green-600" />
+            </div>
+            <h2 className="text-3xl font-black text-slate-900 mb-3">
+              Property Sold!
+            </h2>
+            <p className="text-slate-600 font-medium mb-8">
+              This property has been sold and is no longer available.
+            </p>
+            <button
+              onClick={() => navigate("/")}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold hover:shadow-lg transition-all"
+            >
+              Browse Available Properties
+            </button>
+          </div>
+        </div>
+      </PublicLayout>
+    );
+  }
+
   return (
     <PublicLayout>
       <AnimatePresence>
@@ -540,6 +570,7 @@ export default function PropertyDetails() {
           />
 
           <PropertyActionCard
+            isAuthenticated={isAuthenticated}
             property={property}
             matchingAuction={matchingAuction}
             isLiveNow={isLiveNow}

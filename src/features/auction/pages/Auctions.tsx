@@ -31,7 +31,7 @@ export default function Auctions() {
     urlParams.get("search") || urlParams.get("location") || "",
   );
   const [filterType, setFilterType] = useState("All Types");
-  const [filterStatus, setFilterStatus] = useState("All Status");
+  const [filterStatus, setFilterStatus] = useState("Live & Upcoming");
 
   const [auctionPage, setAuctionPage] = useState(1);
   const [allAuctions, setAllAuctions] = useState<any[]>([]);
@@ -67,14 +67,13 @@ export default function Auctions() {
     const typeMap: Record<string, string> = {
       residential: "Residential",
       commercial: "Commercial",
-      industrial: "Mixed Portfolio",
     };
 
     return {
       lotNumber: `LOT-2026-${String(index + 1).padStart(3, "0")}`,
       title: a.auctionTitle || "Untitled Auction",
       location: "Location TBD",
-      type: typeMap[category] || "Mixed Portfolio",
+      type: typeMap[category] || "Residential",
       startDate: a.startDateTime ? formatUKDateTime(a.startDateTime) : "TBD",
       startTime: "",
       endDate: a.endDateTime ? formatUKDateTime(a.endDateTime) : "TBD",
@@ -110,7 +109,10 @@ export default function Auctions() {
       lot.lotNumber.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === "All Types" || lot.type === filterType;
     const matchesStatus =
-      filterStatus === "All Status" || lot.status === filterStatus;
+      filterStatus === "All Status" ||
+      (filterStatus === "Live & Upcoming" &&
+        (lot.status === "Live Now" || lot.status === "Upcoming")) ||
+      lot.status === filterStatus;
     return matchesSearch && matchesType && matchesStatus;
   });
 
@@ -349,6 +351,7 @@ export default function Auctions() {
                 className="appearance-none pl-4 pr-10 py-4 bg-slate-50 rounded-2xl border-2 border-slate-200 focus:outline-none focus:border-blue-500 focus:bg-white transition-all font-bold text-slate-900 cursor-pointer"
               >
                 <option>All Status</option>
+                <option>Live & Upcoming</option>
                 <option>Live Now</option>
                 <option>Upcoming</option>
                 <option>Completed</option>
@@ -652,7 +655,7 @@ export default function Auctions() {
               onClick={() => {
                 setSearchTerm("");
                 setFilterType("All Types");
-                setFilterStatus("All Status");
+                setFilterStatus("Live & Upcoming");
               }}
               className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold hover:shadow-lg transition-all"
             >

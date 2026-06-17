@@ -535,7 +535,8 @@ export const completeAuction = async (auctionId) => {
 
         if (freshProperty?.createdBy) {
           const propOwner = await User.findById(freshProperty.createdBy).select("role agentDetails name email").lean();
-          if (propOwner && (propOwner.role === "agent" || propOwner.role === "seller")) {
+          // if (propOwner && (propOwner.role === "agent" || propOwner.role === "seller")) { for owner/seller commissions as well
+          if (propOwner && propOwner.role === "agent") {
             const rate = propOwner.agentDetails?.commissionRate || defaultCommissionRate;
             const commissionAmount = (currentBid * rate) / 100;
             await Commission.create({

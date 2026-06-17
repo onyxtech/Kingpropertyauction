@@ -254,4 +254,5 @@ export interface QueryParams {
   minBeds?: string;
   maxBeds?: string;
   auctionStatus?: string;
+  excludeSold?: string;
 }

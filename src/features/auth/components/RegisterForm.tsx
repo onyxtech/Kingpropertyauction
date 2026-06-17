@@ -17,6 +17,29 @@ import {
 import { useAuthStore } from "@/stores/authStore";
 import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
 
+const ID_DOC_TYPES = [
+  {
+    value: "driving_license",
+    label: "🚗 UK Driving License",
+    hint: "Full or provisional UK driving license",
+  },
+  {
+    value: "passport",
+    label: "📷 Photo ID — Passport",
+    hint: "Government-issued photo identification",
+  },
+  {
+    value: "proof_of_address",
+    label: "🏠 Proof of Address",
+    hint: "Utility bill, bank statement or council tax letter (dated within 3 months)",
+  },
+  {
+    value: "other_id",
+    label: "🆔 Other ID",
+    hint: "Any other government-issued identification",
+  },
+];
+
 const roles = [
   {
     key: "buyer",
@@ -65,7 +88,10 @@ export default function RegisterForm() {
     marketingConsent: true,
     acceptTerms: false,
   });
-  const [idDocuments, setIdDocuments] = useState<File[]>([]);
+  const [idDocuments, setIdDocuments] = useState<
+    { file: File; docType: string }[]
+  >([]);
+  const [selectedDocType, setSelectedDocType] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -98,14 +124,28 @@ export default function RegisterForm() {
   };
 
   const handleIdDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedDocType) {
+      alert("Please select a document type first");
+      return;
+    }
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      setIdDocuments((prev) => [...prev, ...filesArray]);
+      const typedFiles = filesArray.map((file) => ({
+        file,
+        docType: selectedDocType,
+      }));
+      setIdDocuments((prev) => [...prev, ...typedFiles]);
+      setSelectedDocType("");
+      e.target.value = "";
     }
   };
 
   const removeIdDocument = (index: number) => {
     setIdDocuments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const getDocTypeLabel = (docType: string) => {
+    return ID_DOC_TYPES.find((d) => d.value === docType)?.label || docType;
   };
 
   const handleRoleSelect = (role: string) => {
@@ -186,14 +226,14 @@ export default function RegisterForm() {
         idDocuments.length > 0
       ) {
         body.idDocuments = await Promise.all(
-          idDocuments.map(async (file) => {
+          idDocuments.map(async ({ file, docType }) => {
             const base64 = await new Promise<string>((resolve) => {
               const reader = new FileReader();
               reader.onload = () => resolve(reader.result as string);
               reader.readAsDataURL(file);
             });
             return {
-              docType: "other_id",
+              docType: docType,
               fileName: `id-doc-${Date.now()}-${file.name}`,
               originalName: file.name,
               mimeType: file.type,
@@ -287,7 +327,7 @@ export default function RegisterForm() {
         {selectedRole !== "seller" && selectedRole !== "agent" && (
           <button
             onClick={() => (window.location.href = "/login")}
-            className="..."
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
           >
             Go to Login
           </button>
@@ -618,38 +658,80 @@ export default function RegisterForm() {
               Upload Driving License, Passport, or ID Card (JPG, PNG, PDF)
             </p>
 
-            <label className="flex py-3 px-4 border-2 border-dashed border-slate-300 rounded-xl text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all">
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,application/pdf"
-                onChange={handleIdDocumentUpload}
-                className="hidden"
-                multiple
-              />
-              <span className="text-sm font-semibold text-blue-600">
-                + Add ID Document
-              </span>
-            </label>
+            {/* Document Type Selector */}
+            <div className="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">
+              <p className="text-sm font-bold text-slate-700 mb-3">
+                Add Document
+              </p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">
+                    Document Type *
+                  </label>
+                  <select
+                    value={selectedDocType}
+                    onChange={(e) => setSelectedDocType(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="">Select type...</option>
+                    {ID_DOC_TYPES.map((d) => (
+                      <option key={d.value} value={d.value}>
+                        {d.label}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedDocType && (
+                    <p className="text-xs text-slate-400 mt-1">
+                      {
+                        ID_DOC_TYPES.find((d) => d.value === selectedDocType)
+                          ?.hint
+                      }
+                    </p>
+                  )}
+                </div>
+
+                <label
+                  className={`flex py-3 px-4 border-2 border-dashed rounded-xl text-center cursor-pointer transition-all ${selectedDocType ? "border-blue-300 hover:border-blue-400 hover:bg-blue-50" : "border-slate-200 opacity-50"}`}
+                >
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    onChange={handleIdDocumentUpload}
+                    className="hidden"
+                    multiple
+                    disabled={!selectedDocType}
+                  />
+                  <span className="text-sm font-semibold text-blue-600">
+                    {selectedDocType
+                      ? "+ Add Files"
+                      : "Select a document type first"}
+                  </span>
+                </label>
+              </div>
+            </div>
 
             {/* Preview uploaded docs */}
             {idDocuments.length > 0 && (
               <div className="space-y-2">
-                {idDocuments.map((file, idx) => (
+                {idDocuments.map((item, idx) => (
                   <div
                     key={idx}
                     className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200"
                   >
                     <div className="flex items-center gap-3">
-                      <span>🪪</span>
+                      <span>📄</span>
                       <div>
+                        <p className="text-xs font-bold text-blue-600">
+                          {getDocTypeLabel(item.docType)}
+                        </p>
                         <p
                           className="text-sm font-semibold text-slate-700 truncate"
                           style={{ maxWidth: "200px" }}
                         >
-                          {file.name}
+                          {item.file.name}
                         </p>
                         <p className="text-xs text-slate-500">
-                          {(file.size / 1024).toFixed(0)} KB
+                          {(item.file.size / 1024).toFixed(0)} KB
                         </p>
                       </div>
                     </div>

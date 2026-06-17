@@ -161,15 +161,18 @@ export default function PropertyCard({
         </div>
 
         <div className="absolute bottom-4 left-4">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onTour(property);
-            }}
-            className="px-3 py-2 bg-black/70 backdrop-blur-md hover:bg-black/90 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xl transition-all hover:scale-110 cursor-pointer"
-          >
-            <Video className="size-4" /> 360° Virtual Tour
-          </button>
+          {(property.media?.propertyVideos?.length > 0 ||
+            property.media?.propertyVideo) && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onTour(property);
+              }}
+              className="px-3 py-2 bg-black/70 backdrop-blur-md hover:bg-black/90 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xl transition-all hover:scale-110 cursor-pointer"
+            >
+              <Video className="size-4" /> Video Tour
+            </button>
+          )}
         </div>
 
         {auctionEndDate && (

@@ -62,7 +62,12 @@ const userSchema = new mongoose.Schema(
         {
           docType: {
             type: String,
-            enum: ["driving_license", "passport", "other_id"],
+            enum: [
+              "driving_license",
+              "passport",
+              "proof_of_address",
+              "other_id",
+            ],
           },
           fileUrl: String,
           fileName: String,
@@ -86,7 +91,7 @@ const userSchema = new mongoose.Schema(
       {
         docType: {
           type: String,
-          enum: ["driving_license", "passport", "other_id"],
+          enum: ["driving_license", "passport", "proof_of_address", "other_id"],
         },
         fileUrl: String,
         fileName: String,
@@ -172,6 +177,16 @@ userSchema.pre("save", function (next) {
   } else if (this.role === "seller" || this.role === "agent") {
     this.permissions.canBid = false;
     this.permissions.canListProperties = true;
+    // Mute enquiry notifications & payments & commissions for owners by default
+    if (this.role === "seller") {
+      if (!this.notificationSettings) this.notificationSettings = {};
+      this.notificationSettings.newEnquiry = false;
+      this.notificationSettings.paymentDue = false;
+      this.notificationSettings.paymentOverdue = false;
+      this.notificationSettings.commissionEarned = false;
+      this.notificationSettings.withdrawalUpdate = false;
+      this.notificationSettings.fundsTransferred = false;
+    }
   } else if (this.role === "admin") {
     this.permissions.canBid = false;
     this.permissions.canListProperties = false;

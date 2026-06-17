@@ -142,7 +142,7 @@ export default function Users() {
               <option key={r} value={r}>
                 {r === "admin" ? "Administrator" :
                  r === "agent" ? "Agent" :
-                 r === "seller" ? "Seller" :
+                 r === "seller" ? "Owner" :
                  "Buyer"}
               </option>
             ))}
@@ -205,7 +205,7 @@ export default function Users() {
                               : user.role === "agent"
                               ? (user.permissions?.canBid ? "Agent & Buyer" : "Agent")
                               : user.role === "seller"
-                              ? (user.permissions?.canBid ? "Owner & Buyer" : "Seller")
+                              ? (user.permissions?.canBid ? "Owner & Buyer" : "Owner")
                               : user.role === "buyer"
                               ? (user.permissions?.canListProperties ? "Buyer & Owner" : "Buyer")
                               : user.role}

@@ -8,7 +8,7 @@ export const createPropertySchema = Joi.object({
   propertyTitle: Joi.string().trim().max(200).required(),
   propertyDescription: Joi.string().max(5000).required(),
   propertyType: Joi.string()
-    .valid("house", "apartment", "land", "commercial", "farmhouse")
+        .valid("house", "apartment", "land", "commercial", "farmhouse", "villa")
     .required(),
   propertyCategory: Joi.string()
     .valid("residential", "commercial", "industrial")

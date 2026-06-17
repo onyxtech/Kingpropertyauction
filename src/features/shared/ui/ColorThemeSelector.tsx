@@ -48,11 +48,11 @@ export default function ColorThemeSelector() {
       {/* Floating Color Picker Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed left-6 bottom-6 z-50 size-16 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl flex items-center justify-center hover:scale-110 transition-all duration-300 group border-2 border-white/20"
+        className="fixed left-6 bottom-6 z-50 size-6 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl flex items-center justify-center hover:scale-110 transition-all duration-300 group border-2 border-white/20"
         aria-label="Change color theme"
       >
-        <Palette className="size-7 text-white group-hover:rotate-12 transition-transform" />
-        <div className="absolute -top-1 -right-1 size-5 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full animate-pulse" />
+        <Palette className="size-5 text-white group-hover:rotate-12 transition-transform" />
+        
       </button>
 
       {/* Color Theme Panel */}

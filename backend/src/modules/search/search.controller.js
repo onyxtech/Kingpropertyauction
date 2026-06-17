@@ -7,8 +7,11 @@ export const universalSearch = async (req, res) => {
       req.query;
     const results = { properties: [], auctions: [] };
 
-    // ─── PROPERTY FILTER (includes price + beds) ───
-    const propertyFilter = { approvalStatus: "approved" };
+    // Exclude sold properties from public search
+    const propertyFilter = {
+      approvalStatus: "approved",
+      propertyStatus: { $ne: "sold" },
+    };
     if (q) {
       const regex = new RegExp(q, "i");
       propertyFilter.$or = [
@@ -52,6 +55,10 @@ export const universalSearch = async (req, res) => {
 
     // ─── AUCTION FILTER (text + status only, no price/beds) ───
     const auctionFilter = {};
+    // Default: exclude completed auctions unless user specifically selected a status
+    if (!status || status === "all") {
+      auctionFilter.status = { $in: ["live", "scheduled"] };
+    }
     if (q) {
       const regex = new RegExp(q, "i");
       auctionFilter.$or = [

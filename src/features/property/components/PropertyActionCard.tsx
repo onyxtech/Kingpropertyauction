@@ -5,6 +5,8 @@ import {
   Gavel,
   Phone,
   MessageSquare,
+  User,
+  FileText,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 
@@ -22,6 +24,7 @@ interface PropertyActionCardProps {
   formatPrice: (val: number) => string;
   onPlaceBid: () => void;
   onNavigate: (path: string) => void;
+  isAuthenticated?: boolean;
   onEnquire: () => void;
   isOwnProperty?: boolean;
 }
@@ -63,6 +66,7 @@ export default function PropertyActionCard({
   onPlaceBid,
   onNavigate,
   onEnquire,
+  isAuthenticated,
   isOwnProperty = false,
 }: PropertyActionCardProps) {
   const handleDownloadBrochure = async () => {
@@ -412,7 +416,7 @@ export default function PropertyActionCard({
     <div className="lg:col-span-1 space-y-6">
       {/* Gradient Action Card */}
       <div
-        className={`rounded-3xl p-8 shadow-2xl sticky top-24 z-10 ${
+        className={`rounded-3xl p-8 shadow-2xl ${
           isLiveNow
             ? "bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600"
             : isCompleted
@@ -567,6 +571,26 @@ export default function PropertyActionCard({
           </button>
         </div>
       </div>
+
+      {/* Log In / Register to Bid - only for NOT logged in AND auction is live/scheduled */}
+      {!isAuthenticated && (isLiveNow || isAuctionType) && !isCompleted && (
+        <a
+          href="/register?reason=buyer"
+          className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-black text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2 text-center"
+        >
+          <User className="size-5" /> Log In / Register to Bid
+        </a>
+      )}
+
+      {/* Submit Offer Now - always visible for auction properties (not completed) */}
+      {(isLiveNow || isAuctionType) && !isCompleted && (
+        <a
+          href="/register?reason=buyer"
+          className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-black text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2 text-center"
+        >
+          <FileText className="size-5" /> Submit Offer Now
+        </a>
+      )}
 
       {/* Agent Contact Card */}
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border-2 border-white/60">

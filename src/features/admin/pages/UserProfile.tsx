@@ -21,6 +21,8 @@ import {
   Percent,
   Crown,
   FileText,
+  Eye,
+  Download,
 } from "lucide-react";
 
 export default function UserProfile() {
@@ -194,7 +196,7 @@ export default function UserProfile() {
 
     if (role === "seller") {
       tabs.push(
-        { id: "agent", label: "Seller Details", icon: Building2 },
+        { id: "agent", label: "Owner Details", icon: Building2 },
         { id: "bank", label: "Bank Details", icon: CreditCard },
         { id: "activity", label: "Activity", icon: TrendingUp },
         { id: "commissions", label: "Commissions", icon: Percent },
@@ -211,7 +213,7 @@ export default function UserProfile() {
       );
       if (canList) {
         tabs.push(
-          { id: "agent", label: "Seller Details", icon: Building2 },
+          { id: "agent", label: "Owner Details", icon: Building2 },
           { id: "bank", label: "Bank Details", icon: CreditCard },
           { id: "commissions", label: "Commissions", icon: Percent },
         );
@@ -281,7 +283,7 @@ export default function UserProfile() {
                           : role === "seller"
                             ? canBid
                               ? "Owner & Buyer"
-                              : "Seller"
+                              : "Owner"
                             : role === "buyer"
                               ? canList
                                 ? "Buyer & Owner"
@@ -477,7 +479,7 @@ export default function UserProfile() {
                           : r === "agent"
                             ? "Agent"
                             : r === "seller"
-                              ? "Seller"
+                              ? "Owner"
                               : "Buyer"}
                       </option>
                     ))}
@@ -653,52 +655,106 @@ export default function UserProfile() {
         {activeTab === "documents" && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
             <h3 className="font-black text-slate-900 text-lg">
-              ID Verification Documents
+              🪪 ID Verification Documents
             </h3>
-            {userData.agentDetails?.idDocuments?.length > 0 ||
-            userData.ownerDocuments?.length > 0 ? (
+            {(() => {
+              const agentDocs = userData.agentDetails?.idDocuments || [];
+              const ownerDocs = userData.ownerDocuments || [];
+              const allDocs = [...agentDocs, ...ownerDocs];
+              return allDocs.length > 0;
+            })() ? (
               <div className="space-y-3">
-                {(
-                  userData.agentDetails?.idDocuments ||
-                  userData.ownerDocuments ||
-                  []
-                ).map((doc: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200"
-                  >
-                    <div className="flex items-center gap-3">
-                      <FileText className="size-6 text-purple-600" />
-                      <div>
-                        <p className="text-sm font-semibold text-slate-700">
-                          {doc.originalName || doc.fileName}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {doc.docType?.replace(/_/g, " ")} •{" "}
-                          {(doc.fileSize / 1024).toFixed(0)} KB •{" "}
-                          {new Date(doc.uploadedAt).toLocaleDateString("en-GB")}
-                        </p>
+                {(() => {
+                  const agentDocs = userData.agentDetails?.idDocuments || [];
+                  const ownerDocs = userData.ownerDocuments || [];
+                  return [...agentDocs, ...ownerDocs];
+                })().map((doc: any, idx: number) => {
+                  const docLabel =
+                    doc.docType === "driving_license"
+                      ? "🚗 UK Driving License"
+                      : doc.docType === "passport"
+                        ? "🛂 Passport"
+                        : doc.docType === "proof_of_address"
+                          ? "🏠 Proof of Address"
+                          : doc.docType === "other_id"
+                            ? "🆔 Other ID"
+                            : doc.docType === "photo_id"
+                              ? "📷 Photo ID — Passport / Driving Licence"
+                              : doc.docType === "legal_pack"
+                                ? "📋 Legal Pack"
+                                : doc.docType === "solicitor_doc"
+                                  ? "⚖️ Solicitor Document"
+                                  : doc.docType === "other" && doc.customLabel
+                                    ? doc.customLabel
+                                    : doc.docType === "other"
+                                      ? "📄 Other Document"
+                                      : (doc.docType || "").replace(/_/g, " ");
+
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-slate-300 transition-all"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="size-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <FileText className="size-6 text-purple-600" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-bold">
+                              {docLabel}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              {(doc.fileSize / 1024).toFixed(0)} KB
+                            </span>
+                          </div>
+                          <p className="text-sm font-semibold text-slate-700 truncate max-w-[250px]">
+                            {doc.originalName || doc.fileName}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            Uploaded{" "}
+                            {new Date(doc.uploadedAt).toLocaleDateString(
+                              "en-GB",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-blue-50 text-blue-700 rounded-xl text-sm font-bold hover:bg-blue-100 transition-all flex items-center gap-1.5"
+                        >
+                          <Eye className="size-4" /> View
+                        </a>
+                        <a
+                          href={doc.fileUrl}
+                          download={doc.originalName || doc.fileName}
+                          className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all flex items-center gap-1.5"
+                        >
+                          <Download className="size-4" /> Download
+                        </a>
                       </div>
                     </div>
-                    <a
-                      href={doc.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline text-sm font-medium"
-                    >
-                      View
-                    </a>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <span className="text-4xl">🪪</span>
-                <p className="text-slate-500 font-bold mt-3">
+              <div className="text-center py-16">
+                <div className="size-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText className="size-10 text-slate-400" />
+                </div>
+                <p className="text-slate-500 font-bold text-lg">
                   No ID documents uploaded
                 </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  User has not submitted verification documents
+                <p className="text-sm text-slate-400 mt-1 max-w-sm mx-auto">
+                  This user has not submitted any verification documents yet.
                 </p>
               </div>
             )}
@@ -873,7 +929,7 @@ export default function UserProfile() {
                         : role === "seller"
                           ? canBid
                             ? "Owner & Buyer"
-                            : "Seller"
+                            : "Owner"
                           : role === "buyer"
                             ? canList
                               ? "Buyer & Owner"

@@ -105,7 +105,7 @@ export default function CustomerSidebar({
       id: "payments",
       icon: CreditCard,
       label: "Payments",
-      show: user?.role !== "admin",
+      show: user?.role !== "admin" && user?.role !== "seller",
     },
     {
       id: "offers",
@@ -258,9 +258,7 @@ export default function CustomerSidebar({
               className="w-full flex items-center gap-2.5 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-[13px] font-bold transition-all disabled:opacity-50"
             >
               <ArrowLeftRight className="size-4" />
-              {showSellerView
-                ? "Switch to Buyer View"
-                : "Switch to Owner View"}
+              {showSellerView ? "Switch to Buyer View" : "Switch to Owner View"}
             </button>
           )}
 

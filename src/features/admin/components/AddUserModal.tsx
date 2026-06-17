@@ -91,7 +91,7 @@ export default function AddUserModal({ onClose, onSuccess }: { onClose: () => vo
           <div className="space-y-4">
             <h3 className="text-xl font-black text-slate-900 flex items-center gap-2"><Lock className="size-6 text-purple-600" />Account Details</h3>
             <div className="grid md:grid-cols-2 gap-4">
-              <div><label className="block text-sm font-bold text-slate-700 mb-2">User Role *</label><select name="role" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500" required><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="agent">Agent</option><option value="admin">Administrator</option></select></div>
+              <div><label className="block text-sm font-bold text-slate-700 mb-2">User Role *</label><select name="role" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500" required><option value="buyer">Buyer</option><option value="seller">Owner</option><option value="agent">Agent</option><option value="admin">Administrator</option></select></div>
               <div><label className="block text-sm font-bold text-slate-700 mb-2">Account Status</label><select name="status" className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
             </div>
             <div className="grid md:grid-cols-2 gap-4">

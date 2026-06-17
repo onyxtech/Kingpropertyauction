@@ -1,6 +1,18 @@
 import { useEffect } from "react";
 import { mediaUrl } from "@/lib/mediaUrl";
-import { Building2, Gavel, MessageSquare, TrendingUp, Plus, ArrowRight, MapPin, Trophy, Clock, Eye, User } from "lucide-react";
+import {
+  Building2,
+  Gavel,
+  MessageSquare,
+  TrendingUp,
+  Plus,
+  ArrowRight,
+  MapPin,
+  Trophy,
+  Clock,
+  Eye,
+  User,
+} from "lucide-react";
 import { useNavigate } from "react-router";
 import { useTheme } from "@/app/hooks/useTheme";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,8 +29,15 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
   const navigate = useNavigate();
   const theme = useTheme();
   const queryClient = useQueryClient();
-  const { canAddProperty, showSellerView, showBuyerView, role, getCombinedRoleLabel } = useCustomerRole();
-  const { useMyProperties, useMyBids, useMyMessages, useMyPropertyStats } = useCustomerApi();
+  const {
+    canAddProperty,
+    showSellerView,
+    showBuyerView,
+    role,
+    getCombinedRoleLabel,
+  } = useCustomerRole();
+  const { useMyProperties, useMyBids, useMyMessages, useMyPropertyStats } =
+    useCustomerApi();
   const { data: myProperties = [] } = useMyProperties();
   const { data: myBids = [] } = useMyBids();
   const { data: conversations = [] } = useMyMessages();
@@ -30,10 +49,11 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
     : 0;
 
   const offerCount = Array.isArray(notifications)
-    ? notifications.filter((n: any) =>
-        n.message?.toLowerCase().includes("opportunity") ||
-        n.message?.toLowerCase().includes("offer") ||
-        (n.type === "lead" && n.icon === "home")
+    ? notifications.filter(
+        (n: any) =>
+          n.message?.toLowerCase().includes("opportunity") ||
+          n.message?.toLowerCase().includes("offer") ||
+          (n.type === "lead" && n.icon === "home"),
       ).length
     : 0;
 
@@ -52,18 +72,24 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
   }, [queryClient]);
 
   const activeBids = Array.isArray(myBids)
-    ? myBids.filter((b: any) => ["active", "winning"].includes(b.status)) : [];
+    ? myBids.filter((b: any) => ["active", "winning"].includes(b.status))
+    : [];
   const wonBids = Array.isArray(myBids)
-    ? myBids.filter((b: any) => b.status === "won") : [];
+    ? myBids.filter((b: any) => b.status === "won")
+    : [];
   const outbidBids = Array.isArray(myBids)
-    ? myBids.filter((b: any) => b.status === "outbid") : [];
+    ? myBids.filter((b: any) => b.status === "outbid")
+    : [];
   const unreadCount = Array.isArray(conversations)
-    ? conversations.filter((c: any) => (c.unreadCount?.user || 0) > 0).length : 0;
+    ? conversations.filter((c: any) => (c.unreadCount?.user || 0) > 0).length
+    : 0;
 
   return (
     <div className="space-y-4 lg:space-y-5">
       {/* Welcome Banner */}
-      <div className={`bg-gradient-to-r ${showSellerView ? "from-blue-600 to-indigo-700" : "from-green-600 to-emerald-700"} rounded-2xl p-4 sm:p-5 text-white shadow-xl`}>
+      <div
+        className={`bg-gradient-to-r ${showSellerView ? "from-blue-600 to-indigo-700" : "from-green-600 to-emerald-700"} rounded-2xl p-4 sm:p-5 text-white shadow-xl`}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-lg sm:text-xl font-black mb-1">
@@ -124,8 +150,12 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
               </div>
               <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-xl sm:text-2xl font-black text-white">{myProperties.length}</p>
-            <p className="text-sm text-white/80 font-medium mt-0.5">My Properties</p>
+            <p className="text-xl sm:text-2xl font-black text-white">
+              {myProperties.length}
+            </p>
+            <p className="text-sm text-white/80 font-medium mt-0.5">
+              My Properties
+            </p>
           </button>
         )}
         {/* Seller additional stats */}
@@ -140,8 +170,12 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
               </div>
               <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-xl sm:text-2xl font-black text-white">{myPropertyStats?.liveAuctions || 0}</p>
-            <p className="text-sm text-white/80 font-medium mt-0.5">Live Auctions</p>
+            <p className="text-xl sm:text-2xl font-black text-white">
+              {myPropertyStats?.liveAuctions || 0}
+            </p>
+            <p className="text-sm text-white/80 font-medium mt-0.5">
+              Live Auctions
+            </p>
           </button>
         )}
         {showSellerView && (
@@ -155,11 +189,15 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
               </div>
               <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-xl sm:text-2xl font-black text-white">{myPropertyStats?.totalBidsReceived || 0}</p>
-            <p className="text-sm text-white/80 font-medium mt-0.5">Bids Received</p>
+            <p className="text-xl sm:text-2xl font-black text-white">
+              {myPropertyStats?.totalBidsReceived || 0}
+            </p>
+            <p className="text-sm text-white/80 font-medium mt-0.5">
+              Bids Received
+            </p>
           </button>
         )}
-        {showSellerView && (
+        {showSellerView && role === "agent" && (
           <button
             onClick={() => onTabChange("messages")}
             className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-3 sm:p-4 text-left hover:shadow-xl hover:scale-105 transition-all group shadow-lg shadow-emerald-200"
@@ -170,8 +208,12 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
               </div>
               <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
             </div>
-            <p className="text-xl sm:text-2xl font-black text-white">{enquiryCount}</p>
-            <p className="text-sm text-white/80 font-medium mt-0.5">Customer Enquiries</p>
+            <p className="text-xl sm:text-2xl font-black text-white">
+              {enquiryCount}
+            </p>
+            <p className="text-sm text-white/80 font-medium mt-0.5">
+              Customer Enquiries
+            </p>
           </button>
         )}
         {/* Buyer stats */}
@@ -187,10 +229,16 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                 </div>
                 <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
               </div>
-              <p className="text-xl sm:text-2xl font-black text-white">{activeBids.length}</p>
-              <p className="text-sm text-white/80 font-medium mt-0.5">Active Bids</p>
+              <p className="text-xl sm:text-2xl font-black text-white">
+                {activeBids.length}
+              </p>
+              <p className="text-sm text-white/80 font-medium mt-0.5">
+                Active Bids
+              </p>
               {outbidBids.length > 0 && (
-                <p className="text-xs text-white/70 font-bold mt-1">⚠️ {outbidBids.length} outbid</p>
+                <p className="text-xs text-white/70 font-bold mt-1">
+                  ⚠️ {outbidBids.length} outbid
+                </p>
               )}
             </button>
             <button
@@ -203,8 +251,12 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                 </div>
                 <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
               </div>
-              <p className="text-xl sm:text-2xl font-black text-white">{wonBids.length}</p>
-              <p className="text-sm text-white/80 font-medium mt-0.5">Auctions Won</p>
+              <p className="text-xl sm:text-2xl font-black text-white">
+                {wonBids.length}
+              </p>
+              <p className="text-sm text-white/80 font-medium mt-0.5">
+                Auctions Won
+              </p>
             </button>
             {showBuyerView && offerCount > 0 && (
               <button
@@ -219,8 +271,12 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                     {offerCount}
                   </span>
                 </div>
-                <p className="text-xl sm:text-2xl font-black text-white">{offerCount}</p>
-                <p className="text-sm text-white/80 font-medium mt-0.5">Property Offers</p>
+                <p className="text-xl sm:text-2xl font-black text-white">
+                  {offerCount}
+                </p>
+                <p className="text-sm text-white/80 font-medium mt-0.5">
+                  Property Offers
+                </p>
               </button>
             )}
           </>
@@ -236,8 +292,12 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             </div>
             <ArrowRight className="size-4 text-white/60 group-hover:text-white transition-colors" />
           </div>
-          <p className="text-xl sm:text-2xl font-black text-white">{unreadCount}</p>
-          <p className="text-sm text-white/80 font-medium mt-0.5">Unread Messages</p>
+          <p className="text-xl sm:text-2xl font-black text-white">
+            {unreadCount}
+          </p>
+          <p className="text-sm text-white/80 font-medium mt-0.5">
+            Unread Messages
+          </p>
         </button>
       </div>
 
@@ -261,7 +321,9 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             {myProperties.length === 0 ? (
               <div className="text-center py-10 px-4">
                 <Building2 className="size-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-slate-500 text-sm font-medium mb-3">No properties listed yet</p>
+                <p className="text-slate-500 text-sm font-medium mb-3">
+                  No properties listed yet
+                </p>
                 <button
                   onClick={() => navigate("/add-property")}
                   className={`px-4 py-2 bg-gradient-to-r ${theme.primary} text-white rounded-xl font-bold text-sm`}
@@ -272,27 +334,47 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             ) : (
               <div className="divide-y divide-slate-100">
                 {myProperties.slice(0, 3).map((p: any) => (
-                  <div key={p._id} className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-all">
+                  <div
+                    key={p._id}
+                    className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-all"
+                  >
                     {p.media?.propertyImages?.[0] ? (
-                      <img src={mediaUrl(p.media.propertyImages[0])} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" alt="" />
+                      <img
+                        src={mediaUrl(p.media.propertyImages[0])}
+                        className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+                        alt=""
+                      />
                     ) : (
                       <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
                         <Building2 className="size-5 text-slate-400" />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-slate-900 text-sm truncate">{p.propertyTitle}</p>
+                      <p className="font-bold text-slate-900 text-sm truncate">
+                        {p.propertyTitle}
+                      </p>
                       <p className="text-xs text-slate-500 flex items-center gap-1">
-                        <MapPin className="size-3" />{p.location?.city || "N/A"}
+                        <MapPin className="size-3" />
+                        {p.location?.city || "N/A"}
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="font-black text-green-600 text-sm">£{p.pricing?.startingAuctionPrice?.toLocaleString() || "TBD"}</p>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                        p.approvalStatus === "approved" ? "bg-green-100 text-green-700" :
-                        p.approvalStatus === "pending" ? "bg-amber-100 text-amber-700" :
-                        "bg-red-100 text-red-700"
-                      }`}>{p.approvalStatus || "pending"}</span>
+                      <p className="font-black text-green-600 text-sm">
+                        £
+                        {p.pricing?.startingAuctionPrice?.toLocaleString() ||
+                          "TBD"}
+                      </p>
+                      <span
+                        className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                          p.approvalStatus === "approved"
+                            ? "bg-green-100 text-green-700"
+                            : p.approvalStatus === "pending"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {p.approvalStatus || "pending"}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -319,7 +401,9 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
             {myBids.length === 0 ? (
               <div className="text-center py-10 px-4">
                 <Gavel className="size-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-slate-500 text-sm font-medium mb-3">No bids placed yet</p>
+                <p className="text-slate-500 text-sm font-medium mb-3">
+                  No bids placed yet
+                </p>
                 <button
                   onClick={() => navigate("/auctions")}
                   className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold text-sm"
@@ -332,43 +416,73 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                 {myBids.slice(0, 3).map((bid: any) => (
                   <button
                     key={bid._id}
-                    onClick={() => navigate(`/auctions/${bid.auction?.slug || bid.auction?._id}`)}
+                    onClick={() =>
+                      navigate(
+                        `/auctions/${bid.auction?.slug || bid.auction?._id}`,
+                      )
+                    }
                     className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 transition-all text-left"
                   >
-                    <div className={`size-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      bid.status === "winning" ? "bg-green-100" :
-                      bid.status === "won" ? "bg-amber-100" :
-                      bid.status === "outbid" ? "bg-orange-100" : "bg-blue-100"
-                    }`}>
-                      {bid.status === "winning" ? <Trophy className="size-5 text-green-600" /> :
-                       bid.status === "won" ? <Trophy className="size-5 text-amber-600" /> :
-                       bid.status === "outbid" ? <TrendingUp className="size-5 text-orange-600" /> :
-                       <Gavel className="size-5 text-blue-600" />}
+                    <div
+                      className={`size-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                        bid.status === "winning"
+                          ? "bg-green-100"
+                          : bid.status === "won"
+                            ? "bg-amber-100"
+                            : bid.status === "outbid"
+                              ? "bg-orange-100"
+                              : "bg-blue-100"
+                      }`}
+                    >
+                      {bid.status === "winning" ? (
+                        <Trophy className="size-5 text-green-600" />
+                      ) : bid.status === "won" ? (
+                        <Trophy className="size-5 text-amber-600" />
+                      ) : bid.status === "outbid" ? (
+                        <TrendingUp className="size-5 text-orange-600" />
+                      ) : (
+                        <Gavel className="size-5 text-blue-600" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-slate-900 text-sm truncate">
-                        {bid.property?.propertyTitle || bid.auction?.auctionTitle || "Property"}
+                        {bid.property?.propertyTitle ||
+                          bid.auction?.auctionTitle ||
+                          "Property"}
                       </p>
                       <p className="text-xs text-slate-500 truncate">
-                        {bid.auction?.auctionTitle} · My bid: £{bid.amount?.toLocaleString()}
+                        {bid.auction?.auctionTitle} · My bid: £
+                        {bid.amount?.toLocaleString()}
                       </p>
                     </div>
                     <div className="flex-shrink-0 text-right">
-                      <span className={`text-xs font-black px-2 py-1 rounded-full ${
-                        bid.status === "winning" ? "bg-green-100 text-green-700" :
-                        bid.status === "won" ? "bg-amber-100 text-amber-700" :
-                        bid.status === "outbid" ? "bg-orange-100 text-orange-700" :
-                        bid.status === "lost" ? "bg-red-100 text-red-700" :
-                        "bg-blue-100 text-blue-700"
-                      }`}>
-                        {bid.status === "winning" ? "🏆 Winning" :
-                         bid.status === "won" ? "✅ Won" :
-                         bid.status === "outbid" ? "⚠️ Outbid" :
-                         bid.status === "lost" ? "Lost" :
-                         bid.status || "Active"}
+                      <span
+                        className={`text-xs font-black px-2 py-1 rounded-full ${
+                          bid.status === "winning"
+                            ? "bg-green-100 text-green-700"
+                            : bid.status === "won"
+                              ? "bg-amber-100 text-amber-700"
+                              : bid.status === "outbid"
+                                ? "bg-orange-100 text-orange-700"
+                                : bid.status === "lost"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
+                        {bid.status === "winning"
+                          ? "🏆 Winning"
+                          : bid.status === "won"
+                            ? "✅ Won"
+                            : bid.status === "outbid"
+                              ? "⚠️ Outbid"
+                              : bid.status === "lost"
+                                ? "Lost"
+                                : bid.status || "Active"}
                       </span>
                       {bid.auction?.status === "live" && (
-                        <p className="text-xs text-red-500 font-bold animate-pulse mt-0.5">🔴 Live</p>
+                        <p className="text-xs text-red-500 font-bold animate-pulse mt-0.5">
+                          🔴 Live
+                        </p>
                       )}
                     </div>
                   </button>
@@ -380,7 +494,9 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
 
         {/* Quick Actions */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-          <h3 className="font-black text-slate-900 text-sm mb-3">Quick Actions</h3>
+          <h3 className="font-black text-slate-900 text-sm mb-3">
+            Quick Actions
+          </h3>
           <div className="grid grid-cols-2 gap-3">
             {showSellerView && (
               <>
@@ -389,14 +505,18 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                   className="flex flex-col items-center gap-2 p-3 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all group"
                 >
                   <Plus className="size-6 text-blue-600 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-bold text-slate-700">Add Property</span>
+                  <span className="text-xs font-bold text-slate-700">
+                    Add Property
+                  </span>
                 </button>
                 <button
                   onClick={() => navigate("/properties")}
                   className="flex flex-col items-center gap-2 p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all group"
                 >
                   <Eye className="size-6 text-slate-600 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-bold text-slate-700">Browse Properties</span>
+                  <span className="text-xs font-bold text-slate-700">
+                    Browse Properties
+                  </span>
                 </button>
               </>
             )}
@@ -407,14 +527,18 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                   className="flex flex-col items-center gap-2 p-3 bg-green-50 hover:bg-green-100 rounded-xl transition-all group"
                 >
                   <Gavel className="size-6 text-green-600 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-bold text-slate-700">Live Auctions</span>
+                  <span className="text-xs font-bold text-slate-700">
+                    Live Auctions
+                  </span>
                 </button>
                 <button
                   onClick={() => navigate("/properties")}
                   className="flex flex-col items-center gap-2 p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all group"
                 >
                   <Eye className="size-6 text-slate-600 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-bold text-slate-700">Browse Properties</span>
+                  <span className="text-xs font-bold text-slate-700">
+                    Browse Properties
+                  </span>
                 </button>
               </>
             )}
@@ -435,7 +559,9 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
               className="flex flex-col items-center gap-2 p-3 bg-orange-50 hover:bg-orange-100 rounded-xl transition-all group"
             >
               <User className="size-6 text-orange-600 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-bold text-slate-700">My Profile</span>
+              <span className="text-xs font-bold text-slate-700">
+                My Profile
+              </span>
             </button>
           </div>
         </div>
@@ -474,14 +600,24 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                     iconBg: "bg-blue-100",
                     iconColor: "text-blue-600",
                     text: `Listed ${p.propertyTitle}`,
-                    sub: p.approvalStatus === "approved" ? "✅ Approved" :
-                         p.approvalStatus === "pending" ? "⏳ Pending review" : "❌ Rejected",
+                    sub:
+                      p.approvalStatus === "approved"
+                        ? "✅ Approved"
+                        : p.approvalStatus === "pending"
+                          ? "⏳ Pending review"
+                          : "❌ Rejected",
                     time: p.createdAt,
                   });
                 });
               }
 
-              const buyerNotifTypes = ["bid", "bid_won", "offer", "auction", "auction_live"];
+              const buyerNotifTypes = [
+                "bid",
+                "bid_won",
+                "offer",
+                "auction",
+                "auction_live",
+              ];
               const sellerNotifTypes = ["property_sold", "system", "property"];
               const isNeutralType = (t: string) =>
                 !buyerNotifTypes.includes(t) && !sellerNotifTypes.includes(t);
@@ -496,22 +632,37 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
               viewFilteredNotifs.slice(0, 3).forEach((notif: any) => {
                 activities.push({
                   id: notif._id + "-notif",
-                  icon: notif.type === "bid_won" ? Trophy :
-                        notif.type === "bid" ? Gavel : MessageSquare,
-                  iconBg: notif.color === "green" ? "bg-green-100" :
-                          notif.color === "orange" ? "bg-orange-100" :
-                          notif.color === "red" ? "bg-red-100" : "bg-blue-100",
-                  iconColor: notif.color === "green" ? "text-green-600" :
-                             notif.color === "orange" ? "text-orange-600" :
-                             notif.color === "red" ? "text-red-600" : "text-blue-600",
+                  icon:
+                    notif.type === "bid_won"
+                      ? Trophy
+                      : notif.type === "bid"
+                        ? Gavel
+                        : MessageSquare,
+                  iconBg:
+                    notif.color === "green"
+                      ? "bg-green-100"
+                      : notif.color === "orange"
+                        ? "bg-orange-100"
+                        : notif.color === "red"
+                          ? "bg-red-100"
+                          : "bg-blue-100",
+                  iconColor:
+                    notif.color === "green"
+                      ? "text-green-600"
+                      : notif.color === "orange"
+                        ? "text-orange-600"
+                        : notif.color === "red"
+                          ? "text-red-600"
+                          : "text-blue-600",
                   text: notif.message,
                   time: notif.createdAt,
                   link: notif.link,
                 });
               });
 
-              activities.sort((a, b) =>
-                new Date(b.time).getTime() - new Date(a.time).getTime()
+              activities.sort(
+                (a, b) =>
+                  new Date(b.time).getTime() - new Date(a.time).getTime(),
               );
 
               if (activities.length === 0) {
@@ -527,22 +678,36 @@ export default function OverviewTab({ onTabChange }: OverviewTabProps) {
                 const Icon = activity.icon;
                 const content = (
                   <div className="flex items-start gap-3 p-3 hover:bg-slate-50 transition-all">
-                    <div className={`size-9 rounded-full ${activity.iconBg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                    <div
+                      className={`size-9 rounded-full ${activity.iconBg} flex items-center justify-center flex-shrink-0 mt-0.5`}
+                    >
                       <Icon className={`size-4 ${activity.iconColor}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-700 leading-snug">{activity.text}</p>
+                      <p className="text-sm font-bold text-slate-700 leading-snug">
+                        {activity.text}
+                      </p>
                       {activity.sub && (
-                        <p className="text-xs text-slate-500 mt-0.5">{activity.sub}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {activity.sub}
+                        </p>
                       )}
                       <p className="text-xs text-slate-400 mt-1">
-                        {new Date(activity.time).toLocaleDateString()} {new Date(activity.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        {new Date(activity.time).toLocaleDateString()}{" "}
+                        {new Date(activity.time).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </p>
                     </div>
                   </div>
                 );
                 return activity.link ? (
-                  <button key={activity.id} onClick={() => navigate(activity.link)} className="w-full text-left">
+                  <button
+                    key={activity.id}
+                    onClick={() => navigate(activity.link)}
+                    className="w-full text-left"
+                  >
                     {content}
                   </button>
                 ) : (

@@ -79,7 +79,7 @@ export default function VirtualTourModal({
                 <div>
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-full mb-4 shadow-xl">
                     <Video className="size-5 animate-pulse" />
-                    <span className="text-sm font-bold">360° Virtual Tour</span>
+                    <span className="text-sm font-bold">Video Tour</span>
                   </div>
                   <h3 className="text-3xl font-black text-white mb-2">{property.propertyTitle}</h3>
                   <div className="flex items-center gap-2 text-white/80">

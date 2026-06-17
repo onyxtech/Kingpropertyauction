@@ -14,6 +14,7 @@ import { startAuctionWorker, stopAuctionWorker } from "./modules/auction/auction
 import { startBidWorker, stopBidWorker } from "./modules/bid/bid.worker.js";
 import { seedDefaultKnowledge, fixKnowledgeURLs } from "./modules/knowledge/knowledge.service.js";
 import { resetAllTemplatesToDefault } from "./modules/notifications/template.service.js";
+import "./modules/notifications/trigger.service.js";
 import { startCampaignWorker, stopCampaignWorker } from "./modules/campaign/campaign.worker.js";
 import { seedDefaultMenus, patchAdminSidebarItems } from "./modules/menu/menu.service.js";
 import User from "./modules/user/user.model.js";

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllUsers, updateUserStatus, updateUser, getUserById, requestRoleSwitch, switchActiveView, reviewRoleRequest, uploadIdDocument, verifyIdDocument } from './user.controller.js';
+import { getAllUsers, updateUserStatus, updateUser, getUserById, requestRoleSwitch, switchActiveView, reviewRoleRequest, uploadIdDocument, verifyIdDocument, deleteIdDocument } from './user.controller.js';
 import { protect } from '../../middlewares/auth.middleware.js';
 import { authorize } from '../../middlewares/role.middleware.js';
 import { uploadIdDocument as uploadIdDoc } from '../../middlewares/upload.middleware.js';
@@ -28,6 +28,13 @@ router.put(
   protect,
   authorize("admin"),
   verifyIdDocument,
+);
+
+// Delete ID document
+router.delete(
+  "/delete-id-document",
+  protect,
+  deleteIdDocument,
 );
 
 export default router;

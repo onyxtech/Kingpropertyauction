@@ -77,6 +77,10 @@ export const getProperties = async (query = {}) => {
     filter["location.city"] = locRegex;
   }
   if (auctionStatus) filter["auctionDetails.auctionStatus"] = auctionStatus;
+  // Exclude sold properties for public views
+  if (query.excludeSold === "true") {
+    filter.propertyStatus = { $ne: "sold" };
+  }
 
   if (query.auctionSlug) {
     // Find the auction by slug, then filter properties by its property IDs

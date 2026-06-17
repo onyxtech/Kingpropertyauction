@@ -2,7 +2,7 @@ import { mediaUrl } from "@/lib/mediaUrl";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { showSuccess, showError } from "@/lib/toast";
-import { CheckCircle, AlertCircle, Search } from "lucide-react";
+import { CheckCircle, AlertCircle, Search, Video, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { useAuctionSocket } from "@/hooks/useAuctionSocket";
@@ -15,7 +15,6 @@ import { useAuthApi } from "@/features/auth/api/useAuthApi";
 import AuthModal from "@/features/shared/components/AuthModal";
 import HeroSlider from "../components/HeroSlider";
 import PropertyFilters from "../components/PropertyFilters";
-import VirtualTourModal from "../components/VirtualTourModal";
 import ShareModal from "../components/ShareModal";
 import PropertyGrid from "../components/PropertyGrid";
 import BidModalWrapper from "../components/BidModalWrapper";
@@ -28,13 +27,11 @@ export default function Website() {
   const authApi = useAuthApi();
   const [activeTab, setActiveTab] = useState("all");
   const [bidModalOpen, setBidModalOpen] = useState(false);
-  const [virtualTourOpen, setVirtualTourOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [bidAmount, setBidAmount] = useState("");
   const [bidSuccess, setBidSuccess] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [tourPlaying, setTourPlaying] = useState(false);
-  const [activeRoom, setActiveRoom] = useState("living");
+  const [videoTourOpen, setVideoTourOpen] = useState(false);
   const [wishlistedProperties, setWishlistedProperties] = useState<string[]>(
     [],
   );
@@ -79,7 +76,7 @@ export default function Website() {
 
   const { useGetProperties } = usePropertyApi();
   const { data: propertiesData, isLoading: propertiesLoading } =
-    useGetProperties({ page: propertyPage, pageSize: 12 });
+  useGetProperties({ page: propertyPage, pageSize: 12, excludeSold: "true" });
   const properties = propertiesData?.data || [];
   const totalPropertiesCount = propertiesData?.total || 0;
   const hasMore = allProperties.length < totalPropertiesCount;
@@ -142,7 +139,7 @@ export default function Website() {
             name: result.data.user.fullName,
             email: result.data.user.email,
             role: result.data.user.role,
-            permissions: result.data.user.permissions,  
+            permissions: result.data.user.permissions,
           });
           setShowAuthModal(false);
           showNotification("Logged in successfully!", "success");
@@ -178,7 +175,7 @@ export default function Website() {
             name: result.data.user.fullName,
             email: result.data.user.email,
             role: result.data.user.role,
-            permissions: result.data.user.permissions, 
+            permissions: result.data.user.permissions,
           });
           setShowAuthModal(false);
           showNotification("Account created successfully!", "success");
@@ -315,11 +312,9 @@ export default function Website() {
     }
   };
 
-  const handleOpenVirtualTour = (property: any) => {
+  const handleOpenVideoTour = (property: any) => {
     setSelectedProperty(property);
-    setVirtualTourOpen(true);
-    setTourPlaying(false);
-    setActiveRoom("living");
+    setVideoTourOpen(true);
   };
 
   const roomImages: Record<string, string> = {
@@ -490,7 +485,7 @@ export default function Website() {
           onBid={handlePlaceBid}
           onWishlist={handleToggleWishlist}
           onShare={handleShareProperty}
-          onTour={handleOpenVirtualTour}
+          onTour={handleOpenVideoTour}
           onNavigate={(path) => navigate(path)}
           onAuctionEnded={() =>
             queryClient.invalidateQueries({ queryKey: ["auctions"] })
@@ -509,22 +504,78 @@ export default function Website() {
         onSubmit={handleSubmitBid}
       />
 
-      <VirtualTourModal
-        show={virtualTourOpen}
-        property={selectedProperty}
-        tourPlaying={tourPlaying}
-        setTourPlaying={setTourPlaying}
-        activeRoom={activeRoom}
-        setActiveRoom={setActiveRoom}
-        roomImages={roomImages}
-        getPropertyImage={getPropertyImage}
-        onClose={() => setVirtualTourOpen(false)}
-        onShare={() => {
-          setPropertyToShare(selectedProperty);
-          setShareModalOpen(true);
-        }}
-        onNavigate={(path) => navigate(path)}
-      />
+      {/* Video Tour Modal */}
+      {videoTourOpen && selectedProperty && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-6"
+          onClick={() => setVideoTourOpen(false)}
+        >
+          <div
+            className="bg-white rounded-3xl overflow-hidden max-w-4xl w-full shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-red-600 to-orange-600 p-5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Video className="size-5 text-white" />
+                <h3 className="text-xl font-black text-white">Video Tour</h3>
+              </div>
+              <button
+                onClick={() => setVideoTourOpen(false)}
+                className="size-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30"
+              >
+                <X className="size-5 text-white" />
+              </button>
+            </div>
+            <div className="aspect-video bg-black relative">
+              <video
+                src={mediaUrl(
+                  selectedProperty.media?.propertyVideos?.[0] ||
+                    selectedProperty.media?.propertyVideo,
+                )}
+                controls
+                autoPlay
+                className="w-full h-full"
+              />
+              {/* Watermark overlay */}
+              <div className="absolute bottom-12 right-4 pointer-events-none select-none z-10">
+                <div
+                  className="flex flex-col items-end"
+                  style={{ opacity: 0.75 }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "'Arial Black', Arial, sans-serif",
+                      fontWeight: 900,
+                      fontSize: "clamp(10px, 1.8vw, 18px)",
+                      color: "rgba(255,255,255,0.90)",
+                      letterSpacing: "2px",
+                      textShadow:
+                        "1px 1px 3px rgba(0,0,0,0.8), -1px -1px 3px rgba(0,0,0,0.8), 1px -1px 3px rgba(0,0,0,0.8), -1px 1px 3px rgba(0,0,0,0.8)",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    ♛ KING PROPERTY AUCTION
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Arial, sans-serif",
+                      fontWeight: 700,
+                      fontSize: "clamp(8px, 1.2vw, 13px)",
+                      color: "rgba(255,215,0,0.90)",
+                      letterSpacing: "1px",
+                      textShadow:
+                        "1px 1px 2px rgba(0,0,0,0.8), -1px -1px 2px rgba(0,0,0,0.8)",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    kingpropertyauction.com
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ShareModal
         show={shareModalOpen}

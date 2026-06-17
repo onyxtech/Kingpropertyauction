@@ -128,7 +128,7 @@ export default function EditUserModal({ user, onClose }: EditUserModalProps) {
                 className="w-full pl-10 pr-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="buyer">Buyer</option>
-                <option value="seller">Seller</option>
+                <option value="seller">Owner</option>
                 <option value="agent">Agent</option>
                 <option value="admin">Administrator</option>
               </select>

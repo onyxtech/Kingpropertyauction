@@ -4,12 +4,14 @@ import { useState } from "react";
 import PublicLayout from "@/features/shared/layout/PublicLayout";
 import { apiClient } from "@/lib/apiClient";
 import { showSuccess, showError } from "@/lib/toast";
+import { useNavigate } from "react-router";
 
 export default function BuyingOverview() {
   const [showGetStartedModal, setShowGetStartedModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -96,7 +98,7 @@ export default function BuyingOverview() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md rounded-full mb-6 border-2 border-white/30 shadow-xl">
               <Sparkles className="size-4 text-yellow-300 animate-pulse" />
-              <span className="text-sm font-bold text-white">🏠 Start Your Property Journey Today</span>
+              <span className="text-sm font-bold text-white">🏠 Register / Login</span>
             </div>
             
             <h1 className="text-6xl font-black text-white mb-6 leading-tight drop-shadow-lg">
@@ -194,9 +196,9 @@ export default function BuyingOverview() {
             </div>
             <button
               className="w-full py-5 bg-white text-indigo-600 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105"
-              onClick={() => setShowGetStartedModal(true)}
+             onClick={() => navigate("/register?reason=buyer")}
             >
-              Get Started Now
+              Register / Login
             </button>
           </div>
         </div>

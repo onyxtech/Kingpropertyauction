@@ -171,7 +171,7 @@ export default function Properties() {
                     {[
                       "Property",
                       "Location",
-                      "Seller",
+                      "Owner",
                       "Price",
                       "Status",
                       "Date",

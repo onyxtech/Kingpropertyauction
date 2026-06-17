@@ -12,6 +12,8 @@ import {
   AlertCircle,
   FileText,
   Sparkles,
+  Info,
+  ExternalLink,
 } from "lucide-react";
 import AuctionTimer from "@/features/shared/components/AuctionTimer";
 import { formatUKDateTime } from "@/features/shared/utils/dateUtils";
@@ -176,28 +178,38 @@ export default function PropertyInfo({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Opening Price - always shown */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200">
             <div className="text-sm font-bold text-blue-900 mb-2">
-              {isDirectSale ? "Asking Price" : "Starting Price"}
+              {isDirectSale ? "Asking Price" : "Opening Price"}
             </div>
             <div className="text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               {formatPrice(startingPrice)}
             </div>
           </div>
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-emerald-200">
-            <div className="text-sm font-bold text-emerald-900 mb-2">
-              {isDirectSale
-                ? "Buy Now Price"
-                : isAuctionType && !isInLiveAuction
-                  ? "Starting Bid"
-                  : "Current Bid"}
+
+          {/* Current Bid - only shown when bids exist */}
+          {property.totalBids > 0 ? (
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-emerald-200">
+              <div className="text-sm font-bold text-emerald-900 mb-2">
+                Current Bid
+              </div>
+              <div className="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                {formatPrice(currentBid)}
+              </div>
             </div>
-            <div className="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-              {isDirectSale
-                ? formatPrice(buyNowPrice || startingPrice)
-                : formatPrice(currentBid)}
+          ) : (
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-emerald-200">
+              <div className="text-sm font-bold text-emerald-900 mb-2">
+                {isDirectSale ? "Buy Now Price" : "Opening Price"}
+              </div>
+              <div className="text-4xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                {isDirectSale
+                  ? formatPrice(buyNowPrice || startingPrice)
+                  : formatPrice(startingPrice)}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {isAuctionType && (
@@ -317,6 +329,47 @@ export default function PropertyInfo({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Property Details */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
+        <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
+          <Info className="size-6 text-blue-600" />
+          Property Details
+        </h2>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border-2 border-blue-100">
+            <p className="text-sm font-bold text-blue-600 mb-1">Status</p>
+            <p className="text-lg font-bold text-slate-900">
+              {property.propertyStatus === "sold" ? "🎉 Sold" : "✅ Available"}
+            </p>
+          </div>
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-5 border-2 border-purple-100">
+            <p className="text-sm font-bold text-purple-600 mb-1">Type</p>
+            <p className="text-lg font-bold text-slate-900 capitalize">
+              {property.propertyType || "N/A"}
+            </p>
+          </div>
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-5 border-2 border-emerald-100">
+            <p className="text-sm font-bold text-emerald-600 mb-1">
+              Occupation
+            </p>
+            <p className="text-lg font-bold text-slate-900">
+              {property.propertyStatus === "sold" ? "Occupied" : "Vacant"}
+            </p>
+          </div>
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border-2 border-amber-100">
+            <p className="text-sm font-bold text-amber-600 mb-1">Council Tax</p>
+            <a
+              href={`https://www.saa.gov.uk/search/?SEARCHED=1&SEARCH_TABLE=council_tax&SEARCH_TERM=${encodeURIComponent(property.location?.postalCode || "")}#results`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-lg font-black text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            >
+              Search <ExternalLink className="size-4" />
+            </a>
+          </div>
+        </div>
       </div>
 
       {/* Description */}
@@ -501,6 +554,60 @@ export default function PropertyInfo({
           onToggle={onToggleBidHistory}
         />
       )}
+
+      {/* Map & Location */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
+        <h2 className="text-2xl font-black text-slate-900 mb-4 flex items-center gap-3">
+          <MapPin className="size-6 text-red-500" />
+          Map & Location
+        </h2>
+        <p className="text-slate-600 font-medium mb-2">
+          {property.location?.streetAddress}, {property.location?.city},{" "}
+          {property.location?.area}, {property.location?.postalCode}
+        </p>
+        <div className="flex flex-wrap gap-3 mt-4">
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+              [
+                property.location?.streetAddress,
+                property.location?.city,
+                property.location?.postalCode,
+              ]
+                .filter(Boolean)
+                .join(", "),
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all flex items-center gap-2"
+          >
+            <MapPin className="size-4" /> Map
+          </a>
+          <a
+            href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(
+              [property.location?.streetAddress, property.location?.city]
+                .filter(Boolean)
+                .join(", "),
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all flex items-center gap-2"
+          >
+            🚶 Street View
+          </a>
+          <a
+            href={`https://www.google.com/maps/@?api=1&map_action=map&basemap=satellite&query=${encodeURIComponent(
+              [property.location?.streetAddress, property.location?.city]
+                .filter(Boolean)
+                .join(", "),
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all flex items-center gap-2"
+          >
+            🛰️ Satellite
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

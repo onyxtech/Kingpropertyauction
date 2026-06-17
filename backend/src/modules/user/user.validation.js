@@ -19,7 +19,7 @@ export const registerSchema = Joi.object({
     .items(
       Joi.object({
         docType: Joi.string()
-          .valid("driving_license", "passport", "other_id")
+          .valid("driving_license", "passport", "proof_of_address", "other_id")
           .optional(),
         fileName: Joi.string().optional(),
         originalName: Joi.string().optional(),

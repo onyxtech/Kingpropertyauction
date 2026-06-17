@@ -44,6 +44,8 @@ export default function ViewAllLots() {
     search: urlSearch || undefined,
     page: lotsPage,
     pageSize: 12,
+    // Only exclude sold for general browsing, not when viewing a specific auction
+    ...(slug ? {} : { excludeSold: "true" }),
   } as any);
 
   const lots: any[] = lotsData?.data || [];
