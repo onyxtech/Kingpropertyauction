@@ -196,6 +196,45 @@ export default function RegisterForm() {
       return;
     }
 
+    // Require ID documents for agent and owner
+    if (selectedRole === "agent" || selectedRole === "seller") {
+      if (idDocuments.length === 0) {
+        showError(
+          "Documents Required",
+          "Please upload your ID verification documents",
+        );
+        return;
+      }
+      const hasPhotoId = idDocuments.some(
+        (doc) =>
+          doc.docType === "driving_license" || doc.docType === "passport",
+      );
+      const hasProofOfAddress = idDocuments.some(
+        (doc) => doc.docType === "proof_of_address",
+      );
+      if (!hasPhotoId && !hasProofOfAddress) {
+        showError(
+          "Documents Required",
+          "Please upload a Photo ID and a Proof of Address",
+        );
+        return;
+      }
+      if (!hasPhotoId) {
+        showError(
+          "Photo ID Required",
+          "Please upload a Driving License or Passport",
+        );
+        return;
+      }
+      if (!hasProofOfAddress) {
+        showError(
+          "Proof of Address Required",
+          "Please upload a utility bill or bank statement",
+        );
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const body: any = {

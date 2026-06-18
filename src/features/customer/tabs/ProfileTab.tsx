@@ -893,6 +893,69 @@ export default function ProfileTab() {
           <h3 className="font-black text-slate-900 text-lg">
             🪪 ID Verification Documents
           </h3>
+
+          {/* Warning banner for missing documents */}
+          {(() => {
+            const agentDocs =
+              (freshProfile as any)?.agentDetails?.idDocuments || [];
+            const ownerDocs = (freshProfile as any)?.ownerDocuments || [];
+            const allDocs = [...agentDocs, ...ownerDocs];
+            const hasPhotoId = allDocs.some(
+              (d: any) =>
+                d.docType === "driving_license" || d.docType === "passport",
+            );
+            const hasProofOfAddress = allDocs.some(
+              (d: any) => d.docType === "proof_of_address",
+            );
+
+            if (allDocs.length === 0) {
+              return (
+                <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl flex items-start gap-3">
+                  <AlertCircle className="size-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-red-700">
+                      Verification Required
+                    </p>
+                    <p className="text-sm text-red-600 mt-1">
+                      You must upload a Photo ID (Driving License or Passport)
+                      and a Proof of Address to verify your account.
+                    </p>
+                  </div>
+                </div>
+              );
+            } else if (!hasPhotoId) {
+              return (
+                <div className="p-4 bg-amber-50 border-2 border-amber-200 rounded-xl flex items-start gap-3">
+                  <AlertCircle className="size-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-amber-700">
+                      Photo ID Required
+                    </p>
+                    <p className="text-sm text-amber-600 mt-1">
+                      Please upload a Driving License or Passport.
+                    </p>
+                  </div>
+                </div>
+              );
+            } else if (!hasProofOfAddress) {
+              return (
+                <div className="p-4 bg-amber-50 border-2 border-amber-200 rounded-xl flex items-start gap-3">
+                  <AlertCircle className="size-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-amber-700">
+                      Proof of Address Required
+                    </p>
+                    <p className="text-sm text-amber-600 mt-1">
+                      Please upload a utility bill, bank statement, or council
+                      tax letter.
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           <p className="text-sm text-slate-500">
             Upload your driving license, passport, or other government-issued ID
             for verification.

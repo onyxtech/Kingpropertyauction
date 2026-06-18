@@ -1,5 +1,16 @@
 import { mediaUrl } from "@/lib/mediaUrl";
-import { MapPin, Bed, Bath, CheckCircle, AlertCircle, Gavel, Eye, ChevronDown, Building, Car } from "lucide-react";
+import {
+  MapPin,
+  Bed,
+  Bath,
+  CheckCircle,
+  AlertCircle,
+  Gavel,
+  Eye,
+  ChevronDown,
+  Building,
+  Car,
+} from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 import { useAuthStore } from "@/stores/authStore";
@@ -81,22 +92,30 @@ export default function LotCard({
         <div className="flex items-center flex-wrap gap-4 mb-6 pb-6 border-b-2 border-slate-100">
           <div className="flex items-center gap-2">
             <Bed className="size-4 text-blue-600" />
-            <span className="text-sm font-bold">{property.specifications?.bedrooms ?? '-'}</span>
+            <span className="text-sm font-bold">
+              {property.specifications?.bedrooms ?? "-"}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <Bath className="size-4 text-purple-600" />
-            <span className="text-sm font-bold">{property.specifications?.bathrooms ?? '-'}</span>
+            <span className="text-sm font-bold">
+              {property.specifications?.bathrooms ?? "-"}
+            </span>
           </div>
           {(property.specifications?.floors ?? 0) > 0 && (
             <div className="flex items-center gap-2">
               <Building className="size-4 text-green-600" />
-              <span className="text-sm font-bold">{property.specifications.floors} fl</span>
+              <span className="text-sm font-bold">
+                {property.specifications.floors} fl
+              </span>
             </div>
           )}
           {(property.specifications?.parkingSpaces ?? 0) > 0 && (
             <div className="flex items-center gap-2">
               <Car className="size-4 text-slate-600" />
-              <span className="text-sm font-bold">{property.specifications.parkingSpaces}P</span>
+              <span className="text-sm font-bold">
+                {property.specifications.parkingSpaces}P
+              </span>
             </div>
           )}
         </div>
@@ -106,7 +125,7 @@ export default function LotCard({
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-xs font-semibold text-slate-600 uppercase">
-                Current Bid
+                {property.totalBids > 0 ? "Current Bid" : "Guide Price"}
               </p>
               <p className="text-2xl font-black text-green-600">
                 £{currentBid.toLocaleString()}
@@ -155,8 +174,12 @@ export default function LotCard({
           {auction.status === "live" ? (
             isOwnProperty ? (
               <div className="flex-1 py-3.5 bg-slate-100 border-2 border-slate-200 rounded-xl text-center">
-                <p className="text-slate-600 font-bold text-sm">🏠 Your Property</p>
-                <p className="text-slate-400 text-xs">Cannot bid on own listing</p>
+                <p className="text-slate-600 font-bold text-sm">
+                  🏠 Your Property
+                </p>
+                <p className="text-slate-400 text-xs">
+                  Cannot bid on own listing
+                </p>
               </div>
             ) : (
               <button
@@ -228,7 +251,9 @@ export default function LotCard({
                           <span
                             className={`text-xs font-bold ${bid.status === "winning" ? "text-green-600" : "text-slate-500"}`}
                           >
-                            {bid.status === "winning" ? "🏆 Winning" : bid.status}
+                            {bid.status === "winning"
+                              ? "🏆 Winning"
+                              : bid.status}
                           </span>
                         </div>
                       </div>

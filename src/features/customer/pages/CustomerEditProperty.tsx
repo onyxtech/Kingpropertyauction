@@ -512,7 +512,7 @@ export default function CustomerEditProperty() {
           {step === 4 && <StepPricing form={form} updateField={updateField} />}
           {step === 5 && <StepAuction form={form} updateField={updateField} />}
           {step === 6 && <StepFeatures form={form} updateField={updateField} />}
-          {step === 7 && <StepLegal form={form} updateField={updateField} propertyId={id} />}
+          {step === 7 && <StepLegal form={form} updateField={updateField} propertyId={id} createdBy={property?.createdBy} />}
           {step === 8 && <StepSeller form={form} updateField={updateField} />}
           {step === 9 && (
             <StepMedia

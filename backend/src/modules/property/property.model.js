@@ -53,6 +53,8 @@ const propertySchema = new mongoose.Schema(
       area: { type: String, required: true },
       streetAddress: { type: String, required: true },
       postalCode: { type: String, required: true },
+      latitude: Number,
+      longitude: Number,
     },
 
     // 3. Property Specifications
@@ -139,13 +141,16 @@ const propertySchema = new mongoose.Schema(
         phone: { type: String },
         email: { type: String },
       },
-      privateDocuments: [{
-        docType: { type: String },
-        customLabel: { type: String },
-        url: { type: String },
-        originalName: { type: String },
-        uploadedAt: { type: Date, default: Date.now },
-      }],
+      privateDocuments: [
+        {
+          docType: { type: String },
+          customLabel: { type: String },
+          url: { type: String },
+          originalName: { type: String },
+          uploadedAt: { type: Date, default: Date.now },
+        },
+      ],
+      specialTerms: { type: String, default: "" }, 
     },
 
     // 8. Agent Information
@@ -214,13 +219,15 @@ propertySchema.index({ "location.city": 1 });
 propertySchema.index({ propertyType: 1 });
 propertySchema.index({ currentBid: 1 });
 
-propertySchema.pre('save', function(next) {
-  if (this.isModified('propertyTitle')) {
-    this.slug = this.propertyTitle
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-      + '-' + this._id.toString().slice(-6);
+propertySchema.pre("save", function (next) {
+  if (this.isModified("propertyTitle")) {
+    this.slug =
+      this.propertyTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "") +
+      "-" +
+      this._id.toString().slice(-6);
   }
   next();
 });

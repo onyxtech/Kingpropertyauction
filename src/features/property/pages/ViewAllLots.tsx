@@ -257,7 +257,7 @@ export default function ViewAllLots() {
                   ? "Highest Bid"
                   : lot.currentBid > 0
                     ? "Current Bid"
-                    : "Starting Price";
+                    : "Guide Price";
 
               // Find which auction this lot belongs to
               const lotAuction =
@@ -384,7 +384,7 @@ export default function ViewAllLots() {
                       <div className="space-y-2 mb-4">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold text-slate-600">
-                            Current Bid
+                            {lot.totalBids > 0 ? "Current Bid" : "Guide Price"}
                           </p>
                           <p className="text-lg font-black text-emerald-600">
                             {formatPrice(currentBid, lot.pricing?.currency)}

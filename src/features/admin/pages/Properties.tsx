@@ -169,12 +169,14 @@ export default function Properties() {
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
                     {[
+                      "Lot No",
                       "Property",
                       "Location",
                       "Owner",
+                      "Contact",
+                      "Agent",
                       "Price",
                       "Status",
-                      "Date",
                       "Actions",
                     ].map((h) => (
                       <th
@@ -192,6 +194,10 @@ export default function Properties() {
                       key={p._id}
                       className="hover:bg-slate-50 transition-colors"
                     >
+                      {/* Lot No */}
+                      <td className="px-4 py-3 text-xs font-bold text-slate-500">
+                        {p.propertyID || `LOT-${p._id?.slice(-6) || "—"}`}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {p.media?.[0] && (
@@ -218,6 +224,14 @@ export default function Properties() {
                         <p className="text-slate-400 text-xs">
                           {p.seller?.email}
                         </p>
+                      </td>
+                      {/* Contact */}
+                      <td className="px-4 py-3 text-xs text-slate-600">
+                        {p.sellerInfo?.agentContact || p.seller?.phone || "—"}
+                      </td>
+                      {/* Agent Company */}
+                      <td className="px-4 py-3 text-xs text-slate-600">
+                        {p.sellerInfo?.agentName || "—"}
                       </td>
                       <td className="px-4 py-3 font-bold text-slate-900">
                         {p.startingPrice

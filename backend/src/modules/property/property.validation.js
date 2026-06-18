@@ -8,7 +8,7 @@ export const createPropertySchema = Joi.object({
   propertyTitle: Joi.string().trim().max(200).required(),
   propertyDescription: Joi.string().max(5000).required(),
   propertyType: Joi.string()
-        .valid("house", "apartment", "land", "commercial", "farmhouse", "villa")
+    .valid("house", "apartment", "land", "commercial", "farmhouse", "villa")
     .required(),
   propertyCategory: Joi.string()
     .valid("residential", "commercial", "industrial")
@@ -32,8 +32,18 @@ export const createPropertySchema = Joi.object({
     bedrooms: Joi.number().integer().min(0).max(50).required(),
     bathrooms: Joi.number().integer().min(0).max(50).required(),
     floors: Joi.number().integer().min(0).max(200).allow("", null).optional(),
-    yearBuilt: Joi.number().integer().min(1800).max(new Date().getFullYear()).allow("", null).optional(),
-    parkingSpaces: Joi.number().integer().min(0).max(100).allow("", null).optional(),
+    yearBuilt: Joi.number()
+      .integer()
+      .min(1800)
+      .max(new Date().getFullYear())
+      .allow("", null)
+      .optional(),
+    parkingSpaces: Joi.number()
+      .integer()
+      .min(0)
+      .max(100)
+      .allow("", null)
+      .optional(),
     furnishedStatus: Joi.string()
       .valid("unfurnished", "semi-furnished", "fully-furnished")
       .default("unfurnished"),
@@ -43,7 +53,7 @@ export const createPropertySchema = Joi.object({
     propertyImages: Joi.array().items(Joi.string()).optional(),
     propertyVideos: Joi.array().items(Joi.string()).optional(),
     floorPlans: Joi.array().items(Joi.string()).optional(),
-    virtualTour: Joi.string().optional().allow('', null),
+    virtualTour: Joi.string().optional().allow("", null),
     legalDocuments: Joi.array().items(Joi.string()).optional(),
   }).optional(),
 
@@ -89,16 +99,20 @@ export const createPropertySchema = Joi.object({
       phone: Joi.string().allow("").optional(),
       email: Joi.string().allow("").optional(),
     }).optional(),
-    privateDocuments: Joi.array().items(
-      Joi.object({
-        _id: Joi.any().optional(),
-        docType: Joi.string().allow("").optional(),
-        customLabel: Joi.string().allow("").optional(),
-        url: Joi.string().allow("").optional(),
-        originalName: Joi.string().allow("").optional(),
-        uploadedAt: Joi.date().optional(),
-      })
-    ).optional().default([]),
+    privateDocuments: Joi.array()
+      .items(
+        Joi.object({
+          _id: Joi.any().optional(),
+          docType: Joi.string().allow("").optional(),
+          customLabel: Joi.string().allow("").optional(),
+          url: Joi.string().allow("").optional(),
+          originalName: Joi.string().allow("").optional(),
+          uploadedAt: Joi.date().optional(),
+        }),
+      )
+      .optional()
+      .default([]),
+    specialTerms: Joi.string().allow("").optional(),
   }).required(),
 
   sellerInfo: Joi.object({

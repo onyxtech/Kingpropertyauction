@@ -15,20 +15,49 @@ export const registerSchema = Joi.object({
     commissionRate: Joi.number().optional(),
     specialization: Joi.string().optional(),
   }).optional(),
-  idDocuments: Joi.array()
-    .items(
-      Joi.object({
-        docType: Joi.string()
-          .valid("driving_license", "passport", "proof_of_address", "other_id")
-          .optional(),
-        fileName: Joi.string().optional(),
-        originalName: Joi.string().optional(),
-        mimeType: Joi.string().optional(),
-        fileSize: Joi.number().optional(),
-        fileData: Joi.string().optional(),
+  idDocuments: Joi.when("role", {
+    is: Joi.valid("agent", "seller"),
+    then: Joi.array()
+      .items(
+        Joi.object({
+          docType: Joi.string()
+            .valid(
+              "driving_license",
+              "passport",
+              "proof_of_address",
+              "other_id",
+            )
+            .required(),
+          fileName: Joi.string().optional(),
+          originalName: Joi.string().optional(),
+          mimeType: Joi.string().optional(),
+          fileSize: Joi.number().optional(),
+          fileData: Joi.string().required(),
+        }),
+      )
+      .min(1)
+      .required()
+      .custom((docs, helpers) => {
+        const hasPhotoId = docs.some(
+          (d) => d.docType === "driving_license" || d.docType === "passport",
+        );
+        const hasProofOfAddress = docs.some(
+          (d) => d.docType === "proof_of_address",
+        );
+        if (!hasPhotoId) {
+          return helpers.error("any.custom", {
+            message: "A Photo ID (Driving License or Passport) is required",
+          });
+        }
+        if (!hasProofOfAddress) {
+          return helpers.error("any.custom", {
+            message: "A Proof of Address document is required",
+          });
+        }
+        return docs;
       }),
-    )
-    .optional(),
+    otherwise: Joi.array().optional(),
+  }),
   permissions: Joi.object({
     canBid: Joi.boolean().optional(),
     canListProperties: Joi.boolean().optional(),

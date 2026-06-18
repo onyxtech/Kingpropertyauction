@@ -252,7 +252,7 @@ export default function PropertyCard({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-600">
-                  Current Bid
+                  {property.totalBids > 0 ? "Current Bid" : "Guide Price"}
                 </span>
                 {property.totalBids > 0 && (
                   <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded-full">
@@ -324,7 +324,7 @@ export default function PropertyCard({
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500 font-medium">
-                      Current Bid
+                      {property.totalBids > 0 ? "Current Bid" : "Guide Price"}
                     </span>
                     <span className="font-black text-green-600">
                       {formatPrice(
@@ -382,9 +382,7 @@ export default function PropertyCard({
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500 font-medium">
-                      {property.currentBid > 0
-                        ? "Current Bid"
-                        : "Starting Price"}
+                      {property.totalBids > 0 ? "Current Bid" : "Guide Price"}
                     </span>
                     <span className="font-black text-emerald-600">
                       {formatPrice(

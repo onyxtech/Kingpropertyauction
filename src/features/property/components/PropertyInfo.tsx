@@ -181,7 +181,7 @@ export default function PropertyInfo({
           {/* Opening Price - always shown */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200">
             <div className="text-sm font-bold text-blue-900 mb-2">
-              {isDirectSale ? "Asking Price" : "Opening Price"}
+              {isDirectSale ? "Asking Price" : "Guide Price"}
             </div>
             <div className="text-4xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               {formatPrice(startingPrice)}
@@ -405,6 +405,24 @@ export default function PropertyInfo({
         </div>
       )}
 
+
+      
+      {/* Special Terms of Sale */}
+      {property.legalInfo?.specialTerms && (
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
+          <h2 className="text-2xl font-black text-slate-900 mb-4 flex items-center gap-3">
+            <FileText className="size-6 text-red-600" />
+            Special Terms of Sale
+          </h2>
+          <pre className="text-slate-700 leading-relaxed text-lg font-sans whitespace-pre-wrap">
+            {property.legalInfo.specialTerms}
+          </pre>
+          <p className="text-xs text-slate-400 mt-4 italic">
+            * These special conditions supersede the general terms of sale.
+          </p>
+        </div>
+      )}
+
       {/* Property Videos */}
       {(property?.media?.propertyVideos?.length > 0 ||
         property?.media?.propertyVideo) && (
@@ -567,40 +585,68 @@ export default function PropertyInfo({
           {property.location?.area}, {property.location?.postalCode}
         </p>
         <div className="flex flex-wrap gap-3 mt-4">
+          {/* Map View */}
           <a
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-              [
-                property.location?.streetAddress,
-                property.location?.city,
-                property.location?.postalCode,
-              ]
-                .filter(Boolean)
-                .join(", "),
-            )}`}
+            href={
+              property.location?.latitude && property.location?.longitude
+                ? `https://www.google.com/maps?q=${property.location.latitude},${property.location.longitude}&z=16`
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    [
+                      property.location?.streetAddress,
+                      property.location?.city,
+                      property.location?.postalCode,
+                      "UK",
+                    ]
+                      .filter(Boolean)
+                      .join(", "),
+                  )}`
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all flex items-center gap-2"
           >
             <MapPin className="size-4" /> Map
           </a>
+
+          {/* Street View */}
           <a
-            href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(
-              [property.location?.streetAddress, property.location?.city]
-                .filter(Boolean)
-                .join(", "),
-            )}`}
+            href={
+              property.location?.latitude && property.location?.longitude
+                ? `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${property.location.latitude},${property.location.longitude}`
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    [
+                      property.location?.streetAddress,
+                      property.location?.city,
+                      property.location?.postalCode,
+                      "UK",
+                    ]
+                      .filter(Boolean)
+                      .join(", "),
+                  )}`
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all flex items-center gap-2"
           >
             🚶 Street View
           </a>
+
+          {/* Satellite View */}
           <a
-            href={`https://www.google.com/maps/@?api=1&map_action=map&basemap=satellite&query=${encodeURIComponent(
-              [property.location?.streetAddress, property.location?.city]
-                .filter(Boolean)
-                .join(", "),
-            )}`}
+            href={
+              property.location?.latitude && property.location?.longitude
+                ? `https://www.google.com/maps/@${property.location.latitude},${property.location.longitude},19z/data=!3m1!1e3`
+                : `https://maps.google.com/maps?q=${encodeURIComponent(
+                    [
+                      property.location?.streetAddress,
+                      property.location?.city,
+                      property.location?.postalCode,
+                      "UK",
+                    ]
+                      .filter(Boolean)
+                      .join(", "),
+                  )}&t=k&z=19`
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all flex items-center gap-2"

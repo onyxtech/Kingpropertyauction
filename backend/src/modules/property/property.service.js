@@ -101,7 +101,7 @@ export const getProperties = async (query = {}) => {
       .sort(sortBy)
       .skip(skip)
       .limit(limit)
-      .populate("createdBy", "name email")
+      .populate("createdBy", "name email phone agentDetails")
       .populate("winningBidder", "name email"),
     Property.countDocuments(filter),
   ]);
@@ -129,7 +129,7 @@ export const getPropertyById = async (id) => {
 
   const property = await Property.findById(id).populate(
     "createdBy",
-    "name email",
+    "name email phone address",
   );
   if (!property) throw new Error("Property not found");
 

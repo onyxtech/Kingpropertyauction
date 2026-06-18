@@ -11,6 +11,7 @@ import {
   CreditCard,
   TrendingUp,
   Send,
+  Download,
 } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 import RevenueChart from "../components/analytics/RevenueChart";
@@ -111,90 +112,7 @@ export default function Analytics() {
             </div>
 
             {/* Modal Body */}
-            <form
-              className="p-8 space-y-6"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.target as HTMLFormElement;
-                const formData = new FormData(form);
-                const type = formData.get("reportType") as string;
-                const startDate = formData.get("startDate") as string;
-                const endDate = formData.get("endDate") as string;
-
-                if (!type) {
-                  showToast("Please select a report type");
-                  return;
-                }
-
-                try {
-                  const params = new URLSearchParams();
-                  params.set("type", type);
-                  if (startDate) params.set("startDate", startDate);
-                  if (endDate) params.set("endDate", endDate);
-
-                  const result = await apiClient.fetch(
-                    `/analytics/export?${params}`,
-                  );
-
-                  if (result.success && result.data) {
-                    // Convert data to CSV
-                    const csvData = result.data.data || [];
-                    let csv = "";
-
-                    if (csvData.length > 0) {
-                      // Headers from first object keys
-                      const headers = Object.keys(csvData[0]);
-                      csv += headers.join(",") + "\n";
-
-                      // Data rows
-                      csvData.forEach((row: any) => {
-                        csv +=
-                          headers
-                            .map((h) => {
-                              let val = row[h];
-                              if (val === null || val === undefined) val = "";
-                              val = String(val).replace(/"/g, '""');
-                              return `"${val}"`;
-                            })
-                            .join(",") + "\n";
-                      });
-                    } else {
-                      // Summary-only report (like financial)
-                      csv = `Report Type: ${result.data.type}\n`;
-                      csv += `Generated: ${new Date(result.data.generatedAt).toLocaleString()}\n`;
-                      csv += `Total Records: 0\n`;
-                      csv += `\nNo data available for the selected period.\n`;
-                    }
-
-                    // Download as CSV file
-                    const blob = new Blob([csv], {
-                      type: "text/csv;charset=utf-8;",
-                    });
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.href = url;
-                    link.download = `${type}-report-${new Date().toISOString().slice(0, 10)}.csv`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-
-                    const recordCount = csvData.length || 0;
-                    showToast(
-                      `Report downloaded! ${recordCount} records exported.`,
-                    );
-                  } else {
-                    showToast(
-                      result.message || "No data available for this report",
-                    );
-                  }
-                } catch (err: any) {
-                  showToast(err.message || "Error generating report");
-                }
-
-                setShowGenerateReportModal(false);
-              }}
-            >
+            <form className="p-8 space-y-6" id="report-form">
               {/* Report Type */}
               <div className="space-y-4">
                 <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
@@ -203,18 +121,17 @@ export default function Analytics() {
                 </h3>
                 <div className="grid md:grid-cols-2 gap-3">
                   {[
-                    { value: "sales", label: "Sales Report", icon: PoundSterling },
+                    {
+                      value: "property",
+                      label: "Property Listings",
+                      icon: Building2,
+                    },
                     {
                       value: "auction",
                       label: "Auction Performance",
                       icon: Gavel,
                     },
                     { value: "user", label: "User Activity", icon: Users },
-                    {
-                      value: "property",
-                      label: "Property Listings",
-                      icon: Building2,
-                    },
                     {
                       value: "leads",
                       label: "Lead Analytics",
@@ -230,26 +147,21 @@ export default function Analytics() {
                       label: "Financial Summary",
                       icon: CreditCard,
                     },
-                    {
-                      value: "marketing",
-                      label: "Marketing Analytics",
-                      icon: TrendingUp,
-                    },
-                  ].map((type) => (
+                  ].map((opt) => (
                     <label
-                      key={type.value}
+                      key={opt.value}
                       className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors border-2 border-transparent hover:border-green-300"
                     >
                       <input
                         type="radio"
                         name="reportType"
-                        value={type.value}
+                        value={opt.value}
                         className="size-5 accent-green-600"
-                        defaultChecked={type.value === "sales"}
+                        defaultChecked={opt.value === "property"}
                       />
-                      <type.icon className="size-5 text-green-600" />
+                      <opt.icon className="size-5 text-green-600" />
                       <span className="text-sm font-bold text-slate-700">
-                        {type.label}
+                        {opt.label}
                       </span>
                     </label>
                   ))}
@@ -287,19 +199,214 @@ export default function Analytics() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-4 pt-6 border-t-2 border-slate-100">
+              <div className="flex items-center gap-3 pt-6 border-t-2 border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowGenerateReportModal(false)}
-                  className="flex-1 px-6 py-4 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-all"
+                  className="flex-1 px-4 py-4 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-all"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  className="flex-1 px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold hover:scale-105 transition-all shadow-lg"
+                  type="button"
+                  onClick={async () => {
+                    const f = document.querySelector(
+                      "#report-form",
+                    ) as HTMLFormElement;
+                    if (!f) return;
+                    const fd = new FormData(f);
+                    const type = fd.get("reportType") as string;
+                    const startDate = fd.get("startDate") as string;
+                    const endDate = fd.get("endDate") as string;
+
+                    if (!type) {
+                      showToast("Please select a report type");
+                      return;
+                    }
+                    setShowGenerateReportModal(false);
+
+                    try {
+                      const params = new URLSearchParams();
+                      params.set("type", type);
+                      if (startDate) params.set("startDate", startDate);
+                      if (endDate) params.set("endDate", endDate);
+                      const result = await apiClient.fetch(
+                        `/analytics/export?${params}`,
+                      );
+                      if (!result.success || !result.data) {
+                        showToast("No data available");
+                        return;
+                      }
+
+                      const filename = `${type}-report-${new Date().toISOString().slice(0, 10)}`;
+                      let headers: string[] = [],
+                        rows: any[][] = [];
+                      if (result.data.data?.length > 0) {
+                        headers = Object.keys(result.data.data[0]);
+                        rows = result.data.data.map((r: any) =>
+                          headers.map((h) =>
+                            String(r[h] ?? "—").substring(0, 100),
+                          ),
+                        );
+                      } else if (type === "financial") {
+                        headers = ["Metric", "Value"];
+                        const rev = result.data.revenue || {};
+                        const kpi = result.data.kpi || {};
+                        rows = [
+                          [
+                            "Total Revenue",
+                            `£${(rev.reduce((s: number, m: any) => s + (m.revenue || 0), 0) || 0).toLocaleString()}`,
+                          ],
+                          [
+                            "Avg Property Value",
+                            `£${(kpi.avgPropertyValue || 0).toLocaleString()}`,
+                          ],
+                          ["Sell-through Rate", `${kpi.sellThroughRate || 0}%`],
+                          [
+                            "Avg Time to Sale",
+                            `${kpi.avgTimeToSale || 0} days`,
+                          ],
+                          [
+                            "Active Bidders This Month",
+                            kpi.activeBiddersThisMonth || 0,
+                          ],
+                          ["Revenue Change", `${kpi.revenueChange || 0}%`],
+                          ["Avg Bids Per Auction", kpi.avgBidsPerAuction || 0],
+                        ];
+                      } else {
+                        showToast("No records found");
+                        return;
+                      }
+
+                      let csv = headers.join(",") + "\n";
+                      rows.forEach((r: any[]) => {
+                        csv +=
+                          r
+                            .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+                            .join(",") + "\n";
+                      });
+                      const blob = new Blob([csv], {
+                        type: "text/csv;charset=utf-8;",
+                      });
+                      const a = document.createElement("a");
+                      a.href = URL.createObjectURL(blob);
+                      a.download = `${filename}.csv`;
+                      a.click();
+                      showToast(`✅ CSV Downloaded! ${rows.length} records`);
+                    } catch (err: any) {
+                      showToast("Error: " + err.message);
+                    }
+                  }}
+                  className="flex-1 px-4 py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
                 >
-                  Generate Report
+                  <FileText className="size-4" /> CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const f = document.querySelector(
+                      "#report-form",
+                    ) as HTMLFormElement;
+                    if (!f) return;
+                    const fd = new FormData(f);
+                    const type = fd.get("reportType") as string;
+                    const startDate = fd.get("startDate") as string;
+                    const endDate = fd.get("endDate") as string;
+
+                    if (!type) {
+                      showToast("Please select a report type");
+                      return;
+                    }
+                    setShowGenerateReportModal(false);
+
+                    try {
+                      const params = new URLSearchParams();
+                      params.set("type", type);
+                      if (startDate) params.set("startDate", startDate);
+                      if (endDate) params.set("endDate", endDate);
+                      const result = await apiClient.fetch(
+                        `/analytics/export?${params}`,
+                      );
+                      if (!result.success || !result.data) {
+                        showToast("No data available");
+                        return;
+                      }
+
+                      const filename = `${type}-report-${new Date().toISOString().slice(0, 10)}`;
+                      let headers: string[] = [],
+                        rows: any[][] = [];
+                      if (result.data.data?.length > 0) {
+                        headers = Object.keys(result.data.data[0]);
+                        rows = result.data.data.map((r: any) =>
+                          headers.map((h) =>
+                            String(r[h] ?? "—").substring(0, 100),
+                          ),
+                        );
+                      } else if (type === "financial") {
+                        headers = ["Metric", "Value"];
+                        const rev = result.data.revenue || {};
+                        const kpi = result.data.kpi || {};
+                        rows = [
+                          [
+                            "Total Revenue",
+                            `£${(rev.reduce((s: number, m: any) => s + (m.revenue || 0), 0) || 0).toLocaleString()}`,
+                          ],
+                          [
+                            "Avg Property Value",
+                            `£${(kpi.avgPropertyValue || 0).toLocaleString()}`,
+                          ],
+                          ["Sell-through Rate", `${kpi.sellThroughRate || 0}%`],
+                          [
+                            "Avg Time to Sale",
+                            `${kpi.avgTimeToSale || 0} days`,
+                          ],
+                          [
+                            "Active Bidders This Month",
+                            kpi.activeBiddersThisMonth || 0,
+                          ],
+                          ["Revenue Change", `${kpi.revenueChange || 0}%`],
+                          ["Avg Bids Per Auction", kpi.avgBidsPerAuction || 0],
+                        ];
+                      } else {
+                        showToast("No records found");
+                        return;
+                      }
+
+                      const { jsPDF } = await import("jspdf");
+                      const { default: autoTable } =
+                        await import("jspdf-autotable");
+                      const doc = new jsPDF();
+                      doc.setFontSize(16);
+                      doc.text(`${result.data.type || type} Report`, 14, 20);
+                      doc.setFontSize(10);
+                      doc.text(
+                        `Generated: ${new Date().toLocaleString()}`,
+                        14,
+                        28,
+                      );
+                      if (startDate)
+                        doc.text(
+                          `Period: ${startDate} — ${endDate || "Today"}`,
+                          14,
+                          34,
+                        );
+                      autoTable(doc, {
+                        head: [headers],
+                        body: rows,
+                        startY: startDate ? 42 : 34,
+                        styles: { fontSize: 8, cellPadding: 3 },
+                        headStyles: { fillColor: [37, 99, 235] },
+                        margin: { horizontal: 10 },
+                      });
+                      doc.save(`${filename}.pdf`);
+                      showToast(`✅ PDF Downloaded! ${rows.length} records`);
+                    } catch (err: any) {
+                      showToast("Error: " + err.message);
+                    }
+                  }}
+                  className="flex-1 px-4 py-4 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <Download className="size-4" /> PDF
                 </button>
               </div>
             </form>

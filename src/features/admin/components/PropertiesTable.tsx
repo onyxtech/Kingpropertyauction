@@ -114,22 +114,37 @@ export default function PropertiesTable() {
           <table className="w-full">
             <thead className="bg-slate-50 border-b-2 border-slate-100">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-black text-slate-700 uppercase">
+                  Lot No
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-black text-slate-700 uppercase">
                   Property
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-black text-slate-700 uppercase">
+                  Location
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-black text-slate-700 uppercase">
+                  Owner
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-black text-slate-700 uppercase">
+                  Contact
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-black text-slate-700 uppercase">
+                  Agent
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-black text-slate-700 uppercase">
                   Type
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-black text-slate-700 uppercase">
                   Price
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-black text-slate-700 uppercase">
                   Approval
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-black text-slate-700 uppercase">
                   Sale Status
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-black text-slate-700 uppercase">
+                <th className="px-4 py-3 text-left text-xs font-black text-slate-700 uppercase">
                   Actions
                 </th>
               </tr>
@@ -137,13 +152,13 @@ export default function PropertiesTable() {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-slate-500">
+                  <td colSpan={11} className="text-center py-8 text-slate-500">
                     Loading properties...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-slate-500">
+                  <td colSpan={11} className="text-center py-8 text-slate-500">
                     No properties found.
                   </td>
                 </tr>
@@ -153,22 +168,57 @@ export default function PropertiesTable() {
                     key={property._id}
                     className="hover:bg-slate-50 transition-colors"
                   >
-                    <td className="px-6 py-4">
+                    {/* Lot No */}
+                    <td className="px-4 py-3 text-xs font-bold text-slate-500">
+                      {property.propertyID || property._id?.slice(-6) || "—"}
+                    </td>
+                    {/* Property */}
+                    <td className="px-4 py-3">
                       <div>
                         <p className="font-bold text-slate-900 text-sm">
                           {property.propertyTitle}
                         </p>
-                        <p className="text-xs text-slate-500 font-medium">
-                          {property.location?.city}, {property.location?.area}
-                        </p>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    {/* Location */}
+                    <td className="px-4 py-3 text-xs text-slate-600">
+                      {typeof property.location === "object"
+                        ? `${property.location?.city || ""}, ${property.location?.state || ""}`
+                        : property.location || "—"}
+                    </td>
+                    {/* Owner */}
+                    <td className="px-4 py-3 text-xs">
+                      <p className="font-bold text-slate-800">
+                        {property.seller?.name ||
+                          property.createdBy?.name ||
+                          "—"}
+                      </p>
+                      <p className="text-slate-400 text-xs">
+                        {property.seller?.email ||
+                          property.createdBy?.email ||
+                          ""}
+                      </p>
+                    </td>
+                    {/* Contact */}
+                    <td className="px-4 py-3 text-xs text-slate-600">
+                      {property.sellerInfo?.agentContact ||
+                        property.createdBy?.phone ||
+                        "—"}
+                    </td>
+                    {/* Agent */}
+                    <td className="px-4 py-3 text-xs text-slate-600">
+                      {property.sellerInfo?.agentName ||
+                        property.createdBy?.name ||
+                        "—"}
+                    </td>
+                    {/* Type */}
+                    <td className="px-4 py-3">
                       <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold capitalize">
                         {property.propertyType}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900">
+                    {/* Price */}
+                    <td className="px-4 py-3 text-sm font-bold text-slate-900">
                       £
                       {(
                         property.pricing?.startingAuctionPrice ||
@@ -176,7 +226,8 @@ export default function PropertiesTable() {
                         0
                       ).toLocaleString()}
                     </td>
-                    <td className="px-6 py-4">
+                    {/* Approval */}
+                    <td className="px-4 py-3">
                       <span
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
                           property.approvalStatus === "approved"
@@ -189,7 +240,8 @@ export default function PropertiesTable() {
                         {property.approvalStatus || "pending"}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    {/* Sale Status */}
+                    <td className="px-4 py-3">
                       {property.propertyStatus === "sold" ? (
                         <span className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold">
                           Sold £
@@ -209,7 +261,8 @@ export default function PropertiesTable() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    {/* Actions */}
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <button
                           title="View Property"
