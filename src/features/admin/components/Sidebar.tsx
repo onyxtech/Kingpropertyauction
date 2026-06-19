@@ -14,6 +14,7 @@ import {
   InboxIcon,
   Handshake,
   CheckCircle,
+  FileChartColumn,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
@@ -59,6 +60,12 @@ const menuItems = [
     icon: BarChart3,
     label: "Analytics",
     path: "/admin/analytics",
+  },
+  {
+    id: "reports",
+    icon: FileChartColumn,
+    label: "Reports",
+    path: "/admin/reports",
   },
   {
     id: "settings",

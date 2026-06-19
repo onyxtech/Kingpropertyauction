@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
 import { mediaUrl } from "@/lib/mediaUrl";
 import { useNavigate } from "react-router";
 import {
@@ -129,7 +127,8 @@ export default function Auctions() {
     return sum + val;
   }, 0);
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    const { jsPDF } = await import("jspdf");
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
@@ -142,6 +141,7 @@ export default function Auctions() {
     doc.text(`Generated: ${new Date().toLocaleString("en-GB")}`, 14, 32);
     doc.text(`Total Lots: ${filteredLots.length}`, 14, 37);
 
+    const autoTable = (await import("jspdf-autotable")).default;
     autoTable(doc, {
       startY: 42,
       head: [

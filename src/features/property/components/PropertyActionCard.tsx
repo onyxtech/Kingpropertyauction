@@ -8,7 +8,6 @@ import {
   User,
   FileText,
 } from "lucide-react";
-import { jsPDF } from "jspdf";
 
 interface PropertyActionCardProps {
   property: any;
@@ -26,6 +25,7 @@ interface PropertyActionCardProps {
   onNavigate: (path: string) => void;
   isAuthenticated?: boolean;
   onEnquire: () => void;
+  onOfferNow?: () => void;
   isOwnProperty?: boolean;
 }
 
@@ -67,9 +67,11 @@ export default function PropertyActionCard({
   onNavigate,
   onEnquire,
   isAuthenticated,
+  onOfferNow,
   isOwnProperty = false,
 }: PropertyActionCardProps) {
   const handleDownloadBrochure = async () => {
+        const { jsPDF } = await import("jspdf");
     const doc = new jsPDF();
     let y = 15;
     const pageWidth = doc.internal.pageSize.width;
@@ -582,14 +584,13 @@ export default function PropertyActionCard({
         </a>
       )}
 
-      {/* Submit Offer Now - always visible for auction properties (not completed) */}
       {(isLiveNow || isAuctionType) && !isCompleted && (
-        <a
-          href="/register?reason=buyer"
+        <button
+          onClick={onOfferNow}
           className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-black text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2 text-center"
         >
           <FileText className="size-5" /> Submit Offer Now
-        </a>
+        </button>
       )}
 
       {/* Agent Contact Card */}

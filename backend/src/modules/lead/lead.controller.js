@@ -1,16 +1,20 @@
 import * as leadService from "./lead.service.js";
 import Lead from "./lead.model.js";
 
+const extractOfferAmount = (message) => {
+  if (!message) return "N/A";
+  const match = message.match(/Offer Amount: £([\d,]+)/);
+  return match ? `£${match[1]}` : "N/A";
+};
+
 export const create = async (req, res) => {
   try {
     const lead = await leadService.createLead(req.body);
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: lead,
-        message: "Your message has been received!",
-      });
+    res.status(201).json({
+      success: true,
+      data: lead,
+      message: "Your message has been received!",
+    });
 
     // Property inquiry: notify property owner and admin
     if (req.body.leadType === "property_inquiry" && req.body.property) {
@@ -184,13 +188,11 @@ export const create = async (req, res) => {
 export const getAll = async (req, res) => {
   try {
     const result = await leadService.getLeads(req.query);
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: result.leads,
-        pagination: result.pagination,
-      });
+    res.status(200).json({
+      success: true,
+      data: result.leads,
+      pagination: result.pagination,
+    });
   } catch (error) {
     console.error("[Lead] getAll error:", error.message);
     res.status(500).json({ success: false, message: error.message });
@@ -268,13 +270,11 @@ export const getStats = async (req, res) => {
 export const getMyLeads = async (req, res) => {
   try {
     const result = await leadService.getLeadsByEmail(req.user.email, req.query);
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: result.leads,
-        pagination: result.pagination,
-      });
+    res.status(200).json({
+      success: true,
+      data: result.leads,
+      pagination: result.pagination,
+    });
   } catch (error) {
     console.error("[Lead] getMyLeads error:", error.message);
     res.status(500).json({ success: false, message: error.message });
@@ -309,33 +309,43 @@ export const replyToLead = async (req, res) => {
       console.log(
         "[Email] adminReply notification disabled - skipping reply email",
       );
-      return res
-        .status(200)
-        .json({
-          success: true,
-          message: "Reply recorded but email sending is currently disabled.",
-        });
+      return res.status(200).json({
+        success: true,
+        message: "Reply recorded but email sending is currently disabled.",
+      });
     }
+
+    // Use offer-specific reply template if it's a property offer
+    const replyTemplateKey =
+      lead.leadType === "property_offer" ? "offerReply" : "adminReply";
 
     const result = await sendEmail({
       to: lead.email,
       subject: emailSubject,
-      templateKey: "adminReply",
-      variables: {
-        user_name: lead.name,
-        subject: lead.subject || "Your Enquiry",
-        message: message,
-        site_url: process.env.CLIENT_URL || "http://localhost:5173",
-      },
+      templateKey: replyTemplateKey,
+      variables:
+        lead.leadType === "property_offer"
+          ? {
+              offeror_name: lead.name,
+              property_title:
+                lead.subject?.replace("Property Offer: ", "") || "Property",
+              offer_amount: extractOfferAmount(lead.message),
+              reply_message: message,
+              site_url: process.env.CLIENT_URL || "http://localhost:5173",
+            }
+          : {
+              user_name: lead.name,
+              subject: lead.subject || "Your Enquiry",
+              message: message,
+              site_url: process.env.CLIENT_URL || "http://localhost:5173",
+            },
     });
 
     if (!result.success) {
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to send email: " + result.message,
-        });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send email: " + result.message,
+      });
     }
 
     lead.notes = lead.notes || [];
@@ -407,12 +417,10 @@ export const replyToLead = async (req, res) => {
       console.error("[Lead Reply] Failed to sync to inbox:", syncError.message);
     }
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Reply sent successfully to " + lead.email,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Reply sent successfully to " + lead.email,
+    });
   } catch (error) {
     console.error("[Lead] replyToLead error:", error.message);
     res.status(500).json({ success: false, message: error.message });

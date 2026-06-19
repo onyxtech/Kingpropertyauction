@@ -4,6 +4,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router";
 import type { Property, Auction, Bid } from "@/types";
 import { useAuctionSocket } from "@/hooks/useAuctionSocket";
 import ShareModal from "@/features/website/components/ShareModal";
+import OfferFormModal from "@/features/property/components/OfferFormModal";
 import {
   ArrowLeft,
   CheckCircle,
@@ -86,6 +87,7 @@ export default function PropertyDetails() {
   });
   const [inquiryLoading, setInquiryLoading] = useState(false);
   const [inquirySuccess, setInquirySuccess] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
 
   const [notification, setNotification] = useState<{
     message: string;
@@ -420,7 +422,7 @@ export default function PropertyDetails() {
     );
   }
 
-    // If property is sold and user is not admin, show sold message
+  // If property is sold and user is not admin, show sold message
   const isSold = property?.propertyStatus === "sold";
   const isAdmin = user?.role === "admin";
 
@@ -585,6 +587,7 @@ export default function PropertyDetails() {
             onPlaceBid={handlePlaceBidClick}
             onNavigate={navigate}
             onEnquire={() => setShowInquiryModal(true)}
+            onOfferNow={() => setShowOfferModal(true)}
             isOwnProperty={
               !!(
                 property?.createdBy &&
@@ -710,6 +713,14 @@ export default function PropertyDetails() {
             ? mediaUrl(p.media.propertyImages[0])
             : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600"
         }
+      />
+
+      {/* Offer Form Modal */}
+      <OfferFormModal
+        show={showOfferModal}
+        onClose={() => setShowOfferModal(false)}
+        property={property}
+        user={user || {}}
       />
 
       {/* Image Modal */}

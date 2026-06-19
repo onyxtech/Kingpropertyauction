@@ -46,6 +46,7 @@ const conversationSchema = new mongoose.Schema({
       'register_alert',
       'referral_fee',
       'home_report',
+      'property_offer',
     ],
     default: 'direct',
   },

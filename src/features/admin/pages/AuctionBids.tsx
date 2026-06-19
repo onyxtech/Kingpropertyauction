@@ -5,8 +5,6 @@ import AdminLayout from "../components/AdminLayout";
 import { apiClient } from "@/lib/apiClient";
 import { useQuery } from "@tanstack/react-query";
 import { useAuctionApi } from "@/features/auction/api/useAuctionApi";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import {
   Gavel,
   Building2,
@@ -87,9 +85,11 @@ export default function AuctionBids() {
     URL.revokeObjectURL(url);
   };
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
     if (!allBids?.length) return;
 
+    const { jsPDF } = await import("jspdf");
+    const autoTable = (await import("jspdf-autotable")).default;
     const doc = new jsPDF();
 
     // Title

@@ -157,6 +157,12 @@ app.use("/api/payments", paymentRoutes);
 import searchRoutes from "./modules/search/search.routes.js";
 app.use("/api/search", searchRoutes);
 
+import offerRoutes from "./modules/lead/offer.routes.js";
+app.use("/api/offers", offerRoutes);
+
+import reportRoutes from "./modules/report/report.routes.js";
+app.use("/api/reports", reportRoutes);
+
 app.use(notFound);
 app.use(errorHandler);
 

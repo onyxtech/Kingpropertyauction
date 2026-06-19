@@ -180,8 +180,13 @@ export const sendMessage = async (
 
     try {
       const User = (await import("../user/user.model.js")).default;
-      const populated2 = await Conversation.findById(conversationId).populate("lead", "email name");
-      const userAccount = await User.findOne({ email: populated2?.lead?.email }).select("name email").lean();
+      const populated2 = await Conversation.findById(conversationId).populate(
+        "lead",
+        "email name",
+      );
+      const userAccount = await User.findOne({ email: populated2?.lead?.email })
+        .select("name email")
+        .lean();
       if (userAccount) {
         const supportReplyEnabled = await isNotificationEnabled("adminReply");
         if (supportReplyEnabled) {
@@ -222,11 +227,18 @@ export const sendMessage = async (
   // Create DB notification + real-time socket for user when admin replies
   if (isAdmin) {
     try {
-      const Notification = (await import("../notifications/notification.model.js")).default;
-      const conv = await Conversation.findById(conversationId).populate("lead", "email name");
+      const Notification = (
+        await import("../notifications/notification.model.js")
+      ).default;
+      const conv = await Conversation.findById(conversationId).populate(
+        "lead",
+        "email name",
+      );
       if (conv?.lead?.email) {
         const User = (await import("../user/user.model.js")).default;
-        const userAccount = await User.findOne({ email: conv.lead.email }).select("_id").lean();
+        const userAccount = await User.findOne({ email: conv.lead.email })
+          .select("_id")
+          .lean();
         if (userAccount) {
           await Notification.create({
             type: "lead",
@@ -246,14 +258,19 @@ export const sendMessage = async (
         }
       }
     } catch (notifErr) {
-      console.warn("User notification for admin reply failed:", notifErr.message);
+      console.warn(
+        "User notification for admin reply failed:",
+        notifErr.message,
+      );
     }
   }
 
   // Email admin when user replies (skip for property_inquiry - handled by CC block below)
   if (!isAdmin) {
     try {
-      const convSource = await Conversation.findById(conversationId).select("source").lean();
+      const convSource = await Conversation.findById(conversationId)
+        .select("source")
+        .lean();
       if (convSource?.source !== "property_inquiry") {
         const enabled = await isNotificationEnabled("newLead");
         if (enabled) {
@@ -261,7 +278,9 @@ export const sendMessage = async (
           const populated = await Conversation.findById(conversationId)
             .populate("lead", "email name")
             .populate("assignedTo", "email name");
-          const admins = await User.find({ role: "admin" }).select("email name").lean();
+          const admins = await User.find({ role: "admin" })
+            .select("email name")
+            .lean();
           const replyText = text.substring(0, 200);
           for (const admin of admins) {
             await sendEmail({
@@ -276,7 +295,9 @@ export const sendMessage = async (
                 message: replyText,
                 dashboard_url: `${process.env.CLIENT_URL || "http://localhost:5173"}/admin/inbox`,
               },
-            }).catch((e) => console.warn("Admin reply email failed:", e.message));
+            }).catch((e) =>
+              console.warn("Admin reply email failed:", e.message),
+            );
           }
         }
       }
@@ -295,20 +316,28 @@ export const sendMessage = async (
 
       if (conv?.source === "property_inquiry") {
         const User = (await import("../user/user.model.js")).default;
-        const Notification = (await import("../notifications/notification.model.js")).default;
+        const Notification = (
+          await import("../notifications/notification.model.js")
+        ).default;
         const { emitToUser } = await import("../../socket.js");
         const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
-        const propertyTitle = conv.subject?.replace("Property Enquiry: ", "") || "Property";
+        const propertyTitle =
+          conv.subject?.replace("Property Enquiry: ", "") || "Property";
 
-        const isOwnerSending = conv.assignedTo?._id &&
+        const isOwnerSending =
+          conv.assignedTo?._id &&
           conv.assignedTo._id.toString() === senderId?.toString();
 
         if (isOwnerSending) {
           // Owner/agent replying to buyer
           const replyEnabled = await isNotificationEnabled("ownerToBuyerReply");
           if (replyEnabled && conv.lead?.email) {
-            const ownerRole = conv.assignedTo?.role === "agent" ? "Estate Agent" :
-                              conv.assignedTo?.role === "seller" ? "Property Seller" : "Owner";
+            const ownerRole =
+              conv.assignedTo?.role === "agent"
+                ? "Estate Agent"
+                : conv.assignedTo?.role === "seller"
+                  ? "Property Seller"
+                  : "Owner";
             await sendEmail({
               to: conv.lead.email,
               subject: `Reply about your property enquiry`,
@@ -322,14 +351,20 @@ export const sendMessage = async (
                 property_url: `${siteUrl}/properties`,
                 dashboard_url: `${siteUrl}/dashboard/messages`,
               },
-            }).catch(e => console.warn("Owner reply email failed:", e.message));
+            }).catch((e) =>
+              console.warn("Owner reply email failed:", e.message),
+            );
           }
 
           // Bell notification to buyer when owner replies
           if (conv.lead?.email) {
             try {
               const UserModel = (await import("../user/user.model.js")).default;
-              const buyerUser = await UserModel.findOne({ email: conv.lead.email }).select("_id").lean();
+              const buyerUser = await UserModel.findOne({
+                email: conv.lead.email,
+              })
+                .select("_id")
+                .lean();
               if (buyerUser) {
                 await Notification.create({
                   type: "lead",
@@ -338,7 +373,9 @@ export const sendMessage = async (
                   link: "/dashboard/messages",
                   color: "green",
                   targetUser: buyerUser._id,
-                }).catch(e => console.warn("Buyer reply notification failed:", e.message));
+                }).catch((e) =>
+                  console.warn("Buyer reply notification failed:", e.message),
+                );
 
                 emitToUser(buyerUser._id.toString(), "new_notification", {
                   type: "lead",
@@ -355,9 +392,15 @@ export const sendMessage = async (
           // Admin CC when owner sends
           const ccEnabled = await isNotificationEnabled("adminInquiryCC");
           if (ccEnabled) {
-            const admins = await User.find({ role: "admin" }).select("email name _id").lean();
-            const ownerRole = conv.assignedTo?.role === "agent" ? "Estate Agent" :
-                              conv.assignedTo?.role === "seller" ? "Property Seller" : "Owner";
+            const admins = await User.find({ role: "admin" })
+              .select("email name _id")
+              .lean();
+            const ownerRole =
+              conv.assignedTo?.role === "agent"
+                ? "Estate Agent"
+                : conv.assignedTo?.role === "seller"
+                  ? "Property Seller"
+                  : "Owner";
             for (const admin of admins) {
               await sendEmail({
                 to: admin.email,
@@ -371,15 +414,21 @@ export const sendMessage = async (
                   message: text,
                   admin_url: `${siteUrl}/admin/inbox`,
                 },
-              }).catch(e => console.warn("Admin CC email failed:", e.message));
+              }).catch((e) =>
+                console.warn("Admin CC email failed:", e.message),
+              );
             }
           }
         } else {
           // Buyer sending to owner
           if (conv.assignedTo?._id) {
-            const ownerMsgEnabled = await isNotificationEnabled("buyerToOwnerMessage");
+            const ownerMsgEnabled = await isNotificationEnabled(
+              "buyerToOwnerMessage",
+            );
             if (ownerMsgEnabled) {
-              const ownerUser = await User.findById(conv.assignedTo._id).select("name email").lean();
+              const ownerUser = await User.findById(conv.assignedTo._id)
+                .select("name email")
+                .lean();
               if (ownerUser?.email) {
                 await sendEmail({
                   to: ownerUser.email,
@@ -393,7 +442,9 @@ export const sendMessage = async (
                     message: text,
                     dashboard_url: `${siteUrl}/dashboard/messages`,
                   },
-                }).catch(e => console.warn("Owner message email failed:", e.message));
+                }).catch((e) =>
+                  console.warn("Owner message email failed:", e.message),
+                );
               }
             }
           }
@@ -401,7 +452,9 @@ export const sendMessage = async (
           // Admin CC when buyer sends
           const ccEnabled = await isNotificationEnabled("adminInquiryCC");
           if (ccEnabled) {
-            const admins = await User.find({ role: "admin" }).select("email name _id").lean();
+            const admins = await User.find({ role: "admin" })
+              .select("email name _id")
+              .lean();
             for (const admin of admins) {
               await sendEmail({
                 to: admin.email,
@@ -415,12 +468,17 @@ export const sendMessage = async (
                   message: text,
                   admin_url: `${siteUrl}/admin/inbox`,
                 },
-              }).catch(e => console.warn("Admin CC email failed:", e.message));
+              }).catch((e) =>
+                console.warn("Admin CC email failed:", e.message),
+              );
             }
           }
 
           // Owner bell notification when buyer sends
-          if (conv.assignedTo?._id && conv.assignedTo._id.toString() !== senderId?.toString()) {
+          if (
+            conv.assignedTo?._id &&
+            conv.assignedTo._id.toString() !== senderId?.toString()
+          ) {
             await Notification.create({
               type: "lead",
               icon: "mail",
@@ -428,7 +486,9 @@ export const sendMessage = async (
               link: "/dashboard/messages",
               color: "blue",
               targetUser: conv.assignedTo._id,
-            }).catch(e => console.warn("Owner notification failed:", e.message));
+            }).catch((e) =>
+              console.warn("Owner notification failed:", e.message),
+            );
 
             emitToUser(conv.assignedTo._id.toString(), "new_notification", {
               type: "lead",
@@ -446,7 +506,9 @@ export const sendMessage = async (
           link: "/admin/inbox",
           color: "blue",
           targetUser: null,
-        }).catch(e => console.warn("Admin CC notification failed:", e.message));
+        }).catch((e) =>
+          console.warn("Admin CC notification failed:", e.message),
+        );
       }
     } catch (ccErr) {
       console.warn("Admin CC failed:", ccErr.message);
@@ -506,20 +568,39 @@ export const createConversationFromLead = async (leadId) => {
     subject: lead.subject || `Inquiry from ${lead.name}`,
     source: (() => {
       const sourceMap = {
-        faq_support: 'faq',
-        legal_enquiry: 'legal',
-        register_alert: 'alert',
-        referral_fee: 'referral',
-        home_report: 'home-report',
+        faq_support: "faq",
+        legal_enquiry: "legal",
+        register_alert: "alert",
+        referral_fee: "referral",
+        home_report: "home-report",
+        property_offer: "property_offer",
       };
       const validSources = new Set([
-        'contact','valuation','catalogue','chat','direct','general','referral',
-        'finance','alert','solicitor','home-report','buying','selling','legal',
-        'faq','newsletter','property_inquiry','faq_support','legal_enquiry',
-        'register_alert','referral_fee','home_report',
+        "contact",
+        "valuation",
+        "catalogue",
+        "chat",
+        "direct",
+        "general",
+        "referral",
+        "finance",
+        "alert",
+        "solicitor",
+        "home-report",
+        "buying",
+        "selling",
+        "legal",
+        "faq",
+        "newsletter",
+        "property_inquiry",
+        "faq_support",
+        "legal_enquiry",
+        "register_alert",
+        "referral_fee",
+        "home_report",
       ]);
       const mapped = sourceMap[lead.leadType] || lead.leadType;
-      return validSources.has(mapped) ? mapped : 'general';
+      return validSources.has(mapped) ? mapped : "general";
     })(),
     participants: [],
     unreadCount: { admin: 1, user: 0 },
@@ -542,7 +623,11 @@ export const createConversationFromLead = async (leadId) => {
 
 // ─── Get conversations for a specific user (customer dashboard) ───
 
-export const getUserConversations = async (userEmail, query = {}, userId = null) => {
+export const getUserConversations = async (
+  userEmail,
+  query = {},
+  userId = null,
+) => {
   const { page = 1, limit = 20 } = query;
 
   // Find leads by this user's email
@@ -555,7 +640,8 @@ export const getUserConversations = async (userEmail, query = {}, userId = null)
   if (leadIds.length > 0) orConditions.push({ lead: { $in: leadIds } });
   if (userId) orConditions.push({ participants: userId });
 
-  const filter = orConditions.length > 0 ? { $or: orConditions } : { _id: null };
+  const filter =
+    orConditions.length > 0 ? { $or: orConditions } : { _id: null };
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const [conversations, total] = await Promise.all([

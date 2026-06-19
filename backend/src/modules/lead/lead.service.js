@@ -31,6 +31,12 @@ const getNotificationKeys = (lead) => {
       ruleKey: "propertyInquiry",
       templateKey: "propertyInquiryConfirmation",
     };
+  if (lead.leadType === "property_offer")
+    return {
+      ruleKey: "offerNotification",
+      templateKey: "offerConfirmation",
+      replyTemplate: "offerReply",
+    };
   return { ruleKey: "contactForm", templateKey: "contactForm" };
 };
 
@@ -67,7 +73,8 @@ export const createLead = async (data) => {
         ((lead.message || "").length > 150 ? "..." : "");
 
       const emailVariables =
-        lead.leadType === "property_inquiry"
+        lead.leadType === "property_inquiry" ||
+        lead.leadType === "property_offer"
           ? {
               inquirer_name: lead.name,
               property_title: propertyTitle,
@@ -99,7 +106,8 @@ export const createLead = async (data) => {
             };
 
       const emailSubject =
-        lead.leadType === "property_inquiry"
+        lead.leadType === "property_inquiry" ||
+        lead.leadType === "property_offer"
           ? `✅ We received your enquiry about ${propertyTitle}`
           : lead.subject || "Thank you for contacting King Property Auction";
 
@@ -108,20 +116,27 @@ export const createLead = async (data) => {
 
       if (lead.leadType === "catalogue") {
         try {
-          const { default: Auction } = await import("../auction/auction.model.js");
+          const { default: Auction } =
+            await import("../auction/auction.model.js");
           const jsPDF = (await import("jspdf")).jsPDF;
 
           const selectedIds = data.auctionIds || [];
           let auctions;
           if (selectedIds.length > 0) {
             auctions = await Auction.find({ _id: { $in: selectedIds } })
-              .populate("properties", "propertyTitle pricing location propertyType")
+              .populate(
+                "properties",
+                "propertyTitle pricing location propertyType",
+              )
               .lean();
           } else {
             auctions = await Auction.find({
               status: { $in: ["scheduled", "live"] },
             })
-              .populate("properties", "propertyTitle pricing location propertyType")
+              .populate(
+                "properties",
+                "propertyTitle pricing location propertyType",
+              )
               .sort("startDateTime")
               .limit(20)
               .lean();
@@ -166,7 +181,9 @@ export const createLead = async (data) => {
                   new Date(auction.startDateTime).toLocaleDateString("en-GB"),
                   new Date(auction.endDateTime).toLocaleDateString("en-GB"),
                   "0",
-                  auction.startingBid ? `£${auction.startingBid.toLocaleString()}` : "£0",
+                  auction.startingBid
+                    ? `£${auction.startingBid.toLocaleString()}`
+                    : "£0",
                   auction.status || "N/A",
                   String(auction.totalBidders || 0),
                   auction.venue?.city || auction.venue?.name || "Online",
@@ -198,7 +215,18 @@ export const createLead = async (data) => {
             autoTable(doc, {
               startY: y + 4,
               head: [
-                ["Lot", "Title", "Type", "Start", "End", "Lots", "Est. Value", "Status", "Bidders", "Location"],
+                [
+                  "Lot",
+                  "Title",
+                  "Type",
+                  "Start",
+                  "End",
+                  "Lots",
+                  "Est. Value",
+                  "Status",
+                  "Bidders",
+                  "Location",
+                ],
               ],
               body: tableRows,
               theme: "grid",
@@ -237,7 +265,10 @@ export const createLead = async (data) => {
               "We appreciate your patience and look forward to serving you.",
             ];
             noAuctionMsg.forEach((msg) => {
-              if (y > 270) { doc.addPage(); y = 20; }
+              if (y > 270) {
+                doc.addPage();
+                y = 20;
+              }
               doc.text(msg, 14, y);
               y += 6;
             });
@@ -268,17 +299,20 @@ export const createLead = async (data) => {
       // Send template email (with PDF attachment for catalogue requests)
       if (pdfAttachment) {
         // For catalogue: send via nodemailer directly to attach PDF
-        const { getEmailSettings } = await import("../settings/settings.service.js");
+        const { getEmailSettings } =
+          await import("../settings/settings.service.js");
         const settings = await getEmailSettings();
         if (settings?.host) {
           const nodemailer = (await import("nodemailer")).default;
           const transporter = nodemailer.createTransport({
             host: settings.host,
             port: parseInt(settings.port),
-            secure: settings.encryption === "ssl" || settings.encryption === "SSL",
+            secure:
+              settings.encryption === "ssl" || settings.encryption === "SSL",
             auth: { user: settings.username, pass: settings.password },
           });
-          const { renderTemplate } = await import("../notifications/template.service.js");
+          const { renderTemplate } =
+            await import("../notifications/template.service.js");
           const html = await renderTemplate(templateKey, emailVariables);
           await transporter.sendMail({
             from: `"${settings.senderName || "King Property Auction"}" <${settings.senderEmail}>`,
@@ -308,7 +342,9 @@ export const createLead = async (data) => {
       const enabled = await isNotificationEnabled(ruleKey);
       if (!enabled) return;
       const { default: User } = await import("../user/user.model.js");
-      const admins = await User.find({ role: "admin", isActive: true }).select("email name");
+      const admins = await User.find({ role: "admin", isActive: true }).select(
+        "email name",
+      );
       for (const admin of admins) {
         await sendEmail({
           to: admin.email,

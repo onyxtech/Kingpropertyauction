@@ -65,6 +65,7 @@ import NotFound from "@/features/shared/pages/NotFound";
 
 const AdminProfile = lazy(() => import("../features/admin/pages/AdminProfile"));
 import Analytics from "@/features/admin/pages/Analytics";
+const Reports = lazy(() => import("../features/admin/pages/Reports"));
 import Campaigns from "@/features/admin/pages/Campaigns";
 import MenuManager from "@/features/admin/pages/MenuManager";
 const CustomerDashboard = lazy(
@@ -286,6 +287,14 @@ export const router = createBrowserRouter([
     element: eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Analytics />
+      </ProtectedRoute>,
+    ),
+  },
+  {
+    path: "/admin/reports",
+    element: lazy_eb(
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <Reports />
       </ProtectedRoute>,
     ),
   },

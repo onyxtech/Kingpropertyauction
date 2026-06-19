@@ -251,13 +251,10 @@ export default function ViewAllLots() {
               const displayBid = isSold
                 ? lot.soldPrice || lot.currentBid || 0
                 : lot.currentBid || lot.pricing?.startingAuctionPrice || 0;
-              const bidLabel = isSold
-                ? "Current Bid"
-                : isUnsold
-                  ? "Highest Bid"
-                  : lot.currentBid > 0
-                    ? "Current Bid"
-                    : "Guide Price";
+              const bidLabel =
+                lot.totalBids > 0 || isSold || isUnsold
+                  ? "Current Bid"
+                  : "Guide Price";
 
               // Find which auction this lot belongs to
               const lotAuction =

@@ -43,6 +43,7 @@ const leadSchema = new mongoose.Schema(
         "faq",
         "newsletter",
         "property_inquiry",
+        "property_offer",
       ],
       default: "general",
     },
@@ -61,12 +62,12 @@ const leadSchema = new mongoose.Schema(
     },
     approvalStatus: {
       type: String,
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'pending',
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
     },
     auctionRef: {
       type: mongoose.Schema.ObjectId,
-      ref: 'Auction',
+      ref: "Auction",
     },
     notes: [
       {

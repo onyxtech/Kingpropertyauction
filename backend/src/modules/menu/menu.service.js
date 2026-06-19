@@ -44,6 +44,7 @@ export const patchAdminSidebarItems = async () => {
       { label: "Approvals", url: "/admin/approvals", type: "link", icon: "CheckCircle", order: 10.2 },
       { label: "Revenue", url: "/admin/revenue", type: "link", icon: "DollarSign", order: 10.3 },
       { label: "Commissions", url: "/admin/commissions", type: "link", icon: "Percent", order: 10.4 },
+      { label: "Reports", url: "/admin/reports", type: "link", icon: "FileChartColumn", order: 10.5 },
     ];
 
     let changed = false;
@@ -247,7 +248,8 @@ export const seedDefaultMenus = async () => {
       { label: "Inbox", url: "/admin/inbox", type: "link", icon: "Inbox", order: 9 },
       { label: "Users", url: "/admin/users", type: "link", icon: "Users", order: 10 },
       { label: "Analytics", url: "/admin/analytics", type: "link", icon: "BarChart3", order: 11 },
-      { label: "Settings", url: "/admin/settings", type: "link", icon: "Settings", order: 12 },
+      { label: "Reports", url: "/admin/reports", type: "link", icon: "FileChartColumn", order: 13 },
+      { label: "Settings", url: "/admin/settings", type: "link", icon: "Settings", order: 14 },
     ],
   });
   console.log("✅ Admin Sidebar seeded");
