@@ -16,6 +16,7 @@ import {
   Heart,
   Mail,
   X,
+  FileText,
 } from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
 import { useAuthStore } from "@/stores/authStore";
@@ -46,6 +47,8 @@ export default function CustomerSidebar({
     canSwitchView,
     showSellerView,
     showBuyerView,
+    isAgent,
+    isSeller,
     canApplyToSell,
     canApplyToBid,
     activeView,
@@ -112,6 +115,12 @@ export default function CustomerSidebar({
       icon: Handshake,
       label: "Offers & Negotiations",
       show: showBuyerView,
+    },
+    {
+        id: "property-offers",
+        icon: FileText,
+        label: "Property Offers",
+        show: (isAgent || isSeller) && showSellerView,
     },
     {
       id: "won-auctions",

@@ -17,6 +17,7 @@ export const usePropertyApi = () => {
           query.set("approvalStatus", params.approvalStatus);
         if (params?.auctionSlug) query.set("auctionSlug", params.auctionSlug);
         if (params?.listingType) query.set("listingType", params.listingType);
+        if (params?.type) query.set("type", params.type);
         if (params?.search) query.set("search", params.search);
         if (params?.location) query.set("city", params.location);
         if (params?.minPrice) query.set("minPrice", params.minPrice);

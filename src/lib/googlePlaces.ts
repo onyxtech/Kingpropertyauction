@@ -62,8 +62,8 @@ export interface ParsedAddress {
 }
 
 export const parseAddressComponents = (
-  place: google.maps.places.PlaceResult
-): ParsedAddress => {
+     place: any
+  ): ParsedAddress => {
   const components = place.address_components || [];
   const result: ParsedAddress = {
     streetNumber: "",

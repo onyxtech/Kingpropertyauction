@@ -79,6 +79,8 @@ export const NotificationRulesSchema = z.object({
   offerConfirmation: z.boolean().default(true),
   offerNotification: z.boolean().default(true),
   offerReply: z.boolean().default(true),
+  offerAccepted: z.boolean().default(true),
+  offerDeclined: z.boolean().default(true),
 });
 
 // ─── API Integrations Schema ───

@@ -40,7 +40,13 @@ export const getProperties = async (query = {}) => {
     city,
     auctionStatus,
     sortBy = "-createdAt",
+    minPrice,
+    maxPrice,
+    minBeds,
+    maxBeds,
   } = query;
+
+    console.log("🔍 FILTER PARAMS:", { minPrice, maxPrice, minBeds, maxBeds, type: query.type, search: query.search });
 
   const filter = {};
 
@@ -59,21 +65,51 @@ export const getProperties = async (query = {}) => {
   if (category) filter.propertyCategory = category;
   if (listingType) filter.listingType = listingType;
   if (city) filter["location.city"] = city;
+  // Build all filter conditions
+  const andConditions = [];
+
+  // Search filter
   if (query.search) {
-    const searchRegex = new RegExp(query.search, "i");
-    filter.$or = [
-      { "location.city": searchRegex },
-    ];
+    const searchWords = query.search.split(/[\s,]+/).filter(w => w.length > 1);
+    const searchRegex = new RegExp(searchWords.join("|"), "i");
+    andConditions.push({
+      $or: [
+        { "location.city": searchRegex },
+        { "location.area": searchRegex },
+        { "location.postalCode": searchRegex },
+      ],
+    });
   }
+
   if (query.location) {
-    const locRegex = new RegExp(query.location, "i");
-    filter["location.city"] = locRegex;
+    filter["location.city"] = new RegExp(query.location, "i");
   }
   if (auctionStatus) filter["auctionDetails.auctionStatus"] = auctionStatus;
-  // Exclude sold properties for public views
   if (query.excludeSold === "true") {
     filter.propertyStatus = { $ne: "sold" };
   }
+
+  // Price filter - use currentBid only (not starting price)
+  if (minPrice || maxPrice) {
+    filter.currentBid = {};
+    if (minPrice) filter.currentBid.$gte = parseInt(minPrice);
+    if (maxPrice) filter.currentBid.$lte = parseInt(maxPrice);
+  }
+
+  // Beds filter
+  if (minBeds || maxBeds) {
+    filter["specifications.bedrooms"] = {};
+    if (minBeds) filter["specifications.bedrooms"].$gte = parseInt(minBeds);
+    if (maxBeds) filter["specifications.bedrooms"].$lte = parseInt(maxBeds);
+  }
+
+  // If we have both search AND price, use $and
+  if (andConditions.length > 0 && filter.$or) {
+    andConditions.push({ $or: filter.$or });
+    delete filter.$or;
+    filter.$and = andConditions;
+  }
+
 
   if (query.auctionSlug) {
     // Find the auction by slug, then filter properties by its property IDs

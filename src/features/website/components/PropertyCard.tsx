@@ -181,7 +181,7 @@ export default function PropertyCard({
         )}
       </div>
 
-      <div className="p-5">
+       <div className="p-5 flex flex-col flex-1">
         <div className="flex items-start justify-between mb-3">
           <h3 className="font-bold text-lg text-slate-900 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 group-hover:bg-clip-text transition-all">
             {property.propertyTitle}

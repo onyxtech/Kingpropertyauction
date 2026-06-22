@@ -227,3 +227,89 @@ export const getOffersStats = async () => {
 
   return { total, pending, reviewed, accepted, declined };
 };
+
+export const respondToOffer = async (offerId, status, message, adminId) => {
+  const offer = await PropertyOffer.findById(offerId)
+    .populate("property", "propertyTitle slug")
+    .lean();
+  if (!offer) throw new Error("Offer not found");
+
+  const updated = await PropertyOffer.findByIdAndUpdate(
+    offerId,
+    { status, reviewedBy: adminId, reviewedAt: new Date(), adminNotes: message || "" },
+    { new: true }
+  );
+
+  // Send email to offeror
+  const templateKey = status === "accepted" ? "offerAccepted" : "offerDeclined";
+  const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  
+  await sendEmail({
+    to: offer.email,
+    subject: status === "accepted" 
+      ? `✅ Your offer has been accepted - ${offer.property?.propertyTitle || "Property"}`
+      : `Update on your offer - ${offer.property?.propertyTitle || "Property"}`,
+    templateKey,
+    variables: {
+      offeror_name: offer.name,
+      property_title: offer.property?.propertyTitle || "Property",
+      offer_amount: `£${offer.offerAmount.toLocaleString()}`,
+      response_message: message || (status === "accepted" ? "Congratulations! Your offer has been accepted. Our team will contact you shortly to complete the purchase." : "Unfortunately, your offer was not accepted at this time. Please feel free to submit another offer or contact us for more details."),
+      site_url: siteUrl,
+    },
+  }).catch(e => console.warn("Offer response email failed:", e.message));
+
+  // Notify property owner/agent
+  try {
+    const Property = (await import("../property/property.model.js")).default;
+    const User = (await import("../user/user.model.js")).default;
+    const property = await Property.findById(offer.property).select("createdBy propertyTitle").lean();
+    if (property?.createdBy) {
+      const owner = await User.findById(property.createdBy).select("_id name").lean();
+      if (owner) {
+        const statusLabel = status === "accepted" ? "accepted" : "declined";
+        await Notification.create({
+          type: "offer",
+          icon: status === "accepted" ? "check-circle" : "x-circle",
+          message: `Offer ${statusLabel}: £${offer.offerAmount.toLocaleString()} for "${property.propertyTitle}"`,
+          link: "/dashboard/property-offers",
+          color: status === "accepted" ? "green" : "red",
+          targetUser: owner._id,
+        }).catch(() => {});
+
+        const { emitToUser } = await import("../../socket.js");
+        emitToUser(owner._id.toString(), "new_notification", {
+          type: "offer",
+          message: `Offer ${statusLabel} on "${property.propertyTitle}"`,
+          link: "/dashboard/property-offers",
+        });
+      }
+    }
+  } catch (e) {
+    console.warn("Owner offer notification failed:", e.message);
+  }
+
+  // Notify admins
+  await Notification.create({
+    type: "offer",
+    icon: status === "accepted" ? "check-circle" : "x-circle",
+    message: `Offer ${status}: £${offer.offerAmount.toLocaleString()} for ${offer.property?.propertyTitle || "property"}`,
+    link: "/admin/offers",
+    color: status === "accepted" ? "green" : "red",
+    targetUser: null,
+  }).catch(() => {});
+
+  return updated;
+};
+
+export const getAgentOffers = async (agentId) => {
+  // Find properties created by this agent
+  const Property = (await import("../property/property.model.js")).default;
+  const agentProperties = await Property.find({ createdBy: agentId }).select("_id").lean();
+  const propertyIds = agentProperties.map(p => p._id);
+
+  return PropertyOffer.find({ property: { $in: propertyIds } })
+    .populate("property", "propertyTitle slug media pricing")
+    .sort("-createdAt")
+    .lean();
+};

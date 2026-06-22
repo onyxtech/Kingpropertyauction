@@ -64,3 +64,30 @@ export const getStats = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const acceptOffer = async (req, res) => {
+  try {
+    const offer = await offerService.respondToOffer(req.params.id, "accepted", req.body.message, req.user._id);
+    res.json({ success: true, data: offer, message: "Offer accepted and offeror notified" });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+};
+
+export const declineOffer = async (req, res) => {
+  try {
+    const offer = await offerService.respondToOffer(req.params.id, "declined", req.body.message, req.user._id);
+    res.json({ success: true, data: offer, message: "Offer declined and offeror notified" });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+};
+
+export const getAgentOffers = async (req, res) => {
+  try {
+    const offers = await offerService.getAgentOffers(req.user._id);
+    res.json({ success: true, data: offers });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+};

@@ -15,6 +15,7 @@ import {
   Handshake,
   CheckCircle,
   FileChartColumn,
+  FileText,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { useTheme } from "../../../app/hooks/useTheme";
@@ -66,6 +67,12 @@ const menuItems = [
     icon: FileChartColumn,
     label: "Reports",
     path: "/admin/reports",
+  },
+  {
+    id: "property-offers",
+    icon: FileText,
+    label: "Property Offers",
+    path: "/admin/property-offers",
   },
   {
     id: "settings",

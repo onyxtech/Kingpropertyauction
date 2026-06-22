@@ -14,6 +14,7 @@ import WonAuctionsTab from "../tabs/WonAuctionsTab";
 import WatchlistTab from "../tabs/WatchlistTab";
 import EnquiriesTab from "../tabs/EnquiriesTab";
 import { useCustomerRole } from "../hooks/useCustomerRole";
+import PropertyOffersTab from "../tabs/PropertyOffersTab";
 
 const getTabFromPath = (pathname: string) => {
   const seg = pathname.replace("/dashboard", "").replace(/^\//, "");
@@ -23,7 +24,7 @@ const getTabFromPath = (pathname: string) => {
 export default function CustomerDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { canAddProperty, canBid, showBuyerView, showSellerView } = useCustomerRole();
+  const { canAddProperty, canBid, showBuyerView, showSellerView, isAgent, isSeller } = useCustomerRole();
   const [activeTab, setActiveTab] = useState(() => getTabFromPath(location.pathname));
 
   useEffect(() => {
@@ -53,6 +54,9 @@ export default function CustomerDashboard() {
       case "offers":
         if (!showBuyerView) return <OverviewTab onTabChange={handleTabChange} />;
         return <OffersTab />;
+      case "property-offers":
+          if (!isAgent && !isSeller) return <OverviewTab onTabChange={handleTabChange} />;
+        return <PropertyOffersTab />;  
       case "won-auctions":
         if (!showBuyerView) return <OverviewTab onTabChange={handleTabChange} />;
         return <WonAuctionsTab />;

@@ -66,6 +66,7 @@ import NotFound from "@/features/shared/pages/NotFound";
 const AdminProfile = lazy(() => import("../features/admin/pages/AdminProfile"));
 import Analytics from "@/features/admin/pages/Analytics";
 const Reports = lazy(() => import("../features/admin/pages/Reports"));
+const PropertyOffers = lazy(() => import("../features/admin/pages/PropertyOffers"));
 import Campaigns from "@/features/admin/pages/Campaigns";
 import MenuManager from "@/features/admin/pages/MenuManager";
 const CustomerDashboard = lazy(
@@ -167,6 +168,14 @@ export const router = createBrowserRouter([
     element: lazy_eb(
       <ProtectedRoute allowedRoles={["admin"]}>
         <Offers />
+      </ProtectedRoute>,
+    ),
+  },
+  {
+    path: "/admin/property-offers",
+    element: lazy_eb(
+      <ProtectedRoute allowedRoles={["admin"]}>
+        <PropertyOffers />
       </ProtectedRoute>,
     ),
   },
