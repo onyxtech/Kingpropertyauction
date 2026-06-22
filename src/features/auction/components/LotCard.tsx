@@ -56,8 +56,6 @@ export default function LotCard({
   const bidIncrement =
     property.pricing?.minimumBidIncrement || auction.bidIncrement || 1000;
   const nextMinBid = currentBid + bidIncrement;
-  const reservePrice = property.pricing?.reservePrice || 0;
-  const reserveMet = currentBid >= reservePrice;
   const imageUrl = getPropertyImage(property);
 
   return (
@@ -146,20 +144,7 @@ export default function LotCard({
               £{bidIncrement.toLocaleString()}
             </span>
           </div>
-          {reservePrice > 0 && (
-            <div
-              className={`flex items-center gap-1.5 text-xs font-bold ${reserveMet ? "text-green-600" : "text-amber-600"}`}
-            >
-              {reserveMet ? (
-                <CheckCircle className="size-3.5" />
-              ) : (
-                <AlertCircle className="size-3.5" />
-              )}
-              {reserveMet
-                ? "Reserve Met"
-                : `Reserve Not Met (£${reservePrice.toLocaleString()})`}
-            </div>
-          )}
+          
           <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
             <span>{property.totalBids || 0} bids</span>
             <span>

@@ -71,7 +71,7 @@ export default function PropertyActionCard({
   isOwnProperty = false,
 }: PropertyActionCardProps) {
   const handleDownloadBrochure = async () => {
-        const { jsPDF } = await import("jspdf");
+    const { jsPDF } = await import("jspdf");
     const doc = new jsPDF();
     let y = 15;
     const pageWidth = doc.internal.pageSize.width;
@@ -295,7 +295,6 @@ export default function PropertyActionCard({
         "Starting Price",
         `GBP ${(pr.startingAuctionPrice || 0).toLocaleString()}`,
       ],
-      ["Reserve Price", `GBP ${(pr.reservePrice || 0).toLocaleString()}`],
     ];
     if (pr.buyNowPrice)
       prs.push(["Buy Now", `GBP ${pr.buyNowPrice.toLocaleString()}`]);
@@ -520,11 +519,8 @@ export default function PropertyActionCard({
               ) : (
                 <div className="bg-white/20 rounded-2xl p-4 text-center text-white border-2 border-white/30">
                   <p className="text-sm text-white/80 mb-1">❌ UNSOLD</p>
-                  <p className="text-lg font-bold">Reserve Not Met</p>
                   <p className="text-xs text-white/70 mt-2">
-                    Highest Bid: £{(property.currentBid || 0).toLocaleString()}{" "}
-                    | Reserve: £
-                    {(property.pricing?.reservePrice || 0).toLocaleString()}
+                    Highest Bid: £{(property.currentBid || 0).toLocaleString()}
                   </p>
                 </div>
               )}

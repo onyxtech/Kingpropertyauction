@@ -29,10 +29,8 @@ interface PropertyInfoProps {
   isDirectSale: boolean;
   currentBid: number;
   startingPrice: number;
-  reservePrice: number;
   bidIncrement: number;
   nextMinBid: number;
-  reserveMet: boolean;
   buyNowPrice: number;
   features: string[];
   isFavorite: boolean;
@@ -55,10 +53,8 @@ export default function PropertyInfo({
   isDirectSale,
   currentBid,
   startingPrice,
-  reservePrice,
   bidIncrement,
   nextMinBid,
-  reserveMet,
   buyNowPrice,
   features,
   isFavorite,
@@ -287,22 +283,6 @@ export default function PropertyInfo({
                   {formatPrice(bidIncrement)}
                 </span>
               </div>
-              {reservePrice > 0 && (
-                <div
-                  className={`flex items-center gap-1.5 text-sm font-bold ${
-                    reserveMet ? "text-green-600" : "text-amber-600"
-                  }`}
-                >
-                  {reserveMet ? (
-                    <CheckCircle className="size-4" />
-                  ) : (
-                    <AlertCircle className="size-4" />
-                  )}
-                  {reserveMet
-                    ? `Reserve Met (${formatPrice(reservePrice)})`
-                    : `Reserve Not Met (${formatPrice(reservePrice)})`}
-                </div>
-              )}
               <div className="flex justify-between text-sm font-semibold">
                 <span className="text-slate-600">Total Bids</span>
                 <span className="text-slate-900 font-bold">

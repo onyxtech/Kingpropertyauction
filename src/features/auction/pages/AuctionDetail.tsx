@@ -572,11 +572,6 @@ export default function AuctionDetail() {
           auction?.bidIncrement ||
           1000
         }
-        reservePrice={selectedLot?.pricing?.reservePrice || 0}
-        reserveMet={
-          (selectedLot?.currentBid || 0) >=
-          (selectedLot?.pricing?.reservePrice || 0)
-        }
         bidAmount={bidAmount}
         onBidAmountChange={setBidAmount}
         autoBidEnabled={selectedLot?.auctionDetails?.autoBidEnabled}

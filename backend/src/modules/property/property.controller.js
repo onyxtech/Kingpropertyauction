@@ -16,8 +16,12 @@ export const create = async (req, res) => {
     req.body.media?.propertyImages || req.body.propertyImages || "NONE",
   );
 
-  // Geocode address to get coordinates for Maps
-  if (req.body.location?.streetAddress) {
+  // Use frontend coordinates if provided (from Google Places), otherwise geocode
+  if (
+    req.body.location?.streetAddress &&
+    !req.body.location?.latitude &&
+    !req.body.location?.longitude
+  ) {
     try {
       const addr = [
         req.body.location.streetAddress,
@@ -192,7 +196,9 @@ export const getAll = async (req, res) => {
 export const getById = async (req, res) => {
   try {
     const { id } = req.params; // ← Changed from slug to id
-        let property = await Property.findById(id).populate("createdBy", "name email phone address").catch(() => null);
+    let property = await Property.findById(id)
+      .populate("createdBy", "name email phone address")
+      .catch(() => null);
     if (!property) {
       property = await Property.findOne({ slug: id });
     }

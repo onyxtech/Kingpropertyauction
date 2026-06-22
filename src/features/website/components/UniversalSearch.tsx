@@ -88,15 +88,12 @@ export default function UniversalSearch() {
   };
 
   const handleViewAllProperties = () => {
-    navigate(`/view-all-lots?${buildSearchParams()}`);
+    navigate(`/view-all-lots`);
     setShowDropdown(false);
   };
 
   const handleViewAllAuctions = () => {
-    const p = new URLSearchParams();
-    if (query) p.set("search", query);
-    if (auctionStatus !== "all") p.set("status", auctionStatus);
-    navigate(`/auctions?${p}`);
+    navigate(`/auctions`);
     setShowDropdown(false);
   };
 
@@ -162,7 +159,7 @@ export default function UniversalSearch() {
                   value={query}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Search by location, property name, or auction..."
+                  placeholder="Search by city, area, or postcode..."
                   className="w-full pl-12 pr-10 py-3.5 bg-white border-2 border-slate-200 rounded-2xl text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all"
                 />
                 {query && (
@@ -327,7 +324,7 @@ export default function UniversalSearch() {
                       <button
                         key={p._id}
                         onClick={() => {
-                          navigate(`/properties/${p.slug || p._id}`);
+                          navigate(`/view-all-lots?search=${encodeURIComponent(query)}`);
                           setShowDropdown(false);
                         }}
                         className="w-full px-6 py-4 text-left hover:bg-blue-50/50 border-b border-slate-50 flex items-center gap-4 transition-colors"

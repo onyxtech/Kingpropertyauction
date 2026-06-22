@@ -15,14 +15,7 @@ export const universalSearch = async (req, res) => {
     if (q) {
       const regex = new RegExp(q, "i");
       propertyFilter.$or = [
-        { propertyTitle: regex },
-        { propertyDescription: regex },
-        { propertyType: regex },
         { "location.city": regex },
-        { "location.area": regex },
-        { "location.postalCode": regex },
-        { "location.streetAddress": regex },
-        { propertyID: regex },
       ];
     }
     if (location) propertyFilter["location.city"] = new RegExp(location, "i");

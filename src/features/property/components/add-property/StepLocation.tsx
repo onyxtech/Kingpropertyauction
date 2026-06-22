@@ -8,7 +8,11 @@ interface StepLocationProps {
   theme: { primary: string };
 }
 
-export default function StepLocation({ formData, handleInputChange, theme }: StepLocationProps) {
+export default function StepLocation({
+  formData,
+  handleInputChange,
+  theme,
+}: StepLocationProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
@@ -36,9 +40,7 @@ export default function StepLocation({ formData, handleInputChange, theme }: Ste
             type="text"
             placeholder="United Kingdom"
             value={formData.country}
-            onChange={(e) =>
-              handleInputChange("country", e.target.value)
-            }
+            onChange={(e) => handleInputChange("country", e.target.value)}
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
@@ -95,16 +97,19 @@ export default function StepLocation({ formData, handleInputChange, theme }: Ste
             onAddressSelect={(address: ParsedAddress) => {
               if (address.streetAddress)
                 handleInputChange("streetAddress", address.streetAddress);
-              if (address.city)
-                handleInputChange("city", address.city);
-              if (address.state)
-                handleInputChange("state", address.state);
+              if (address.city) handleInputChange("city", address.city);
+              if (address.postalCode)
+                handleInputChange("postalCode", address.postalCode);
+              if (address.state) handleInputChange("state", address.state);
+              if (address.lat) handleInputChange("latitude", address.lat);
+              if (address.lng) handleInputChange("longitude", address.lng);
+              if (address.city) handleInputChange("city", address.city);
+              if (address.state) handleInputChange("state", address.state);
               if (address.country)
                 handleInputChange("country", address.country);
               if (address.postalCode)
                 handleInputChange("postalCode", address.postalCode);
-              if (address.area)
-                handleInputChange("area", address.area);
+              if (address.area) handleInputChange("area", address.area);
             }}
             placeholder="e.g., 123 Park Lane, London"
           />
@@ -125,9 +130,10 @@ export default function StepLocation({ formData, handleInputChange, theme }: Ste
             className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             required
           />
-          <p className="text-xs text-slate-500 mt-1">UK postcode format (e.g. SW1A 1AA)</p>
+          <p className="text-xs text-slate-500 mt-1">
+            UK postcode format (e.g. SW1A 1AA)
+          </p>
         </div>
-
       </div>
     </div>
   );

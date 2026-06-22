@@ -69,7 +69,7 @@ export default function PropertyGrid({
       return false;
 
     const priceValue =
-      property.pricing?.reservePrice ||
+      property.pricing?.startingAuctionPrice ||
       property.pricing?.startingAuctionPrice ||
       0;
     const minPriceValue = filters.minPrice ? parseInt(filters.minPrice) : 0;
@@ -160,9 +160,9 @@ export default function PropertyGrid({
 
   filteredProperties = [...filteredProperties].sort((a: any, b: any) => {
     const priceA =
-      a.pricing?.reservePrice || a.pricing?.startingAuctionPrice || 0;
+      a.pricing?.startingAuctionPrice || 0;
     const priceB =
-      b.pricing?.reservePrice || b.pricing?.startingAuctionPrice || 0;
+      b.pricing?.startingAuctionPrice || 0;
     const dateA = new Date(a.createdAt || 0).getTime();
     const dateB = new Date(b.createdAt || 0).getTime();
 

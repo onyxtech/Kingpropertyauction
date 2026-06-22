@@ -26,8 +26,6 @@ export default function BidModalWrapper({ show, property, bidAmount, bidSuccess,
   const currentBid = property?.currentBid || property?.pricing?.startingAuctionPrice || 0;
   const bidIncrement = property?.pricing?.minimumBidIncrement || 1000;
   const nextMinBid = currentBid + bidIncrement;
-  const reservePrice = property?.pricing?.reservePrice || 0;
-  const reserveMet = (property?.currentBid || 0) >= reservePrice;
 
   return (
     <BidModal
@@ -37,8 +35,6 @@ export default function BidModalWrapper({ show, property, bidAmount, bidSuccess,
       currentBid={currentBid}
       nextMinBid={nextMinBid}
       bidIncrement={bidIncrement}
-      reservePrice={reservePrice}
-      reserveMet={reserveMet}
       bidAmount={bidAmount}
       onBidAmountChange={onBidChange}
       bidSuccess={bidSuccess}

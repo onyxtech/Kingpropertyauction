@@ -170,13 +170,11 @@ export default function PropertyDetails() {
   const currentBid =
     property?.currentBid || property?.pricing?.startingAuctionPrice || 0;
   const startingPrice = property?.pricing?.startingAuctionPrice || 0;
-  const reservePrice = property?.pricing?.reservePrice || 0;
   const bidIncrement =
     property?.pricing?.minimumBidIncrement ||
     matchingAuction?.bidIncrement ||
     1000;
   const nextMinBid = currentBid + bidIncrement;
-  const reserveMet = currentBid >= reservePrice;
   const buyNowPrice = property?.pricing?.buyNowPrice || 0;
 
   const images =
@@ -530,10 +528,8 @@ export default function PropertyDetails() {
             isDirectSale={isDirectSale}
             currentBid={currentBid}
             startingPrice={startingPrice}
-            reservePrice={reservePrice}
             bidIncrement={bidIncrement}
             nextMinBid={nextMinBid}
-            reserveMet={reserveMet}
             buyNowPrice={buyNowPrice}
             features={features}
             isFavorite={isFavorite}
@@ -695,8 +691,6 @@ export default function PropertyDetails() {
         currentBid={currentBid}
         nextMinBid={nextMinBid}
         bidIncrement={bidIncrement}
-        reservePrice={reservePrice}
-        reserveMet={reserveMet}
         bidAmount={bidAmount}
         onBidAmountChange={setBidAmount}
         autoBidEnabled={property?.auctionDetails?.autoBidEnabled}
@@ -758,13 +752,8 @@ export default function PropertyDetails() {
             <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-6 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-2xl font-black text-white">
-                    Property Location
-                  </h3>
-                  <p className="text-white/90">
-                    {property.location?.streetAddress},{" "}
-                    {property.location?.city}
-                  </p>
+                  <h3 className="text-2xl font-black text-white">Property Location</h3>
+                  <p className="text-white/90">{property.location?.streetAddress}, {property.location?.city}</p>
                 </div>
                 <button
                   onClick={() => setShowMapModal(false)}
@@ -774,24 +763,45 @@ export default function PropertyDetails() {
                 </button>
               </div>
             </div>
-            <div className="relative h-[400px] bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="size-20 text-red-500 mx-auto animate-bounce" />
-                <p className="text-xl font-bold text-slate-700 mt-4">
-                  {property.location?.streetAddress}
-                </p>
-                <p className="text-slate-500">
-                  {property.location?.city}, {property.location?.area}
-                </p>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.location?.streetAddress + " " + property.location?.city)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold"
-                >
-                  Open in Google Maps
-                </a>
-              </div>
+            <div className="relative h-[500px] bg-slate-200">
+              {property.location?.latitude && property.location?.longitude ? (
+                <>
+                  <iframe
+                    src={`https://maps.google.com/maps?q=${property.location.latitude},${property.location.longitude}&z=17&ie=UTF8&iwloc=B&output=embed`}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Property Location"
+                  />
+                  <a
+                    href={`https://www.google.com/maps/@${property.location.latitude},${property.location.longitude},97m/data=!3m1!1e3?entry=ttu`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute bottom-4 right-4 px-4 py-2 bg-white rounded-xl shadow-lg text-sm font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-2 z-10"
+                  >
+                    <MapPin className="size-4 text-emerald-600" /> View Larger Map
+                  </a>
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <MapPin className="size-20 text-red-500 mx-auto animate-bounce" />
+                    <p className="text-xl font-bold text-slate-700 mt-4">{property.location?.streetAddress}</p>
+                    <p className="text-slate-500">{property.location?.city}, {property.location?.area}</p>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.location?.streetAddress + " " + property.location?.city)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold"
+                    >
+                      Open in Google Maps
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

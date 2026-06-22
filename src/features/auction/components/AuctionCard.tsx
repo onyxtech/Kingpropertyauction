@@ -212,9 +212,7 @@ export default function AuctionCard({ auction }: any) {
                 const soldPrice = bidStats.soldPrice || null;
                 const displayPrice = (isCompleted && isSold && soldPrice) ? soldPrice : highestBid;
                 const isUnsold = isCompleted && !isSold && (bidStats.highestBid !== undefined || latestData?.propertyStatus === "unsold");
-                const pReserve =
-                  bidStats.reservePrice || latestData?.pricing?.reservePrice || property.pricing?.reservePrice || 0;
-                const pReserveMet = highestBid >= pReserve && pReserve > 0;
+                
 
                 // For live auctions, get winning bidder name from global data
                 const liveWinnerObj = latestData?.winningBidder || latestData?.soldTo || property.winningBidder;
@@ -261,8 +259,8 @@ export default function AuctionCard({ auction }: any) {
                           </span>
                         )
                       ) : (
-                        <span className={`text-xs font-bold ml-2 ${pReserveMet ? "text-green-600" : "text-amber-600"}`}>
-                          {pReserveMet ? "✅ Met" : "❌ Not Met"}
+                        <span className="text-xs font-bold ml-2 text-green-600">
+                         
                         </span>
                       )}
                     </div>
@@ -323,9 +321,7 @@ export default function AuctionCard({ auction }: any) {
                             {liveWinnerName.length > 25 ? liveWinnerName.slice(0, 23) + "..." : liveWinnerName}
                           </span>
                         </span>
-                        {pReserve > 0 && (
-                          <span className="text-slate-400">Reserve: £{pReserve.toLocaleString()}</span>
-                        )}
+                       
                       </div>
                     )}
                   </div>

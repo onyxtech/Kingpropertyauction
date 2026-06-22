@@ -74,18 +74,12 @@ export default function PropertyCard({
         property.currentBid || property.pricing?.startingAuctionPrice || 0,
       )
     : formatPrice(
-        property.pricing?.reservePrice ||
-          property.pricing?.startingAuctionPrice ||
-          0,
+        property.pricing?.buyNowPrice || property.pricing?.startingAuctionPrice || 0,
       );
   const nextMinBid = isAuction
     ? (property.currentBid || property.pricing?.startingAuctionPrice || 0) +
       (property.pricing?.minimumBidIncrement || 1000)
     : 0;
-  const reserveMet = isAuction
-    ? (property.currentBid || 0) >= (property.pricing?.reservePrice || 0)
-    : false;
-  const reservePrice = property.pricing?.reservePrice || 0;
   const imageUrl = getPropertyImage(property);
   const isSold = property.propertyStatus === "sold";
   const isUnsold = property.propertyStatus === "unsold";
@@ -263,18 +257,7 @@ export default function PropertyCard({
               <p className="text-2xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 {displayPrice}
               </p>
-              {reservePrice > 0 && (
-                <div
-                  className={`flex items-center gap-1.5 text-xs font-bold ${reserveMet ? "text-green-600" : "text-amber-600"}`}
-                >
-                  {reserveMet ? (
-                    <CheckCircle className="size-3.5" />
-                  ) : (
-                    <AlertCircle className="size-3.5" />
-                  )}
-                  {reserveMet ? "Reserve Met" : "Reserve Not Met"}
-                </div>
-              )}
+              
               {nextMinBid > 0 && (
                 <p className="text-xs text-slate-500">
                   Next min bid:{" "}
@@ -331,21 +314,8 @@ export default function PropertyCard({
                         property.soldPrice || property.currentBid || 0,
                       )}
                     </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">
-                      Reserve Price
-                    </span>
-                    <span className="font-bold text-slate-700">
-                      {formatPrice(property.pricing?.reservePrice || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">
-                      Reserve Met
-                    </span>
-                    <span className="font-bold text-green-600">✅ Yes</span>
-                  </div>
+                  </div>                
+                 
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500 font-medium">Bids</span>
                     <span className="font-bold text-slate-700">
@@ -363,20 +333,6 @@ export default function PropertyCard({
                       {formatPrice(property.currentBid || 0)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">
-                      Reserve Price
-                    </span>
-                    <span className="font-bold text-slate-700">
-                      {formatPrice(property.pricing?.reservePrice || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">
-                      Reserve Met
-                    </span>
-                    <span className="font-bold text-red-600">❌ No</span>
-                  </div>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -392,29 +348,8 @@ export default function PropertyCard({
                       )}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">
-                      Reserve Price
-                    </span>
-                    <span className="font-bold text-slate-700">
-                      {formatPrice(property.pricing?.reservePrice || 0)}
-                    </span>
-                  </div>
-                  {property.currentBid > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500 font-medium">
-                        Reserve Met
-                      </span>
-                      <span
-                        className={`font-bold ${property.currentBid >= (property.pricing?.reservePrice || 0) ? "text-green-600" : "text-red-500"}`}
-                      >
-                        {property.currentBid >=
-                        (property.pricing?.reservePrice || 0)
-                          ? "✅ Yes"
-                          : "❌ No"}
-                      </span>
-                    </div>
-                  )}
+                
+                  
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500 font-medium">Bids</span>
                     <span className="font-bold text-slate-700">

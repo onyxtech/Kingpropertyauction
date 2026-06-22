@@ -62,14 +62,7 @@ export const getProperties = async (query = {}) => {
   if (query.search) {
     const searchRegex = new RegExp(query.search, "i");
     filter.$or = [
-      { propertyTitle: searchRegex },
-      { propertyDescription: searchRegex },
-      { propertyType: searchRegex },
       { "location.city": searchRegex },
-      { "location.area": searchRegex },
-      { "location.postalCode": searchRegex },
-      { "location.streetAddress": searchRegex },
-      { propertyID: searchRegex },
     ];
   }
   if (query.location) {

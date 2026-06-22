@@ -244,8 +244,6 @@ export default function ViewAllLots() {
               const isUnsold = lot.propertyStatus === "unsold";
               const currentBid =
                 lot.currentBid || lot.pricing?.startingAuctionPrice || 0;
-              const reservePrice = lot.pricing?.reservePrice || 0;
-              const reserveMet = currentBid >= reservePrice;
               const nextMinBid =
                 currentBid + (lot.pricing?.minimumBidIncrement || 1000);
               const displayBid = isSold
@@ -393,18 +391,7 @@ export default function ViewAllLots() {
                             {formatPrice(nextMinBid, lot.pricing?.currency)}
                           </span>
                         </div>
-                        {reservePrice > 0 && (
-                          <div
-                            className={`flex items-center gap-1 text-xs font-bold ${reserveMet ? "text-green-600" : "text-amber-600"}`}
-                          >
-                            {reserveMet ? (
-                              <CheckCircle className="size-3" />
-                            ) : (
-                              <AlertCircle className="size-3" />
-                            )}
-                            {reserveMet ? "Reserve Met" : "Reserve Not Met"}
-                          </div>
-                        )}
+                      
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-500">Bids</span>
                           <span className="font-bold text-slate-700">
@@ -422,22 +409,7 @@ export default function ViewAllLots() {
                             {formatPrice(displayBid, lot.pricing?.currency)}
                           </span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-500">Reserve</span>
-                          <span className="font-bold text-slate-700">
-                            {formatPrice(reservePrice, lot.pricing?.currency)}
-                          </span>
-                        </div>
-                        {(isSold || isUnsold || lot.currentBid > 0) && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-500">Reserve Met</span>
-                            <span
-                              className={`font-bold ${isSold ? "text-green-600" : "text-red-500"}`}
-                            >
-                              {isSold ? "✅ Yes" : "❌ No"}
-                            </span>
-                          </div>
-                        )}
+                        
                       </div>
                     )}
 

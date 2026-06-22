@@ -9,8 +9,6 @@ interface BidModalProps {
   currentBid: number;
   nextMinBid: number;
   bidIncrement: number;
-  reservePrice?: number;
-  reserveMet?: boolean;
   bidAmount: string;
   onBidAmountChange: (val: string) => void;
   autoBidEnabled?: boolean;
@@ -32,8 +30,6 @@ export default function BidModal({
   currentBid,
   nextMinBid,
   bidIncrement,
-  reservePrice,
-  reserveMet,
   bidAmount,
   onBidAmountChange,
   autoBidEnabled,
@@ -112,20 +108,7 @@ export default function BidModal({
               {formatPrice(bidIncrement)}
             </span>
           </div>
-          {reservePrice !== undefined && reservePrice > 0 && (
-            <div
-              className={`flex items-center gap-1.5 text-xs font-bold ${reserveMet ? "text-green-600" : "text-amber-600"}`}
-            >
-              {reserveMet ? (
-                <CheckCircle className="size-3.5" />
-              ) : (
-                <AlertCircle className="size-3.5" />
-              )}
-              {reserveMet
-                ? "Reserve Met"
-                : `Reserve Not Met (${formatPrice(reservePrice)})`}
-            </div>
-          )}
+          
         </div>
 
         {bidSuccess ? (
