@@ -8,14 +8,8 @@ export default function UniversalSearch() {
   const [address, setAddress] = useState("");
 
   const handleAddressSelect = (data: any) => {
-    // Build a clean location string from components
-    const parts = [];
-    if (data.city) parts.push(data.city);
-    if (data.area && data.area !== data.city) parts.push(data.area);
-    if (data.postalCode) parts.push(data.postalCode);
-    
-    const searchTerm = parts.length > 0 ? parts.join(", ") : (data.formattedAddress || address);
-    setAddress(searchTerm);
+    // Keep the exact selected text from dropdown
+    // Address is already set by the autocomplete component
   };
 
   const handleSearch = () => {

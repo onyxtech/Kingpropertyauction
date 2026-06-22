@@ -65,20 +65,17 @@ export const getProperties = async (query = {}) => {
   if (category) filter.propertyCategory = category;
   if (listingType) filter.listingType = listingType;
   if (city) filter["location.city"] = city;
-  // Build all filter conditions
-  const andConditions = [];
+
 
   // Search filter
   if (query.search) {
     const searchWords = query.search.split(/[\s,]+/).filter(w => w.length > 1);
     const searchRegex = new RegExp(searchWords.join("|"), "i");
-    andConditions.push({
-      $or: [
-        { "location.city": searchRegex },
-        { "location.area": searchRegex },
-        { "location.postalCode": searchRegex },
-      ],
-    });
+    filter.$or = [
+      { "location.city": searchRegex },
+      { "location.area": searchRegex },
+      { "location.postalCode": searchRegex },
+    ];
   }
 
   if (query.location) {
@@ -103,12 +100,6 @@ export const getProperties = async (query = {}) => {
     if (maxBeds) filter["specifications.bedrooms"].$lte = parseInt(maxBeds);
   }
 
-  // If we have both search AND price, use $and
-  if (andConditions.length > 0 && filter.$or) {
-    andConditions.push({ $or: filter.$or });
-    delete filter.$or;
-    filter.$and = andConditions;
-  }
 
 
   if (query.auctionSlug) {

@@ -247,7 +247,7 @@ export default function ViewAllLots() {
                 sessionStorage.setItem("viewAllLotsScroll", window.scrollY.toString());
                 window.location.href = `/view-all-lots?${p.toString()}`;
               }} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all whitespace-nowrap">
-                Update Results
+                Show Results
               </button>
             </div>
             {Object.values(filterValues).some(v => v) && (
