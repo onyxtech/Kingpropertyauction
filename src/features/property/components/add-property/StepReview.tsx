@@ -7,9 +7,12 @@ interface StepReviewProps {
   theme: { primary: string };
   onEditStep?: (step: number) => void;
   isAdmin?: boolean;
+  listOnZoopla?: boolean;
+  setListOnZoopla?: (val: boolean) => void;
+  zooplaEnabled?: boolean;
 }
 
-export default function StepReview({ formData, theme, onEditStep, isAdmin, user }: StepReviewProps) {
+export default function StepReview({ formData, theme, onEditStep, isAdmin, user, listOnZoopla, setListOnZoopla, zooplaEnabled }: StepReviewProps) {
 
   return (
     <div className="space-y-6">
@@ -345,6 +348,28 @@ export default function StepReview({ formData, theme, onEditStep, isAdmin, user 
         </div>
       </div>
 
+            {/* Zoopla Listing Option */}
+      {zooplaEnabled && (
+        <div className="bg-purple-50 rounded-xl p-6 border-2 border-purple-200">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={listOnZoopla}
+              onChange={(e) => setListOnZoopla?.(e.target.checked)}
+              className="size-5 rounded accent-purple-600 mt-1"
+            />
+            <div className="text-sm">
+              <span className="font-bold text-purple-900 flex items-center gap-2">
+                🏠 List on Zoopla
+              </span>
+              <p className="text-purple-700 mt-1">
+                Also publish this property on Zoopla to reach more potential buyers.
+              </p>
+            </div>
+          </label>
+        </div>
+      )}
+      
       {/* Terms & Conditions */}
       <div className="bg-slate-50 rounded-xl p-6 border-2 border-slate-200">
         <label className="flex items-start gap-3 cursor-pointer">

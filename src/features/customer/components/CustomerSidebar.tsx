@@ -111,6 +111,12 @@ export default function CustomerSidebar({
       show: user?.role !== "admin" && user?.role !== "seller",
     },
     {
+        id: "invoices",
+        icon: FileText,
+        label: "Invoices",
+        show: true,
+    },
+    {
       id: "offers",
       icon: Handshake,
       label: "Offers & Negotiations",

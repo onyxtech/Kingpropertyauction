@@ -1,0 +1,1019 @@
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import AdminLayout from "../components/AdminLayout";
+import { apiClient } from "@/lib/apiClient";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { showSuccess, showError } from "@/lib/toast";
+import {
+  FileText,
+  Search,
+  Eye,
+  Download,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Loader2,
+  PoundSterling,
+  TrendingUp,
+  AlertCircle,
+  Home,
+} from "lucide-react";
+
+const statusColors: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-700",
+  paid: "bg-green-100 text-green-700",
+  overdue: "bg-red-100 text-red-700",
+  cancelled: "bg-slate-100 text-slate-500",
+  refunded: "bg-purple-100 text-purple-700",
+  withdrawn: "bg-orange-100 text-orange-700",
+};
+
+export default function Invoices() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [processing, setProcessing] = useState(false);
+
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [generateForm, setGenerateForm] = useState({
+    propertyId: "",
+    buyerId: "",
+    sellerId: "",
+    salePrice: "",
+    notes: "",
+  });
+  const [properties, setProperties] = useState<any[]>([]);
+  const [buyers, setBuyers] = useState<any[]>([]);
+  const [preview, setPreview] = useState<any>(null);
+  const [selectedProperty, setSelectedProperty] = useState<any>(null);
+
+  const [propertySearch, setPropertySearch] = useState("");
+  const [buyerSearch, setBuyerSearch] = useState("");
+  const [showPropertyList, setShowPropertyList] = useState(false);
+  const [showBuyerList, setShowBuyerList] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-invoices", statusFilter],
+    queryFn: () => apiClient.fetch(`/invoices?status=${statusFilter}`),
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ["invoice-stats"],
+    queryFn: () => apiClient.fetch("/invoices/stats"),
+  });
+
+  const invoices = data?.invoices || data?.data || [];
+  const invoiceStats = stats?.data || {};
+
+  const filtered = invoices.filter(
+    (inv: any) =>
+      !search ||
+      inv.invoiceNumber?.toLowerCase().includes(search.toLowerCase()) ||
+      inv.buyer?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      inv.property?.propertyTitle?.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const formatPrice = (val: number) =>
+    new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
+      maximumFractionDigits: 0,
+    }).format(val || 0);
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    setProcessing(true);
+    try {
+      const result = await apiClient.fetch(`/invoices/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      if (result.success) {
+        showSuccess(`Invoice marked as ${status}`);
+        queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
+        queryClient.invalidateQueries({ queryKey: ["invoice-stats"] });
+        setSelectedInvoice(null);
+      }
+    } catch (e: any) {
+      showError("Failed", e.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const downloadPDF = async (invoice: any) => {
+    const { jsPDF } = await import("jspdf");
+    const autoTable = (await import("jspdf-autotable")).default;
+    const doc = new jsPDF();
+    const m = 14;
+    let y = 20;
+
+    doc.setFillColor(30, 64, 175);
+    doc.rect(0, 0, 210, 35, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text("KING PROPERTY AUCTION", m, 18);
+    doc.setFontSize(10);
+    doc.text("Invoice", m, 28);
+
+    doc.setTextColor(0);
+    doc.setFontSize(12);
+    y = 42;
+    doc.text(`Invoice: ${invoice.invoiceNumber}`, m, y);
+    y += 8;
+    doc.setFontSize(10);
+    doc.text(
+      `Date: ${new Date(invoice.issuedDate).toLocaleDateString("en-GB")}`,
+      m,
+      y,
+    );
+    y += 6;
+    doc.text(
+      `Due Date: ${new Date(invoice.dueDate).toLocaleDateString("en-GB")}`,
+      m,
+      y,
+    );
+    y += 6;
+    doc.text(`Status: ${invoice.status.toUpperCase()}`, m, y);
+    y += 10;
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Buyer:", m, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.text(`  ${invoice.buyer?.name || "N/A"}`, m, y);
+    y += 5;
+    doc.text(`  ${invoice.buyer?.email || ""}`, m, y);
+    y += 8;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Property:", m, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.text(`  ${invoice.property?.propertyTitle || "N/A"}`, m, y);
+    y += 10;
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Description", "Amount"]],
+      body: [
+        ["Sale Price", formatPrice(invoice.salePrice)],
+        [
+          `Buyer's Fee (${invoice.buyersFeePercent}%)`,
+          formatPrice(invoice.buyersFeeAmount),
+        ],
+        [`VAT (${invoice.vatPercent}%)`, formatPrice(invoice.vatAmount)],
+        ["Additional Fees", formatPrice(invoice.additionalFees || 0)],
+        ["Total Amount", formatPrice(invoice.totalAmount)],
+        ["Deposit Due", formatPrice(invoice.depositAmount)],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontSize: 9 },
+      bodyStyles: { fontSize: 9 },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(8);
+    doc.text(invoice.termsOfSale || "", m, y, { maxWidth: 180 });
+
+    doc.save(`${invoice.invoiceNumber}.pdf`);
+  };
+
+  const openGenerateModal = async () => {
+    setShowGenerateModal(true);
+    setPreview(null);
+    setSelectedProperty(null);
+    const [propsRes, usersRes, invoicesRes] = await Promise.all([
+      apiClient.fetch("/properties?limit=200"),
+      apiClient.fetch("/users?limit=200"),
+      apiClient.fetch("/invoices?limit=200"),
+    ]);
+    // Exclude properties that have an active invoice (not cancelled/withdrawn)
+    const activeInvoicedIds = (invoicesRes?.invoices || invoicesRes?.data || [])
+      .filter((i: any) => !["cancelled", "withdrawn"].includes(i.status))
+      .map((i: any) => i.property?._id || i.property);
+    const availableProperties = (propsRes.data || []).filter(
+      (p: any) => !activeInvoicedIds.includes(p._id),
+    );
+    setProperties(availableProperties);
+    setBuyers(usersRes.data || usersRes.users || []);
+  };
+
+  const handlePropertyChange = async (propertyId: string) => {
+    setGenerateForm({
+      ...generateForm,
+      propertyId,
+      buyerId: "",
+      salePrice: "",
+    });
+    setPreview(null);
+    if (!propertyId) return;
+
+    const prop = properties.find((p: any) => p._id === propertyId);
+    setSelectedProperty(prop);
+
+    const price =
+      prop?.soldPrice ||
+      prop?.currentBid ||
+      prop?.pricing?.startingAuctionPrice ||
+      0;
+    const priceStr = price.toString();
+
+    let bidderId = "";
+    if (prop?.winningBidder) {
+      bidderId =
+        typeof prop.winningBidder === "object"
+          ? prop.winningBidder._id
+          : prop.winningBidder;
+    }
+
+    const sellerId = prop?.createdBy?._id || prop?.createdBy || "";
+    setGenerateForm((prev) => ({
+      ...prev,
+      salePrice: priceStr,
+      buyerId: bidderId,
+      sellerId,
+    }));
+
+    // Auto-calculate preview
+    if (price > 0) {
+      try {
+        const customSettings: any = {};
+        if (prop?.termsOfSale) {
+          const t = prop.termsOfSale;
+          if (t.buyersFeePercent)
+            customSettings.buyersFeePercent = t.buyersFeePercent;
+          if (t.buyersFeeMin) customSettings.buyersFeeMin = t.buyersFeeMin;
+          if (t.depositPercent)
+            customSettings.depositPercent = t.depositPercent;
+          if (t.depositMin) customSettings.depositMin = t.depositMin;
+          if (t.vatPercent) customSettings.vatPercent = t.vatPercent;
+          if (t.additionalFees != null && t.additionalFees > 0)
+            customSettings.additionalFees = t.additionalFees;
+        }
+        const result = await apiClient.fetch("/invoices/calculate", {
+          method: "POST",
+          body: JSON.stringify({ salePrice: price, customSettings }),
+        });
+        if (result.success) setPreview(result.data);
+      } catch {}
+    }
+  };
+
+  const handlePriceChange = async (price: string) => {
+    setGenerateForm({ ...generateForm, salePrice: price });
+    if (price && parseFloat(price) > 0) {
+      try {
+        const customSettings: any = {};
+        if (selectedProperty?.termsOfSale) {
+          const t = selectedProperty.termsOfSale;
+          if (t.buyersFeePercent)
+            customSettings.buyersFeePercent = t.buyersFeePercent;
+          if (t.buyersFeeMin) customSettings.buyersFeeMin = t.buyersFeeMin;
+          if (t.depositPercent)
+            customSettings.depositPercent = t.depositPercent;
+          if (t.depositMin) customSettings.depositMin = t.depositMin;
+          if (t.vatPercent) customSettings.vatPercent = t.vatPercent;
+          if (t.additionalFees != null && t.additionalFees > 0)
+            customSettings.additionalFees = t.additionalFees;
+        }
+        const result = await apiClient.fetch("/invoices/calculate", {
+          method: "POST",
+          body: JSON.stringify({
+            salePrice: parseFloat(price),
+            customSettings,
+          }),
+        });
+        if (result.success) setPreview(result.data);
+      } catch {}
+    } else {
+      setPreview(null);
+    }
+  };
+
+  const handleGenerateInvoice = async () => {
+    if (
+      !generateForm.propertyId ||
+      !generateForm.buyerId ||
+      !generateForm.salePrice
+    ) {
+      showError("Please fill all required fields");
+      return;
+    }
+    setProcessing(true);
+    try {
+      const result = await apiClient.fetch("/invoices", {
+        method: "POST",
+        body: JSON.stringify({
+          propertyId: generateForm.propertyId,
+          buyerId: generateForm.buyerId,
+          sellerId: generateForm.sellerId,
+          salePrice: parseFloat(generateForm.salePrice),
+          notes: generateForm.notes,
+          invoiceType: "manual",
+        }),
+      });
+      if (result.success) {
+        showSuccess("Invoice generated!");
+        queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
+        queryClient.invalidateQueries({ queryKey: ["invoice-stats"] });
+        setShowGenerateModal(false);
+      }
+    } catch (e: any) {
+      showError("Failed", e.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <AdminLayout activeTab="invoices" onTabChange={() => {}}>
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-3xl font-black text-slate-900">Invoices</h2>
+            <p className="text-slate-600 font-medium mt-1">
+              Manage all property invoices
+            </p>
+          </div>
+          <button
+            onClick={openGenerateModal}
+            className="px-4 py-2 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700 transition-all flex items-center gap-2"
+          >
+            <FileText className="size-4" /> Generate Invoice
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            {
+              label: "Total Invoices",
+              value: invoiceStats.total || 0,
+              icon: FileText,
+              color: "from-blue-500 to-indigo-600",
+            },
+            {
+              label: "Pending",
+              value: invoiceStats.pending || 0,
+              icon: Clock,
+              color: "from-yellow-500 to-amber-600",
+            },
+            {
+              label: "Paid",
+              value: invoiceStats.paid || 0,
+              icon: CheckCircle,
+              color: "from-green-500 to-emerald-600",
+            },
+            {
+              label: "Total Value",
+              value: formatPrice(invoiceStats.totalAmount || 0),
+              icon: PoundSterling,
+              color: "from-purple-500 to-violet-600",
+            },
+          ].map((s) => {
+            const Icon = s.icon;
+            return (
+              <div
+                key={s.label}
+                className={`bg-gradient-to-br ${s.color} rounded-2xl p-4 text-white`}
+              >
+                <Icon className="size-5 opacity-80 mb-2" />
+                <p className="text-2xl font-black">{s.value}</p>
+                <p className="text-white/80 text-xs font-medium">{s.label}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 border-2 border-white/60 shadow-lg mb-6 flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search invoice number, buyer or property..."
+              className="w-full pl-10 pr-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-bold"
+          >
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+            <option value="overdue">Overdue</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="withdrawn">Withdrawn</option>
+          </select>
+        </div>
+
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border-2 border-white/60 shadow-lg overflow-hidden">
+          {isLoading ? (
+            <div className="text-center py-12">
+              <Loader2 className="size-8 animate-spin mx-auto" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-16 text-slate-400">
+              <FileText className="size-12 mx-auto mb-3 opacity-30" />
+              <p className="font-bold">No invoices found</p>
+              <p className="text-sm text-slate-400 mt-1">
+                Click "Generate Invoice" to create one for a sold property
+              </p>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-gradient-to-r from-blue-600 to-indigo-600">
+                <tr>
+                  {[
+                    "Invoice #",
+                    "Buyer",
+                    "Property",
+                    "Sale Price",
+                    "Total",
+                    "Status",
+                    "Date",
+                    "Actions",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-left text-xs font-black text-white uppercase"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((inv: any) => (
+                  <tr
+                    key={inv._id}
+                    className="hover:bg-blue-50 cursor-pointer"
+                    onClick={() => setSelectedInvoice(inv)}
+                  >
+                    <td className="px-4 py-3 font-bold text-blue-600 text-xs">
+                      {inv.invoiceNumber}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-semibold text-slate-900">
+                      {inv.buyer?.name || "N/A"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-700">
+                      {inv.property?.propertyTitle || "N/A"}
+                    </td>
+                    <td className="px-4 py-3 font-bold text-slate-900">
+                      {formatPrice(inv.salePrice)}
+                    </td>
+                    <td className="px-4 py-3 font-black text-green-700">
+                      {formatPrice(inv.totalAmount)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const isOverdue =
+                          inv.status === "pending" &&
+                          new Date(inv.dueDate) < new Date();
+                        const displayStatus = isOverdue
+                          ? "overdue"
+                          : inv.status;
+                        return (
+                          <span
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold ${statusColors[displayStatus]}`}
+                          >
+                            {displayStatus}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-500">
+                      {new Date(inv.issuedDate).toLocaleDateString("en-GB")}
+                    </td>
+                    <td
+                      className="px-4 py-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setSelectedInvoice(inv)}
+                          className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold hover:bg-blue-200"
+                        >
+                          View
+                        </button>
+                        {inv.status === "pending" && (
+                          <button
+                            onClick={() => handleUpdateStatus(inv._id, "paid")}
+                            className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-[10px] font-bold hover:bg-green-200"
+                          >
+                            Mark Paid
+                          </button>
+                        )}
+                        {inv.status === "paid" && (
+                          <button
+                            onClick={() =>
+                              handleUpdateStatus(inv._id, "withdrawn")
+                            }
+                            className="px-2 py-1 bg-orange-100 text-orange-700 rounded-lg text-[10px] font-bold hover:bg-orange-200"
+                          >
+                            Mark Withdraw
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {/* Invoice Detail Modal */}
+      {selectedInvoice && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedInvoice(null)}
+        >
+          <div
+            className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white rounded-t-3xl sticky top-0 z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileText className="size-7" />
+                  <div>
+                    <h3 className="text-xl font-black">
+                      {selectedInvoice.invoiceNumber}
+                    </h3>
+                    <p className="text-white/80 text-sm">
+                      {selectedInvoice.property?.propertyTitle}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedInvoice(null)}
+                  className="size-10 bg-white/20 rounded-full flex items-center justify-center"
+                >
+                  <XCircle className="size-5" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-5">
+              <div className="flex justify-between items-center">
+                <span
+                  className={`px-3 py-1.5 rounded-xl text-sm font-bold ${statusColors[selectedInvoice.status]}`}
+                >
+                  {selectedInvoice.status.toUpperCase()}
+                </span>
+                <button
+                  onClick={() => downloadPDF(selectedInvoice)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold flex items-center gap-2"
+                >
+                  <Download className="size-4" /> PDF
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-slate-500 text-xs">Buyer</p>
+                  <p className="font-bold">{selectedInvoice.buyer?.name}</p>
+                  <p className="text-xs text-slate-500">
+                    {selectedInvoice.buyer?.email}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-500 text-xs">Property</p>
+                  <p className="font-bold">
+                    {selectedInvoice.property?.propertyTitle}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-500 text-xs">Issued</p>
+                  <p className="font-bold">
+                    {new Date(selectedInvoice.issuedDate).toLocaleDateString(
+                      "en-GB",
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-500 text-xs">Due Date</p>
+                  <p className="font-bold">
+                    {new Date(selectedInvoice.dueDate).toLocaleDateString(
+                      "en-GB",
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-4">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {[
+                      ["Sale Price", formatPrice(selectedInvoice.salePrice)],
+                      [
+                        `Buyer's Fee (${selectedInvoice.buyersFeePercent}%)`,
+                        formatPrice(selectedInvoice.buyersFeeAmount),
+                      ],
+                      [
+                        `VAT (${selectedInvoice.vatPercent}%)`,
+                        formatPrice(selectedInvoice.vatAmount),
+                      ],
+                      [
+                        "Additional Fees",
+                        formatPrice(selectedInvoice.additionalFees || 0),
+                      ],
+                    ].map(([label, value]) => (
+                      <tr key={label} className="border-b border-slate-100">
+                        <td className="py-2 text-slate-600">{label}</td>
+                        <td className="py-2 text-right font-bold">{value}</td>
+                      </tr>
+                    ))}
+                    <tr className="text-lg">
+                      <td className="py-3 font-black text-slate-900">Total</td>
+                      <td className="py-3 text-right font-black text-green-700">
+                        {formatPrice(selectedInvoice.totalAmount)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-2 text-slate-600">Deposit Due</td>
+                      <td className="py-2 text-right font-bold text-amber-600">
+                        {formatPrice(selectedInvoice.depositAmount)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {(selectedInvoice.status === "pending" ||
+                selectedInvoice.status === "paid") && (
+                <div className="flex gap-3 flex-wrap">
+                  {selectedInvoice.status === "pending" && (
+                    <>
+                      <button
+                        onClick={() =>
+                          handleUpdateStatus(selectedInvoice._id, "paid")
+                        }
+                        disabled={processing}
+                        className="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {processing ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <CheckCircle className="size-4" />
+                        )}{" "}
+                        Mark as Paid
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleUpdateStatus(selectedInvoice._id, "cancelled")
+                        }
+                        disabled={processing}
+                        className="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        <XCircle className="size-4" /> Cancel Invoice
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() =>
+                      handleUpdateStatus(selectedInvoice._id, "withdrawn")
+                    }
+                    disabled={processing}
+                    className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <AlertCircle className="size-4" /> Mark Withdrawn
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generate Invoice Modal */}
+      {showGenerateModal && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowGenerateModal(false)}
+        >
+          <div
+            className="bg-white rounded-3xl w-full max-w-xl shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white rounded-t-3xl sticky top-0 z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="size-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                    <FileText className="size-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black">Generate Invoice</h3>
+                    <p className="text-white/70 text-sm">
+                      Create a new invoice for a property
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowGenerateModal(false)}
+                  className="size-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30"
+                >
+                  <XCircle className="size-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Property Selection */}
+              <div>
+                <label className="block text-sm font-black text-slate-800 mb-2">
+                  Property <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search property..."
+                    value={propertySearch}
+                    onChange={(e) => {
+                      setPropertySearch(e.target.value);
+                      setShowPropertyList(true);
+                    }}
+                    onFocus={() => setShowPropertyList(true)}
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                  {generateForm.propertyId && selectedProperty && (
+                    <div className="mt-2 p-3 bg-purple-50 border border-purple-200 rounded-xl flex items-center gap-3">
+                      <Home className="size-5 text-purple-600" />
+                      <div>
+                        <p className="font-bold text-purple-900 text-sm">
+                          {selectedProperty.propertyTitle}
+                        </p>
+                        <p className="text-xs text-purple-600">
+                          {selectedProperty.propertyStatus} • £
+                          {(
+                            selectedProperty.soldPrice ||
+                            selectedProperty.currentBid ||
+                            selectedProperty.pricing?.startingAuctionPrice ||
+                            0
+                          ).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {showPropertyList && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border-2 border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                      {properties
+                        .filter(
+                          (p) =>
+                            !propertySearch ||
+                            p.propertyTitle
+                              ?.toLowerCase()
+                              .includes(propertySearch.toLowerCase()),
+                        )
+                        .slice(0, 20)
+                        .map((p: any) => (
+                          <button
+                            key={p._id}
+                            type="button"
+                            onClick={() => {
+                              handlePropertyChange(p._id);
+                              setShowPropertyList(false);
+                              setPropertySearch("");
+                            }}
+                            className="w-full px-4 py-2.5 text-left hover:bg-purple-50 flex items-center justify-between border-b border-slate-50"
+                          >
+                            <span className="text-sm font-medium text-slate-700">
+                              {p.propertyTitle}
+                            </span>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full font-bold ${p.propertyStatus === "sold" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}
+                            >
+                              {p.propertyStatus}
+                            </span>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Buyer Selection */}
+              <div>
+                <label className="block text-sm font-black text-slate-800 mb-2">
+                  Buyer <span className="text-red-500">*</span>
+                  {selectedProperty?.winningBidder && (
+                    <span className="text-xs font-normal text-green-600 ml-2">
+                      ✅ Auto-selected from property
+                    </span>
+                  )}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search buyer..."
+                    value={buyerSearch}
+                    onChange={(e) => {
+                      setBuyerSearch(e.target.value);
+                      setShowBuyerList(true);
+                    }}
+                    onFocus={() => setShowBuyerList(true)}
+                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                  {generateForm.buyerId && (
+                    <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+                      <div className="size-10 bg-green-200 rounded-xl flex items-center justify-center text-green-700 font-bold">
+                        {buyers
+                          .find((b) => b._id === generateForm.buyerId)
+                          ?.name?.charAt(0) || "?"}
+                      </div>
+                      <div>
+                        <p className="font-bold text-green-900 text-sm">
+                          {
+                            buyers.find((b) => b._id === generateForm.buyerId)
+                              ?.name
+                          }
+                        </p>
+                        <p className="text-xs text-green-600">
+                          {
+                            buyers.find((b) => b._id === generateForm.buyerId)
+                              ?.email
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {showBuyerList && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border-2 border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                      {buyers
+                        .filter(
+                          (b) =>
+                            !buyerSearch ||
+                            b.name
+                              ?.toLowerCase()
+                              .includes(buyerSearch.toLowerCase()) ||
+                            b.email
+                              ?.toLowerCase()
+                              .includes(buyerSearch.toLowerCase()),
+                        )
+                        .slice(0, 20)
+                        .map((b: any) => (
+                          <button
+                            key={b._id}
+                            type="button"
+                            onClick={() => {
+                              setGenerateForm({
+                                ...generateForm,
+                                buyerId: b._id,
+                              });
+                              setShowBuyerList(false);
+                              setBuyerSearch("");
+                            }}
+                            className="w-full px-4 py-2.5 text-left hover:bg-green-50 flex items-center gap-3 border-b border-slate-50"
+                          >
+                            <div className="size-8 bg-slate-200 rounded-lg flex items-center justify-center text-xs font-bold">
+                              {b.name?.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-slate-700">
+                                {b.name}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                {b.email}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Sale Price */}
+              <div>
+                <label className="block text-sm font-black text-slate-800 mb-2">
+                  Sale Price (£) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={generateForm.salePrice}
+                  onChange={(e) => handlePriceChange(e.target.value)}
+                  placeholder="Enter sale price"
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-lg font-bold focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+
+              {/* Live Preview */}
+              {preview && (
+                <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-2xl p-5 border-2 border-slate-200">
+                  <h4 className="font-black text-slate-800 text-sm mb-4 flex items-center gap-2">
+                    <FileText className="size-4 text-blue-600" /> Invoice
+                    Preview
+                  </h4>
+                  <table className="w-full text-sm">
+                    <tbody>
+                      <tr className="border-b border-slate-200">
+                        <td className="py-2 text-slate-600">Sale Price</td>
+                        <td className="py-2 text-right font-bold text-slate-900">
+                          £{preview.salePrice?.toLocaleString()}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-slate-200">
+                        <td className="py-2 text-slate-600">
+                          Buyer's Fee ({preview.buyersFeePercent}%)
+                        </td>
+                        <td className="py-2 text-right font-bold text-blue-700">
+                          £{preview.buyersFeeAmount?.toLocaleString()}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-slate-200">
+                        <td className="py-2 text-slate-600">
+                          VAT ({preview.vatPercent}%)
+                        </td>
+                        <td className="py-2 text-right font-bold text-amber-700">
+                          £{preview.vatAmount?.toLocaleString()}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-slate-200">
+                        <td className="py-2 text-slate-600">Additional Fees</td>
+                        <td className="py-2 text-right font-bold text-slate-700">
+                          £{preview.additionalFees?.toLocaleString()}
+                        </td>
+                      </tr>
+                      <tr className="border-b-2 border-slate-300">
+                        <td className="py-3 font-black text-slate-900 text-base">
+                          Total Due
+                        </td>
+                        <td className="py-3 text-right font-black text-green-700 text-lg">
+                          £{preview.totalAmount?.toLocaleString()}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 text-slate-600">
+                          Deposit Required ({preview.depositPercent}%)
+                        </td>
+                        <td className="py-2 text-right font-bold text-purple-700">
+                          £{preview.depositAmount?.toLocaleString()}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-black text-slate-800 mb-2">
+                  Notes (optional)
+                </label>
+                <textarea
+                  value={generateForm.notes}
+                  onChange={(e) =>
+                    setGenerateForm({ ...generateForm, notes: e.target.value })
+                  }
+                  placeholder="Add any additional notes..."
+                  rows={2}
+                  className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowGenerateModal(false);
+                    setPreview(null);
+                  }}
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-sm transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleGenerateInvoice}
+                  disabled={
+                    processing ||
+                    !generateForm.propertyId ||
+                    !generateForm.buyerId ||
+                    !generateForm.salePrice
+                  }
+                  className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {processing ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" /> Generating...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="size-4" /> Generate Invoice
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </AdminLayout>
+  );
+}

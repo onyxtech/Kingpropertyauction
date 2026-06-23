@@ -75,6 +75,12 @@ const menuItems = [
     path: "/admin/property-offers",
   },
   {
+    id: "invoices",
+    icon: FileText,
+    label: "Invoices",
+    path: "/admin/invoices",
+  },
+  {
     id: "settings",
     icon: Settings,
     label: "Settings",
@@ -155,7 +161,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
             const itemPath = isDbItem
               ? item.url
-              : (item.path || `/admin/${item.id}`);
+              : item.path || `/admin/${item.id}`;
             const isActive =
               window.location.pathname === itemPath ||
               window.location.pathname.startsWith(itemPath + "/");

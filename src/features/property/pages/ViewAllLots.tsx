@@ -76,6 +76,7 @@ export default function ViewAllLots() {
     maxBeds: urlMaxBeds || undefined,
     page: lotsPage,
     pageSize: 12,
+    excludeSold: "true",
   } as any);
 
   const lots: any[] = lotsData?.data || [];

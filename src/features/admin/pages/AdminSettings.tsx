@@ -32,6 +32,12 @@ export default function AdminSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
 
+  const [testingZoopla, setTestingZoopla] = useState(false);
+  const [zooplaTestResult, setZooplaTestResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
+
   const [emailForm, setEmailForm] = useState({
     mailer: "smtp",
     host: "",
@@ -63,12 +69,16 @@ export default function AdminSettings() {
   const [showPreview, setShowPreview] = useState(false);
   const [templateMessage, setTemplateMessage] = useState("");
   const [simpleMode, setSimpleMode] = useState(true);
-  const [simpleFields, setSimpleFields] = useState<{label: string, value: string, index: number}[]>([]);
+  const [simpleFields, setSimpleFields] = useState<
+    { label: string; value: string; index: number }[]
+  >([]);
   const [showLinkInput, setShowLinkInput] = useState(false);
-  const [linkText, setLinkText] = useState('');
-  const [linkUrl, setLinkUrl] = useState('');
-  const [linkStyle, setLinkStyle] = useState<'text' | 'button'>('button');
-  const [focusedFieldIndex, setFocusedFieldIndex] = useState<number | null>(null);
+  const [linkText, setLinkText] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkStyle, setLinkStyle] = useState<"text" | "button">("button");
+  const [focusedFieldIndex, setFocusedFieldIndex] = useState<number | null>(
+    null,
+  );
   const loadedRef = useRef(false);
   const [integrationsForm, setIntegrationsForm] = useState({
     groqApiKey: "",
@@ -76,8 +86,26 @@ export default function AdminSettings() {
     googlePlacesApiKey: "",
     openaiApiKey: "",
     activeAiProvider: "groq",
+    zooplaEnabled: false,
+    zooplaApiKey: "",
+    zooplaApiSecret: "",
+    zooplaBranchId: "",
+    zooplaAgentId: "",
+    zooplaTestMode: true,
   });
-  const [generalForm, setGeneralForm] = useState({ defaultCommissionRate: 5, paymentDueHours: 48 });
+
+  const [generalForm, setGeneralForm] = useState({
+    defaultCommissionRate: 5,
+    paymentDueHours: 48,
+    invoiceBuyersFeePercent: 3,
+    invoiceBuyersFeeMin: 3250,
+    invoiceDepositPercent: 10,
+    invoiceDepositMin: 3000,
+    invoiceVatPercent: 20,
+    invoiceAdditionalFees: 0,
+    invoicePrefix: "INV-KPA-",
+    defaultTermsOfSale: "",
+  });
   const [knowledgeEntries, setKnowledgeEntries] = useState<any[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -129,9 +157,14 @@ export default function AdminSettings() {
         if (oauthResult.success && oauthResult.data) {
           setOAuthForm((prev) => ({ ...prev, ...oauthResult.data }));
         }
-        const integrationsResult = await apiClient.fetch("/settings/integrations");
+        const integrationsResult = await apiClient.fetch(
+          "/settings/integrations",
+        );
         if (integrationsResult.success && integrationsResult.data) {
-          setIntegrationsForm((prev) => ({ ...prev, ...integrationsResult.data }));
+          setIntegrationsForm((prev) => ({
+            ...prev,
+            ...integrationsResult.data,
+          }));
         }
         const generalResult = await apiClient.fetch("/settings/general");
         if (generalResult.success && generalResult.data) {
@@ -187,7 +220,9 @@ export default function AdminSettings() {
         method: "PUT",
         body: JSON.stringify(generalForm),
       });
-      setSaveMessage(result.success ? "General settings saved!" : "Error: " + result.message);
+      setSaveMessage(
+        result.success ? "General settings saved!" : "Error: " + result.message,
+      );
     } catch (e: any) {
       setSaveMessage("Error: " + e.message);
     }
@@ -202,12 +237,30 @@ export default function AdminSettings() {
         method: "PUT",
         body: JSON.stringify(integrationsForm),
       });
-      setSaveMessage(result.success ? "API integrations saved!" : "Error: " + result.message);
+      setSaveMessage(
+        result.success ? "API integrations saved!" : "Error: " + result.message,
+      );
     } catch (e: any) {
       setSaveMessage("Error: " + e.message);
     }
     setIsSaving(false);
     setTimeout(() => setSaveMessage(""), 4000);
+  };
+
+  const handleTestZoopla = async () => {
+    setTestingZoopla(true);
+    setZooplaTestResult(null);
+    try {
+      const result = await apiClient.fetch("/zoopla/test", { method: "POST" });
+      setZooplaTestResult({
+        success: result.success,
+        message: result.message || "Connection successful",
+      });
+    } catch (e: any) {
+      setZooplaTestResult({ success: false, message: e.message });
+    } finally {
+      setTestingZoopla(false);
+    }
   };
 
   const handleOAuthSave = async () => {
@@ -277,7 +330,7 @@ export default function AdminSettings() {
         `/notifications/templates/${selectedTemplate}/reset`,
         { method: "POST" },
       );
-      console.log('[Reset] API response:', JSON.stringify(result));
+      console.log("[Reset] API response:", JSON.stringify(result));
       if (result.success && result.data) {
         const newHtml = result.data.html;
         const newSubject = result.data.subject;
@@ -286,7 +339,7 @@ export default function AdminSettings() {
         setSimpleMode(true);
         setSimpleFields(extractSimpleFields(newHtml));
         setShowPreview(false);
-        setTemplates(prev => ({
+        setTemplates((prev) => ({
           ...prev,
           [selectedTemplate]: {
             ...prev[selectedTemplate],
@@ -294,8 +347,8 @@ export default function AdminSettings() {
             subject: newSubject,
           },
         }));
-        setTemplateMessage('Template reset to default!');
-        setTimeout(() => setTemplateMessage(''), 3000);
+        setTemplateMessage("Template reset to default!");
+        setTimeout(() => setTemplateMessage(""), 3000);
       }
     } catch (e) {
       setTemplateMessage("Error resetting template");
@@ -403,16 +456,18 @@ export default function AdminSettings() {
   const extractSimpleFields = (html: string) => {
     try {
       const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const fields: {label: string, value: string, index: number}[] = [];
+      const doc = parser.parseFromString(html, "text/html");
+      const fields: { label: string; value: string; index: number }[] = [];
       let idx = 0;
-      doc.querySelectorAll('h1, h2, h3, h4, p').forEach((el) => {
+      doc.querySelectorAll("h1, h2, h3, h4, p").forEach((el) => {
         const text = el.textContent?.trim();
         if (text !== undefined && text !== null) {
           const tag = el.tagName.toLowerCase();
-          const isHeading = ['h1','h2','h3','h4'].includes(tag);
+          const isHeading = ["h1", "h2", "h3", "h4"].includes(tag);
           fields.push({
-            label: isHeading ? `Heading: ${text.substring(0, 30)}` : `Text: ${text.substring(0, 30)}...`,
+            label: isHeading
+              ? `Heading: ${text.substring(0, 30)}`
+              : `Text: ${text.substring(0, 30)}...`,
             value: text,
             index: idx++,
           });
@@ -425,18 +480,19 @@ export default function AdminSettings() {
   };
 
   const updateSimpleField = (fieldIndex: number, newValue: string) => {
-    const updated = simpleFields.map(f =>
-      f.index === fieldIndex ? { ...f, value: newValue } : f
+    const updated = simpleFields.map((f) =>
+      f.index === fieldIndex ? { ...f, value: newValue } : f,
     );
     setSimpleFields(updated);
     try {
       const parser = new DOMParser();
-      const doc = parser.parseFromString(editHtml, 'text/html');
-      const elements = Array.from(doc.querySelectorAll('h1, h2, h3, h4, p'))
-        .filter(el => el.textContent !== null && el.textContent !== undefined);
+      const doc = parser.parseFromString(editHtml, "text/html");
+      const elements = Array.from(
+        doc.querySelectorAll("h1, h2, h3, h4, p"),
+      ).filter((el) => el.textContent !== null && el.textContent !== undefined);
       updated.forEach((field) => {
         if (elements[field.index]) {
-          elements[field.index].textContent = field.value || '';
+          elements[field.index].textContent = field.value || "";
         }
       });
       setEditHtml(doc.body.innerHTML);
@@ -451,15 +507,17 @@ export default function AdminSettings() {
 
   const insertBeforeClose = (html: string, newContent: string) => {
     // Find the last <a ...> tag (the CTA button) and insert after its closing </div>
-    const lastAnchorEnd = html.lastIndexOf('</a>');
+    const lastAnchorEnd = html.lastIndexOf("</a>");
     if (lastAnchorEnd !== -1) {
-      const insertPoint = html.indexOf('</div>', lastAnchorEnd);
+      const insertPoint = html.indexOf("</div>", lastAnchorEnd);
       if (insertPoint !== -1) {
-        return html.slice(0, insertPoint) + newContent + html.slice(insertPoint);
+        return (
+          html.slice(0, insertPoint) + newContent + html.slice(insertPoint)
+        );
       }
     }
     // Fallback: insert before last </div></div>
-    const lastIndex = html.lastIndexOf('</div></div>');
+    const lastIndex = html.lastIndexOf("</div></div>");
     if (lastIndex === -1) return html + newContent;
     return html.slice(0, lastIndex) + newContent + html.slice(lastIndex);
   };
@@ -469,7 +527,7 @@ export default function AdminSettings() {
       id: "general",
       label: "General",
       icon: Settings2,
-      description: "Commission rates, payment due hours",
+      description: "Commission rates, payment due hours, invoice defaults",
     },
     {
       id: "email",
@@ -521,37 +579,121 @@ export default function AdminSettings() {
     { label: string; icon: string; category: string }
   > = {
     welcome: { label: "Welcome Email", icon: "👋", category: "Auth" },
-    accountApproved: { label: "Account Approved", icon: "✅", category: "Auth" },
-    accountRejected: { label: "Account Rejected", icon: "❌", category: "Auth" },
+    accountApproved: {
+      label: "Account Approved",
+      icon: "✅",
+      category: "Auth",
+    },
+    accountRejected: {
+      label: "Account Rejected",
+      icon: "❌",
+      category: "Auth",
+    },
     passwordReset: { label: "Password Reset", icon: "🔑", category: "Auth" },
-    bidConfirmation: { label: "Bid Confirmation", icon: "🔨", category: "Bidding" },
+    bidConfirmation: {
+      label: "Bid Confirmation",
+      icon: "🔨",
+      category: "Bidding",
+    },
     outbidAlert: { label: "Outbid Alert", icon: "⚠️", category: "Bidding" },
     auctionWon: { label: "Auction Won", icon: "🎉", category: "Bidding" },
     auctionLost: { label: "Auction Lost", icon: "😢", category: "Bidding" },
-    auctionStartingSoon: { label: "Auction Starting Soon", icon: "⏰", category: "Auction" },
-    auctionStarted: { label: "Auction Started (Buyer)", icon: "🔴", category: "Auction" },
-    auctionStartedSeller: { label: "Auction Started (Seller/Owner)", icon: "🎯", category: "Auction" },
+    auctionStartingSoon: {
+      label: "Auction Starting Soon",
+      icon: "⏰",
+      category: "Auction",
+    },
+    auctionStarted: {
+      label: "Auction Started (Buyer)",
+      icon: "🔴",
+      category: "Auction",
+    },
+    auctionStartedSeller: {
+      label: "Auction Started (Seller/Owner)",
+      icon: "🎯",
+      category: "Auction",
+    },
     auctionEnded: { label: "Auction Ended", icon: "🏁", category: "Auction" },
-    propertySubmitted: { label: "Property Submitted", icon: "📋", category: "Property" },
-    propertyApproved: { label: "Property Approved", icon: "✅", category: "Property" },
-    propertyRejected: { label: "Property Rejected", icon: "❌", category: "Property" },
+    propertySubmitted: {
+      label: "Property Submitted",
+      icon: "📋",
+      category: "Property",
+    },
+    propertyApproved: {
+      label: "Property Approved",
+      icon: "✅",
+      category: "Property",
+    },
+    propertyRejected: {
+      label: "Property Rejected",
+      icon: "❌",
+      category: "Property",
+    },
     propertySold: { label: "Property Sold", icon: "🏠", category: "Property" },
-    propertyUnsold: { label: "Property Unsold", icon: "📉", category: "Property" },
+    propertyUnsold: {
+      label: "Property Unsold",
+      icon: "📉",
+      category: "Property",
+    },
     contactForm: { label: "Contact Form", icon: "📧", category: "Leads" },
-    valuationRequest: { label: "Valuation Request", icon: "💰", category: "Leads" },
-    adminLeadAlert: { label: "Admin Lead Alert", icon: "📋", category: "Leads" },
-    catalogueRequest: { label: "Catalogue Request", icon: "📚", category: "Leads" },
+    valuationRequest: {
+      label: "Valuation Request",
+      icon: "💰",
+      category: "Leads",
+    },
+    adminLeadAlert: {
+      label: "Admin Lead Alert",
+      icon: "📋",
+      category: "Leads",
+    },
+    catalogueRequest: {
+      label: "Catalogue Request",
+      icon: "📚",
+      category: "Leads",
+    },
     adminReply: { label: "Admin Reply", icon: "💬", category: "Leads" },
     faqsupport: { label: "FAQ Support", icon: "💬", category: "Leads" },
     legalenquiry: { label: "Legal Enquiry", icon: "⚖️", category: "Leads" },
-    newsletterwelcome: { label: "Newsletter Welcome", icon: "📰", category: "Leads" },
-    paymentDue: { label: "Payment Due (Buyer)", icon: "💳", category: "Payment" },
-    paymentOverdue: { label: "Payment Overdue (Buyer)", icon: "⚠️", category: "Payment" },
-    paymentWithdrawn: { label: "Payment Withdrawn (Buyer)", icon: "❌", category: "Payment" },
-    commissionEarned: { label: "Commission Earned (Owner)", icon: "💰", category: "Commission" },
-    withdrawalRequested: { label: "Withdrawal Requested (Owner)", icon: "✅", category: "Commission" },
-    fundsTransferred: { label: "Funds Transferred (Owner)", icon: "🎉", category: "Commission" },
-    propertyAvailableAgain: { label: "Property Available Again (Next Bidders)", icon: "🏠", category: "Payment" },
+    newsletterwelcome: {
+      label: "Newsletter Welcome",
+      icon: "📰",
+      category: "Leads",
+    },
+    paymentDue: {
+      label: "Payment Due (Buyer)",
+      icon: "💳",
+      category: "Payment",
+    },
+    paymentOverdue: {
+      label: "Payment Overdue (Buyer)",
+      icon: "⚠️",
+      category: "Payment",
+    },
+    paymentWithdrawn: {
+      label: "Payment Withdrawn (Buyer)",
+      icon: "❌",
+      category: "Payment",
+    },
+    commissionEarned: {
+      label: "Commission Earned (Owner)",
+      icon: "💰",
+      category: "Commission",
+    },
+    withdrawalRequested: {
+      label: "Withdrawal Requested (Owner)",
+      icon: "✅",
+      category: "Commission",
+    },
+    fundsTransferred: {
+      label: "Funds Transferred (Owner)",
+      icon: "🎉",
+      category: "Commission",
+    },
+    propertyAvailableAgain: {
+      label: "Property Available Again (Next Bidders)",
+      icon: "🏠",
+      category: "Payment",
+    },
   };
 
   const ruleLabels: Record<string, string> = {
@@ -703,10 +845,14 @@ export default function AdminSettings() {
 
           <div className="p-8">
             {activeTab === "general" && (
-              <div className="space-y-6 max-w-lg">
+              <div className="space-y-6 max-w-3xl">
                 <div>
-                  <h3 className="font-black text-slate-900 text-lg mb-1">General Settings</h3>
-                  <p className="text-sm text-slate-500">Platform-wide defaults for payments and commissions.</p>
+                  <h3 className="font-black text-slate-900 text-lg mb-1">
+                    General Settings
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    Platform-wide defaults for payments and commissions.
+                  </p>
                 </div>
                 <div className="space-y-4">
                   <div>
@@ -719,11 +865,18 @@ export default function AdminSettings() {
                       max="100"
                       step="0.1"
                       value={generalForm.defaultCommissionRate}
-                      onChange={(e) => setGeneralForm((f) => ({ ...f, defaultCommissionRate: parseFloat(e.target.value) || 0 }))}
+                      onChange={(e) =>
+                        setGeneralForm((f) => ({
+                          ...f,
+                          defaultCommissionRate:
+                            parseFloat(e.target.value) || 0,
+                        }))
+                      }
                       className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     <p className="text-xs text-slate-500 mt-1">
-                      Used when an agent/owner has no individual commission rate set.
+                      Used when an agent/owner has no individual commission rate
+                      set.
                     </p>
                   </div>
                   <div>
@@ -734,21 +887,197 @@ export default function AdminSettings() {
                       type="number"
                       min="1"
                       value={generalForm.paymentDueHours}
-                      onChange={(e) => setGeneralForm((f) => ({ ...f, paymentDueHours: parseInt(e.target.value) || 48 }))}
+                      onChange={(e) =>
+                        setGeneralForm((f) => ({
+                          ...f,
+                          paymentDueHours: parseInt(e.target.value) || 48,
+                        }))
+                      }
                       className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     <p className="text-xs text-slate-500 mt-1">
-                      Hours after auction end before a payment is considered overdue (default: 48).
+                      Hours after auction end before a payment is considered
+                      overdue (default: 48).
                     </p>
                   </div>
                 </div>
+
+                {/* Invoice Settings */}
+                <div className="border-t border-slate-200 pt-6 mt-6">
+                  <h4 className="font-black text-slate-800 text-sm mb-3">
+                    Invoice Defaults
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">
+                        Buyer's Fee (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={generalForm.invoiceBuyersFeePercent}
+                        onChange={(e) =>
+                          setGeneralForm({
+                            ...generalForm,
+                            invoiceBuyersFeePercent:
+                              parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                      />
+                      <p className="text-xs text-slate-400 mt-1">
+                        % of sale price
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">
+                        Buyer's Fee Min (£)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={generalForm.invoiceBuyersFeeMin}
+                        onChange={(e) =>
+                          setGeneralForm({
+                            ...generalForm,
+                            invoiceBuyersFeeMin: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">
+                        Deposit (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={generalForm.invoiceDepositPercent}
+                        onChange={(e) =>
+                          setGeneralForm({
+                            ...generalForm,
+                            invoiceDepositPercent:
+                              parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                      />
+                      <p className="text-xs text-slate-400 mt-1">
+                        % of sale price
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">
+                        Min Deposit (£)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={generalForm.invoiceDepositMin}
+                        onChange={(e) =>
+                          setGeneralForm({
+                            ...generalForm,
+                            invoiceDepositMin: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">
+                        VAT (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={generalForm.invoiceVatPercent}
+                        onChange={(e) =>
+                          setGeneralForm({
+                            ...generalForm,
+                            invoiceVatPercent: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">
+                        Invoice Prefix
+                      </label>
+                      <input
+                        type="text"
+                        value={generalForm.invoicePrefix}
+                        onChange={(e) =>
+                          setGeneralForm({
+                            ...generalForm,
+                            invoicePrefix: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-1">
+                        Additional Fees (£)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={generalForm.invoiceAdditionalFees || 0}
+                        onChange={(e) =>
+                          setGeneralForm({
+                            ...generalForm,
+                            invoiceAdditionalFees:
+                              parseInt(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                      />
+                      <p className="text-xs text-slate-400 mt-1">
+                        Extra fees added to all invoices
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-bold text-slate-700 mb-1">
+                        Default Terms of Sale Text
+                      </label>
+                      <textarea
+                        value={generalForm.defaultTermsOfSale || ""}
+                        onChange={(e) =>
+                          setGeneralForm({
+                            ...generalForm,
+                            defaultTermsOfSale: e.target.value,
+                          })
+                        }
+                        rows={10}
+                        className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                        placeholder="Enter default terms of sale..."
+                      />
+                      <p className="text-xs text-slate-400 mt-1">
+                        Used as fallback when property has no custom terms
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex justify-end">
                   <button
                     onClick={handleGeneralSave}
                     disabled={isSaving}
                     className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
                   >
-                    {isSaving ? <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="size-4" />}
+                    {isSaving ? (
+                      <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Save className="size-4" />
+                    )}
                     Save General Settings
                   </button>
                 </div>
@@ -801,7 +1130,7 @@ export default function AdminSettings() {
                   setEditHtml(tpl.html);
                   setSimpleMode(true);
                   setSimpleFields(extractSimpleFields(tpl.html));
-                  setTemplateMessage('');
+                  setTemplateMessage("");
                   setShowPreview(false);
                 }}
                 setEditSubject={setEditSubject}
@@ -871,6 +1200,9 @@ export default function AdminSettings() {
                 setIntegrationsForm={setIntegrationsForm}
                 isSaving={isSaving}
                 onSave={handleIntegrationsSave}
+                onTestZoopla={handleTestZoopla}
+                zooplaTestResult={zooplaTestResult}
+                testingZoopla={testingZoopla}
               />
             )}
           </div>

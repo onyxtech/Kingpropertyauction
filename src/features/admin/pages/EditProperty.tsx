@@ -70,6 +70,9 @@ export default function EditProperty() {
   const [existingFloorPlans, setExistingFloorPlans] = useState<string[]>([]);
   const [existingLegalDocs, setExistingLegalDocs] = useState<string[]>([]);
   const [legalDocFiles, setLegalDocFiles] = useState<File[]>([]);
+
+  const [defaultTerms, setDefaultTerms] = useState<any>({});
+
   const [uploadProgress, setUploadProgress] = useState({
     step: "",
     percent: 0,
@@ -114,9 +117,24 @@ export default function EditProperty() {
     agentName: "",
     agentContact: "",
     specialTerms: "",
+    buyersFeePercent: "",
+    buyersFeeMin: "",
+    depositPercent: "",
+    depositMin: "",
+    vatPercent: "",
+    additionalFees: "",
     existingImages: [],
     existingPrivateDocs: [],
   };
+
+  useEffect(() => {
+    apiClient
+      .fetch("/settings/general")
+      .then((res) => {
+        if (res.success) setDefaultTerms(res.data || {});
+      })
+      .catch(() => {});
+  }, []);
 
   const [form, setForm] = useState<any>(defaultForm);
 
@@ -160,6 +178,12 @@ export default function EditProperty() {
         titleDeedNumber: property.legalInfo?.titleDeedNumber || "",
         solicitorDetails: property.legalInfo?.solicitorDetails || {},
         specialTerms: property.legalInfo?.specialTerms || "",
+        buyersFeePercent: property.termsOfSale?.buyersFeePercent || "",
+        buyersFeeMin: property.termsOfSale?.buyersFeeMin || "",
+        depositPercent: property.termsOfSale?.depositPercent || "",
+        depositMin: property.termsOfSale?.depositMin || "",
+        vatPercent: property.termsOfSale?.vatPercent || "",
+        additionalFees: property.termsOfSale?.additionalFees || "",
         newPrivateDocs: [],
         agentName: property.sellerInfo?.agentName || "",
         agentContact: property.sellerInfo?.agentContact || "",
@@ -392,7 +416,22 @@ export default function EditProperty() {
           titleDeedNumber: form.titleDeedNumber || "",
           solicitorDetails: form.solicitorDetails || {},
           privateDocuments: privateDocUrls,
-          specialTerms: form.specialTerms, 
+          specialTerms: form.specialTerms,
+        },
+        termsOfSale: {
+          text: form.specialTerms || "",
+          buyersFeePercent: form.buyersFeePercent
+            ? Number(form.buyersFeePercent)
+            : undefined,
+          buyersFeeMin: form.buyersFeeMin
+            ? Number(form.buyersFeeMin)
+            : undefined,
+          depositPercent: form.depositPercent
+            ? Number(form.depositPercent)
+            : undefined,
+          depositMin: form.depositMin ? Number(form.depositMin) : undefined,
+          vatPercent: form.vatPercent ? Number(form.vatPercent) : undefined,
+          additionalFees: form.additionalFees ? Number(form.additionalFees) : undefined,
         },
         sellerInfo: {
           agentName: form.agentName || "",
@@ -540,6 +579,105 @@ export default function EditProperty() {
                 placeholder="10% Deposit (Minimum £3,000)&#10;Buyers Fee = 3% of Sale Price (Minimum £3,250 + vat)&#10;4 Weeks Completion&#10;Contribution to Sellers Costs £2,750"
                 className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">
+                    Buyer's Fee (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={form.buyersFeePercent || ""}
+                    onChange={(e) =>
+                      updateField("buyersFeePercent", e.target.value)
+                    }
+                    placeholder={`Default: ${defaultTerms.invoiceBuyersFeePercent || 3}`}
+                    className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">% of sale price</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">
+                    Min Buyer's Fee (£)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.buyersFeeMin || ""}
+                    onChange={(e) =>
+                      updateField("buyersFeeMin", e.target.value)
+                    }
+                    placeholder={`Default: ${(defaultTerms.invoiceBuyersFeeMin || 3250).toLocaleString()}`}
+                    className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">
+                    Deposit (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={form.depositPercent || ""}
+                    onChange={(e) =>
+                      updateField("depositPercent", e.target.value)
+                    }
+                    placeholder={`Default: ${defaultTerms.invoiceDepositPercent || 10}`}
+                    className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">% of sale price</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">
+                    Min Deposit (£)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.depositMin || ""}
+                    onChange={(e) => updateField("depositMin", e.target.value)}
+                    placeholder={`Default: ${(defaultTerms.invoiceDepositMin || 3000).toLocaleString()}`}
+                    className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">
+                    VAT (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={form.vatPercent || ""}
+                    onChange={(e) => updateField("vatPercent", e.target.value)}
+                    placeholder={`Default: ${defaultTerms.invoiceVatPercent || 20}`}
+                    className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">
+                    Additional Fees (£)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.additionalFees || ""}
+                    onChange={(e) =>
+                      updateField("additionalFees", e.target.value)
+                    }
+                    placeholder={`Default: ${defaultTerms.invoiceAdditionalFees || 0}`}
+                    className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-slate-400 mt-3">
+                Leave empty to use platform defaults from Admin Settings
+              </p>
             </div>
           )}
           {step === 9 && <StepSeller form={form} updateField={updateField} />}

@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
+import { apiClient } from "@/lib/apiClient";
 import {
   Building2,
   MapPin,
@@ -64,6 +65,8 @@ export default function AddProperty() {
     type: "success" | "error";
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+
   const [uploadProgress, setUploadProgress] = useState({ step: '', percent: 0 });
   const [uploadStatus, setUploadStatus] = useState('');
 
@@ -129,10 +132,20 @@ export default function AddProperty() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [createdTitle, setCreatedTitle] = useState("");
+  const [listOnZoopla, setListOnZoopla] = useState(false);
+  const [zooplaEnabled, setZooplaEnabled] = useState(false);
+
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
   const [uploadedVideoUrls, setUploadedVideoUrls] = useState<string[]>([]);
   const [uploadedFloorPlanUrls, setUploadedFloorPlanUrls] = useState<string[]>([]);
   const [uploadedLegalDocUrls, setUploadedLegalDocUrls] = useState<string[]>([]);
+
+  
+  useEffect(() => {
+    apiClient.fetch("/settings/integrations").then(res => {
+      if (res.success) setZooplaEnabled(res.data?.zooplaEnabled || false);
+    }).catch(() => {});
+  }, []);
 
   const handleInputChange = (field: string, value: any) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -388,6 +401,7 @@ export default function AddProperty() {
       delete propertyData.floorPlans;
       delete propertyData.legalDocuments;
       delete propertyData.newPrivateDocs;
+      propertyData.listOnZoopla = listOnZoopla;
 
       const response = await createProperty(propertyData);
       if (response.success) {
@@ -774,6 +788,9 @@ export default function AddProperty() {
                 theme={theme}
                 onEditStep={goToStep}
                 isAdmin={isAdmin}
+                listOnZoopla={listOnZoopla}
+                setListOnZoopla={setListOnZoopla}
+                zooplaEnabled={zooplaEnabled}
               />
             )}
             <div className="flex items-center justify-end gap-3 pt-8 border-t-2 border-slate-200">
