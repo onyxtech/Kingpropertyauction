@@ -569,6 +569,22 @@ export const completeAuction = async (auctionId) => {
       } catch (e) {
         console.warn("Auto-create Payment/Commission failed:", e.message);
       }
+            // Auto-generate Invoice
+      try {
+        const Invoice = (await import("../invoice/invoice.service.js")).default || await import("../invoice/invoice.service.js");
+        const invoiceData = {
+          propertyId: property._id,
+          auctionId,
+          buyerId: winner?._id,
+          sellerId: freshProperty?.createdBy,
+          salePrice: currentBid,
+          invoiceType: "auction_sale",
+        };
+        await import("../invoice/invoice.service.js").then(s => s.generateInvoice(invoiceData, null));
+        console.log(`[Invoice] Generated for property: ${freshProperty?.propertyTitle}`);
+      } catch (invoiceErr) {
+        console.warn("[Invoice] Failed to generate invoice:", invoiceErr.message);
+      }
     } else if (currentBid > 0 && currentBid < reservePrice) {
       await Property.findByIdAndUpdate(property._id, {
         propertyStatus: "unsold",

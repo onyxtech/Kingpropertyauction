@@ -103,6 +103,19 @@ const fixSoldProperties = async () => {
 };
 await fixSoldProperties();
 
+// ─── Set default terms of sale if not set ───
+try {
+  const { getSetting, updateSetting } = await import("./modules/settings/settings.service.js");
+  const general = await getSetting("general") || {};
+  if (!general.defaultTermsOfSale) {
+    general.defaultTermsOfSale = "*10% Deposit (Minimum £3,000)\nStandard Completion (Unless specified differently in any Special Conditions of Sale)\n*Buyers Fee = 3% of Sale Price (Minimum £3,250 + vat)\n\nSTANDARD TERMS OF SALE are 4 week completion with 1 week extension. Sellers can request an earlier or later completion date which will be detailed in any Special Conditions of Sale for this lot. Buyers must satisfy themselves prior to bidding as to the terms on offer.\n\n* If no Special Conditions of Sale are present in the legal docs download bidders are advised to request a copy by email prior to bidding.";
+    await updateSetting("general", general, null);
+    console.log("✅ Default terms of sale seeded");
+  }
+} catch (e) {
+  console.warn("Terms seed failed:", e.message);
+}
+
 // ─── Set oldest admin as super admin if none set yet ───
 try {
   const alreadySet = await User.findOne({ role: "admin", isSuperAdmin: true });

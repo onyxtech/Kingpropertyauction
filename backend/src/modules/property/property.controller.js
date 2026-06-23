@@ -164,6 +164,35 @@ export const create = async (req, res) => {
       );
     }
 
+        // Submit to Zoopla if enabled
+    if (req.body.listOnZoopla) {
+      try {
+        const zooplaService = await import("../zoopla/zoopla.service.js");
+        const zooplaResult = await zooplaService.createListing({
+          ...req.body,
+          media: req.body.media || {},
+        });
+        
+        if (zooplaResult.success) {
+          await Property.findByIdAndUpdate(property._id, {
+            "zoopla.listingId": zooplaResult.zooplaId,
+            "zoopla.status": "active",
+            "zoopla.lastSync": new Date(),
+          });
+          console.log(`[Zoopla] Property listed: ${zooplaResult.zooplaId}`);
+        } else {
+          await Property.findByIdAndUpdate(property._id, {
+            "zoopla.status": "failed",
+            "zoopla.errorMessage": zooplaResult.error,
+            "zoopla.lastSync": new Date(),
+          });
+          console.warn(`[Zoopla] Failed to list property: ${zooplaResult.error}`);
+        }
+      } catch (e) {
+        console.error("[Zoopla] Error submitting to Zoopla:", e.message);
+      }
+    }
+
     res.status(201).json({
       success: true,
       data: property,
@@ -263,10 +292,10 @@ export const update = async (req, res) => {
         console.warn("Geocoding failed:", e.message);
       }
     }
-    const { error, value } = updatePropertySchema.validate(req.body, {
-      stripUnknown: true,
-      abortEarly: false,
-    });
+      const { error, value } = updatePropertySchema.validate(req.body, {
+        allowUnknown: true,
+        abortEarly: false,
+      });
     if (error) {
       return res.status(400).json({
         success: false,

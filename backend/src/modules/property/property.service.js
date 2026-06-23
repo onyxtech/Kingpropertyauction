@@ -46,8 +46,6 @@ export const getProperties = async (query = {}) => {
     maxBeds,
   } = query;
 
-    console.log("🔍 FILTER PARAMS:", { minPrice, maxPrice, minBeds, maxBeds, type: query.type, search: query.search });
-
   const filter = {};
 
   if (status)
@@ -116,7 +114,7 @@ export const getProperties = async (query = {}) => {
   const [properties, total] = await Promise.all([
     Property.find(filter)
       .select(
-        "propertyTitle slug propertyType listingType propertyStatus approvalStatus location pricing specifications media auctionDetails currentBid totalBids featured soldPrice soldTo createdBy winningBidder createdAt updatedAt legalInfo propertyID propertyDescription",
+        "propertyTitle slug propertyType listingType propertyStatus approvalStatus location pricing specifications media auctionDetails currentBid totalBids featured soldPrice soldTo createdBy winningBidder createdAt updatedAt legalInfo propertyID propertyDescription termsOfSale",
       )
       .sort(sortBy)
       .skip(skip)
@@ -166,10 +164,11 @@ export const updateProperty = async (id, updateData) => {
     }
   }
 
-  const property = await Property.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
-  });
+   const property = await Property.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+    if (!property) throw new Error("Property not found");
   if (!property) throw new Error("Property not found");
   await cache.delPattern("properties:*");
   await cache.del(`property:${id}`);

@@ -167,6 +167,12 @@ app.use("/api/offers", offerRoutes);
 import reportRoutes from "./modules/report/report.routes.js";
 app.use("/api/reports", reportRoutes);
 
+import zooplaRoutes from "./modules/zoopla/zoopla.routes.js";
+app.use("/api/zoopla", zooplaRoutes);
+
+import invoiceRoutes from "./modules/invoice/invoice.routes.js";
+app.use("/api/invoices", invoiceRoutes);
+
 app.use(notFound);
 app.use(errorHandler);
 

@@ -150,13 +150,24 @@ const propertySchema = new mongoose.Schema(
           uploadedAt: { type: Date, default: Date.now },
         },
       ],
-      specialTerms: { type: String, default: "" }, 
+      specialTerms: { type: String, default: "" },
     },
 
     // 8. Agent Information
     sellerInfo: {
       agentName: { type: String },
       agentContact: { type: String },
+    },
+
+        // Terms of Sale (per-property override - top level)
+    termsOfSale: {
+      text: { type: String, default: "" },
+      buyersFeePercent: { type: Number },
+      buyersFeeMin: { type: Number },
+      depositPercent: { type: Number },
+      depositMin: { type: Number },
+      vatPercent: { type: Number },
+      additionalFees: { type: Number, default: 0 },
     },
 
     // 9. Media
@@ -202,6 +213,17 @@ const propertySchema = new mongoose.Schema(
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
+    },
+    // Zoopla Integration
+    zoopla: {
+      listingId: { type: String },
+      status: {
+        type: String,
+        enum: ["pending", "active", "failed", "removed", null],
+        default: null,
+      },
+      lastSync: { type: Date },
+      errorMessage: { type: String },
     },
     savedBy: [{ type: mongoose.Schema.ObjectId, ref: "User" }],
   },

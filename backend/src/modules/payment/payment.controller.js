@@ -22,34 +22,51 @@ export const getAll = async (req, res) => {
     ]);
 
     const stats = await Payment.aggregate([
-      { $group: {
-        _id: null,
-        totalAmount: {
-          $sum: {
-            $cond: [{ $in: ["$status", ["pending", "paid", "overdue"]] }, "$amount", 0]
-          }
+      {
+        $group: {
+          _id: null,
+          totalAmount: {
+            $sum: {
+              $cond: [
+                { $in: ["$status", ["pending", "paid", "overdue"]] },
+                "$amount",
+                0,
+              ],
+            },
+          },
+          paidAmount: {
+            $sum: { $cond: [{ $eq: ["$status", "paid"] }, "$amount", 0] },
+          },
+          pendingAmount: {
+            $sum: {
+              $cond: [
+                { $in: ["$status", ["pending", "overdue"]] },
+                "$amount",
+                0,
+              ],
+            },
+          },
+          withdrawnAmount: {
+            $sum: { $cond: [{ $eq: ["$status", "withdrawn"] }, "$amount", 0] },
+          },
+          withdrawnCount: {
+            $sum: { $cond: [{ $eq: ["$status", "withdrawn"] }, 1, 0] },
+          },
+          count: { $sum: 1 },
         },
-        paidAmount: {
-          $sum: { $cond: [{ $eq: ["$status", "paid"] }, "$amount", 0] }
-        },
-        pendingAmount: {
-          $sum: { $cond: [{ $in: ["$status", ["pending", "overdue"]] }, "$amount", 0] }
-        },
-        withdrawnAmount: {
-          $sum: { $cond: [{ $eq: ["$status", "withdrawn"] }, "$amount", 0] }
-        },
-        withdrawnCount: {
-          $sum: { $cond: [{ $eq: ["$status", "withdrawn"] }, 1, 0] }
-        },
-        count: { $sum: 1 },
-      }},
+      },
     ]);
 
     res.json({
       success: true,
       data: payments,
       pagination: { page: parseInt(page), limit: parseInt(limit), total },
-      stats: stats[0] || { totalAmount: 0, paidAmount: 0, pendingAmount: 0, count: 0 },
+      stats: stats[0] || {
+        totalAmount: 0,
+        paidAmount: 0,
+        pendingAmount: 0,
+        count: 0,
+      },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -71,7 +88,10 @@ export const getMyPayments = async (req, res) => {
 
 export const create = async (req, res) => {
   try {
-    const payment = await Payment.create({ ...req.body, updatedBy: req.user._id });
+    const payment = await Payment.create({
+      ...req.body,
+      updatedBy: req.user._id,
+    });
     const populated = await Payment.findById(payment._id)
       .populate("buyer", "name email")
       .populate("property", "propertyTitle");
@@ -91,33 +111,44 @@ export const updateStatus = async (req, res) => {
       update.withdrawnBy = req.user._id;
     }
 
-    const payment = await Payment.findByIdAndUpdate(req.params.id, update, { new: true })
+    const payment = await Payment.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+    })
       .populate("buyer", "name email _id")
       .populate("auction", "_id auctionTitle")
       .populate("property", "_id propertyTitle");
-    if (!payment) return res.status(404).json({ success: false, message: "Not found" });
+    if (!payment)
+      return res.status(404).json({ success: false, message: "Not found" });
 
     const { emitToUser, emitToAdmins } = await import("../../socket.js");
-    const Notification = (await import("../notifications/notification.model.js")).default;
+    const Notification = (
+      await import("../notifications/notification.model.js")
+    ).default;
     const { sendEmail } = await import("../notifications/email.service.js");
-    const { isNotificationEnabled } = await import("../settings/settings.service.js");
+    const { isNotificationEnabled } =
+      await import("../settings/settings.service.js");
     const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
 
     if (status === "paid") {
       const buyerUser = await (await import("../user/user.model.js")).default
-        .findById(payment.buyer._id).select("notificationSettings").lean();
+        .findById(payment.buyer._id)
+        .select("notificationSettings")
+        .lean();
       const bellEnabled = buyerUser?.notificationSettings?.paymentDue !== false;
       if (bellEnabled) {
         await Notification.create({
-          type: "system", icon: "check",
+          type: "system",
+          icon: "check",
           message: `✅ Your payment has been confirmed!`,
-          link: "/dashboard/payments", color: "green",
+          link: "/dashboard/payments",
+          color: "green",
           targetUser: payment.buyer._id,
         });
         emitToUser(payment.buyer._id.toString(), "new_notification", {
           type: "system",
           message: "✅ Your payment has been confirmed!",
-          link: "/dashboard/payments", color: "green",
+          link: "/dashboard/payments",
+          color: "green",
         });
       }
       if (payment.buyer?.email) {
@@ -132,7 +163,9 @@ export const updateStatus = async (req, res) => {
               amount: `£${payment.amount?.toLocaleString()}`,
               dashboard_url: `${siteUrl}/dashboard/payments`,
             },
-          }).catch((e) => console.warn("paymentConfirmed email failed:", e.message));
+          }).catch((e) =>
+            console.warn("paymentConfirmed email failed:", e.message),
+          );
         }
       }
     }
@@ -147,10 +180,18 @@ export const updateStatus = async (req, res) => {
             user_name: payment.buyer.name || "Bidder",
             property_title: payment.property?.propertyTitle || "the property",
             amount: `£${payment.amount?.toLocaleString()}`,
-            due_datetime: payment.dueDate ? new Date(payment.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "N/A",
+            due_datetime: payment.dueDate
+              ? new Date(payment.dueDate).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+              : "N/A",
             dashboard_url: `${siteUrl}/dashboard/payments`,
           },
-        }).catch((e) => console.warn("paymentOverdue email failed:", e.message));
+        }).catch((e) =>
+          console.warn("paymentOverdue email failed:", e.message),
+        );
       }
     }
 
@@ -182,7 +223,10 @@ export const updateStatus = async (req, res) => {
         },
       });
 
-      if (payment.buyer?.email && await isNotificationEnabled("paymentWithdrawn")) {
+      if (
+        payment.buyer?.email &&
+        (await isNotificationEnabled("paymentWithdrawn"))
+      ) {
         sendEmail({
           to: payment.buyer.email,
           subject: `❌ Withdrawn from Purchase - ${payment.property?.propertyTitle || "Property"}`,
@@ -192,24 +236,38 @@ export const updateStatus = async (req, res) => {
             property_title: payment.property?.propertyTitle || "the property",
             dashboard_url: `${siteUrl}/dashboard/payments`,
           },
-        }).catch((e) => console.warn("paymentWithdrawn email failed:", e.message));
+        }).catch((e) =>
+          console.warn("paymentWithdrawn email failed:", e.message),
+        );
       }
 
       // Void any pending/approved commissions for this property
-      const Commission = (await import("../commission/commission.model.js")).default;
+      const Commission = (await import("../commission/commission.model.js"))
+        .default;
       await Commission.updateMany(
-        { property: payment.property._id, status: { $in: ["pending", "approved"] } },
-        { $set: { status: "voided", notes: "Voided - buyer withdrew from purchase" } }
+        {
+          property: payment.property._id,
+          status: { $in: ["pending", "approved"] },
+        },
+        {
+          $set: {
+            status: "voided",
+            notes: "Voided - buyer withdrew from purchase",
+          },
+        },
       );
 
       const voidedCommissions = await Commission.find({
         property: payment.property._id,
         status: "voided",
-      }).populate("agent", "_id name email notificationSettings").lean();
+      })
+        .populate("agent", "_id name email notificationSettings")
+        .lean();
 
       for (const comm of voidedCommissions) {
         if (!comm.agent?._id) continue;
-        const bellOn = comm.agent.notificationSettings?.commissionEarned !== false;
+        const bellOn =
+          comm.agent.notificationSettings?.commissionEarned !== false;
         if (bellOn) {
           await Notification.create({
             type: "system",
@@ -246,8 +304,8 @@ export const updateStatus = async (req, res) => {
                 salePrice: payment.amount || 0,
                 note: "Winner withdrew from purchase",
                 updatedAt: new Date(),
-              }
-            }
+              },
+            },
           });
         } catch (e) {
           console.warn("Outcome snapshot (withdraw) failed:", e.message);
@@ -255,7 +313,11 @@ export const updateStatus = async (req, res) => {
       }
     }
 
-    emitToAdmins("payment_updated", { type: "payment", status, paymentId: payment._id });
+    emitToAdmins("payment_updated", {
+      type: "payment",
+      status,
+      paymentId: payment._id,
+    });
     res.json({ success: true, data: payment });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -266,13 +328,21 @@ export const assignNewBuyer = async (req, res) => {
   try {
     const { propertyId, newBuyerId, agreedPrice, auctionId } = req.body;
     if (!propertyId || !newBuyerId) {
-      return res.status(400).json({ success: false, message: "propertyId and newBuyerId required" });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "propertyId and newBuyerId required",
+        });
     }
 
     const Property = (await import("../property/property.model.js")).default;
     const User = (await import("../user/user.model.js")).default;
-    const Commission = (await import("../commission/commission.model.js")).default;
-    const Notification = (await import("../notifications/notification.model.js")).default;
+    const Commission = (await import("../commission/commission.model.js"))
+      .default;
+    const Notification = (
+      await import("../notifications/notification.model.js")
+    ).default;
     const { emitToUser } = await import("../../socket.js");
     const { sendEmail } = await import("../notifications/email.service.js");
     const { getSetting } = await import("../settings/settings.service.js");
@@ -281,25 +351,38 @@ export const assignNewBuyer = async (req, res) => {
     // 1. Fetch property to determine final price
     const existingProperty = await Property.findById(propertyId).lean();
     if (!existingProperty) {
-      return res.status(404).json({ success: false, message: "Property not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Property not found" });
     }
 
-    const finalPrice = agreedPrice && Number(agreedPrice) > 0
-      ? Number(agreedPrice)
-      : (existingProperty.currentBid || existingProperty.pricing?.reservePrice || 0);
+    const finalPrice =
+      agreedPrice && Number(agreedPrice) > 0
+        ? Number(agreedPrice)
+        : existingProperty.currentBid ||
+          existingProperty.pricing?.reservePrice ||
+          0;
 
     // Update property with new buyer
     const property = await Property.findByIdAndUpdate(
       propertyId,
-      { soldTo: newBuyerId, soldPrice: finalPrice, currentBid: finalPrice, propertyStatus: "sold", winningBidder: newBuyerId },
-      { new: true }
+      {
+        soldTo: newBuyerId,
+        soldPrice: finalPrice,
+        currentBid: finalPrice,
+        propertyStatus: "sold",
+        winningBidder: newBuyerId,
+      },
+      { new: true },
     ).populate("createdBy", "name email agentDetails");
 
     // Update auction winningBidder to reflect re-assignment
     if (auctionId) {
       try {
         const Auction = (await import("../auction/auction.model.js")).default;
-        await Auction.findByIdAndUpdate(auctionId, { $set: { winningBidder: newBuyerId } });
+        await Auction.findByIdAndUpdate(auctionId, {
+          $set: { winningBidder: newBuyerId },
+        });
       } catch (e) {
         console.warn("Auction winner update failed:", e.message);
       }
@@ -324,24 +407,39 @@ export const assignNewBuyer = async (req, res) => {
     // 3. Void old commissions + create new one
     await Commission.updateMany(
       { property: propertyId, status: { $in: ["pending", "approved"] } },
-      { $set: { status: "voided", notes: "Voided - property re-assigned to new buyer" } }
+      {
+        $set: {
+          status: "voided",
+          notes: "Voided - property re-assigned to new buyer",
+        },
+      },
     );
 
     const owner = property.createdBy;
     if (owner) {
       const defaultRate = general?.defaultCommissionRate || 5;
-      const commissionRate = owner.agentDetails?.commissionRate > 0
-        ? owner.agentDetails.commissionRate : defaultRate;
+      const commissionRate =
+        owner.agentDetails?.commissionRate > 0
+          ? owner.agentDetails.commissionRate
+          : defaultRate;
       const commissionAmount = (finalPrice * commissionRate) / 100;
       await Commission.create({
-        agent: owner._id, property: propertyId, auction: auctionId || null,
-        buyer: newBuyerId, salePrice: finalPrice, commissionRate, commissionAmount,
-        status: "pending", notes: "Re-offer commission - assigned to new buyer",
+        agent: owner._id,
+        property: propertyId,
+        auction: auctionId || null,
+        buyer: newBuyerId,
+        salePrice: finalPrice,
+        commissionRate,
+        commissionAmount,
+        status: "pending",
+        notes: "Re-offer commission - assigned to new buyer",
       });
     }
 
     // 4. Notify new buyer
-    const newBuyer = await User.findById(newBuyerId).select("name email").lean();
+    const newBuyer = await User.findById(newBuyerId)
+      .select("name email")
+      .lean();
 
     // Write sold snapshot to auction
     if (auctionId && property?._id) {
@@ -356,8 +454,8 @@ export const assignNewBuyer = async (req, res) => {
               salePrice: finalPrice,
               note: "Re-assigned to next bidder after withdrawal",
               updatedAt: new Date(),
-            }
-          }
+            },
+          },
         });
       } catch (e) {
         console.warn("Outcome snapshot (assign) failed:", e.message);
@@ -366,9 +464,12 @@ export const assignNewBuyer = async (req, res) => {
 
     if (newBuyer) {
       await Notification.create({
-        type: "system", icon: "check",
+        type: "system",
+        icon: "check",
         message: `🎉 "${property.propertyTitle}" has been assigned to you at £${finalPrice.toLocaleString()}. Payment is now due.`,
-        link: "/dashboard/payments", color: "green", targetUser: newBuyerId,
+        link: "/dashboard/payments",
+        color: "green",
+        targetUser: newBuyerId,
         metadata: {
           propertyId: propertyId,
           propertyTitle: property.propertyTitle,
@@ -378,7 +479,8 @@ export const assignNewBuyer = async (req, res) => {
       emitToUser(newBuyerId.toString(), "new_notification", {
         type: "system",
         message: `🎉 You are the new buyer for "${property.propertyTitle}"`,
-        link: "/dashboard/payments", color: "green",
+        link: "/dashboard/payments",
+        color: "green",
         metadata: {
           propertyId: propertyId,
           propertyTitle: property.propertyTitle,
@@ -390,29 +492,74 @@ export const assignNewBuyer = async (req, res) => {
         subject: `🎉 Property Assigned - ${property.propertyTitle}`,
         templateKey: "paymentDue",
         variables: {
-          user_name: newBuyer.name, property_title: property.propertyTitle,
+          user_name: newBuyer.name,
+          property_title: property.propertyTitle,
           amount: `£${finalPrice.toLocaleString()}`,
           due_datetime: dueDate.toUTCString(),
-          auction_name: "Re-offer Sale", dashboard_url: `${siteUrl}/dashboard/payments`,
+          auction_name: "Re-offer Sale",
+          dashboard_url: `${siteUrl}/dashboard/payments`,
         },
-      }).catch(e => console.warn("New buyer email failed:", e.message));
+      }).catch((e) => console.warn("New buyer email failed:", e.message));
     }
 
     // 5. Notify seller
     if (owner) {
       await Notification.create({
-        type: "system", icon: "home",
+        type: "system",
+        icon: "home",
         message: `✅ New buyer assigned for "${property.propertyTitle}" at £${finalPrice.toLocaleString()}`,
-        link: "/dashboard/payments", color: "green", targetUser: owner._id,
+        link: "/dashboard/payments",
+        color: "green",
+        targetUser: owner._id,
       });
       emitToUser(owner._id.toString(), "new_notification", {
         type: "system",
         message: `✅ New buyer for "${property.propertyTitle}" at £${finalPrice.toLocaleString()}`,
-        link: "/dashboard/payments", color: "green",
+        link: "/dashboard/payments",
+        color: "green",
       });
     }
 
-    res.json({ success: true, message: "New buyer assigned successfully", data: { property, payment: newPayment } });
+    // Auto-cancel old invoice for withdrawn buyer
+    try {
+      const Invoice = (await import("../invoice/invoice.model.js")).default;
+      await Invoice.updateMany(
+        { property: propertyId, buyer: { $ne: newBuyerId }, status: "pending" },
+        { status: "withdrawn" },
+      );
+      console.log(
+        `[Invoice] Cancelled old invoices for property: ${property.propertyTitle}`,
+      );
+    } catch (e) {
+      console.warn("[Invoice] Failed to cancel old invoices:", e.messFage);
+    }
+
+    // Auto-generate invoice for new buyer
+    try {
+      const { generateInvoice } = await import("../invoice/invoice.service.js");
+      await generateInvoice(
+        {
+          propertyId,
+          auctionId: auctionId || null,
+          buyerId: newBuyerId,
+          sellerId: property.createdBy?._id || property.createdBy,
+          salePrice: finalPrice,
+          invoiceType: "reassigned",
+        },
+        req.user._id,
+      );
+      console.log(
+        `[Invoice] Generated for reassigned property: ${property.propertyTitle}`,
+      );
+    } catch (e) {
+      console.warn("[Invoice] Reassigned invoice failed:", e.message);
+    }
+
+    res.json({
+      success: true,
+      message: "New buyer assigned successfully",
+      data: { property, payment: newPayment },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -421,33 +568,51 @@ export const assignNewBuyer = async (req, res) => {
 export const resetPropertyToAvailable = async (req, res) => {
   try {
     const { propertyId } = req.body;
-    if (!propertyId) return res.status(400).json({ success: false, message: "propertyId required" });
+    if (!propertyId)
+      return res
+        .status(400)
+        .json({ success: false, message: "propertyId required" });
 
     const Property = (await import("../property/property.model.js")).default;
-    const Commission = (await import("../commission/commission.model.js")).default;
+    const Commission = (await import("../commission/commission.model.js"))
+      .default;
 
     const property = await Property.findByIdAndUpdate(
       propertyId,
-      { propertyStatus: "available", soldTo: null, soldPrice: null, winningBidder: null, currentBid: 0, "auctionDetails.auctionStatus": "upcoming" },
-      { new: true }
+      {
+        propertyStatus: "available",
+        soldTo: null,
+        soldPrice: null,
+        winningBidder: null,
+        currentBid: 0,
+        "auctionDetails.auctionStatus": "upcoming",
+      },
+      { new: true },
     );
-    if (!property) return res.status(404).json({ success: false, message: "Property not found" });
+    if (!property)
+      return res
+        .status(404)
+        .json({ success: false, message: "Property not found" });
 
     await Commission.updateMany(
       { property: propertyId, status: { $in: ["pending", "approved"] } },
-      { status: "voided", notes: "Voided - no buyer found, property reset to available" }
+      {
+        status: "voided",
+        notes: "Voided - no buyer found, property reset to available",
+      },
     );
 
     await Payment.updateMany(
       { property: propertyId, status: "withdrawn" },
-      { $set: { resetToAvailable: true, resetAt: new Date() } }
+      { $set: { resetToAvailable: true, resetAt: new Date() } },
     );
 
     // Update existing withdrawn snapshot note (keep history, add reset context)
     try {
       const Auction = (await import("../auction/auction.model.js")).default;
       const auctionsWithProp = await Auction.find({ properties: propertyId })
-        .select("_id propertyOutcomes").lean();
+        .select("_id propertyOutcomes")
+        .lean();
       for (const auc of auctionsWithProp) {
         const existing = auc.propertyOutcomes?.get
           ? auc.propertyOutcomes.get(propertyId)
@@ -455,9 +620,10 @@ export const resetPropertyToAvailable = async (req, res) => {
         if (existing && existing.status === "withdrawn") {
           await Auction.findByIdAndUpdate(auc._id, {
             $set: {
-              [`propertyOutcomes.${propertyId}.note`]: "Winner withdrew — property reset to available",
+              [`propertyOutcomes.${propertyId}.note`]:
+                "Winner withdrew — property reset to available",
               [`propertyOutcomes.${propertyId}.updatedAt`]: new Date(),
-            }
+            },
           });
         }
       }
@@ -465,7 +631,11 @@ export const resetPropertyToAvailable = async (req, res) => {
       console.warn("Outcome snapshot (reset) failed:", e.message);
     }
 
-    res.json({ success: true, message: "Property reset to available successfully", data: property });
+    res.json({
+      success: true,
+      message: "Property reset to available successfully",
+      data: property,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -501,8 +671,14 @@ export const sendReminder = async (req, res) => {
       .populate("property", "propertyTitle _id")
       .populate("auction", "auctionTitle")
       .lean();
-    if (!payment) return res.status(404).json({ success: false, message: "Payment not found" });
-    if (!payment.buyer?.email) return res.status(400).json({ success: false, message: "Buyer has no email address" });
+    if (!payment)
+      return res
+        .status(404)
+        .json({ success: false, message: "Payment not found" });
+    if (!payment.buyer?.email)
+      return res
+        .status(400)
+        .json({ success: false, message: "Buyer has no email address" });
 
     const { sendEmail } = await import("../notifications/email.service.js");
     const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";

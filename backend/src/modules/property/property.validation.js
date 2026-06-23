@@ -115,6 +115,16 @@ export const createPropertySchema = Joi.object({
     specialTerms: Joi.string().allow("").optional(),
   }).required(),
 
+  termsOfSale: Joi.object({
+    text: Joi.string().allow("").optional(),
+    buyersFeePercent: optionalNumber(),
+    buyersFeeMin: optionalNumber(),
+    depositPercent: optionalNumber(),
+    depositMin: optionalNumber(),
+    vatPercent: optionalNumber(),
+    additionalFees: optionalNumber(),
+  }).optional(),
+
   sellerInfo: Joi.object({
     agentName: optionalString(),
     agentContact: optionalString(),
