@@ -97,7 +97,7 @@ export const placeBid = async (data, userId) => {
     property: data.property,
     status: 'outbid',
     bidder: { $ne: userId },
-  }).populate('bidder', 'name email');
+  }).populate("bidder", "name email address")
 
   const notifiedBidders = new Set();
   for (const oldBid of outbidders) {
@@ -215,7 +215,7 @@ const processAutoBids = async (auctionId, propertyId, currentBidAmount) => {
           auction: auctionId,
           property: propertyId,
           status: "winning",
-        }).populate('bidder', 'name email');
+        }).populate("bidder", "name email address")
 
         // Place auto-bid on their behalf
         await Bid.updateMany(
@@ -301,7 +301,7 @@ export const getBidHistory = async (auctionId, propertyId) => {
   if (propertyId) filter.property = propertyId;
 
   const bids = await Bid.find(filter)
-    .populate("bidder", "name email")
+    .populate("bidder", "name email address")
     .populate("property", "propertyTitle currentBid")
     .sort("-amount");
 
@@ -432,7 +432,7 @@ export const getAllBids = async (query = {}) => {
 
   const [bids, total] = await Promise.all([
     Bid.find(filter)
-      .populate("bidder", "name email phone bankDetails")
+      .populate("bidder", "name email address phone bankDetails")
       .populate("auction", "auctionTitle slug status")
       .populate("property", "propertyTitle slug currentBid")
       .sort(sortBy)
