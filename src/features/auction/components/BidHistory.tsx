@@ -1,8 +1,13 @@
 import { Gavel } from "lucide-react";
 import { useBiddingApi } from "@/features/bid/api/useBiddingApi";
+import { getAnonymousBidder, resetBidderCounter } from "@/features/shared/utils/anonymizeBidder";
+import { useEffect } from "react";
 
 export default function BidHistory({ auctionId }: { auctionId: string }) {
   const { useGetBidHistory } = useBiddingApi();
+    useEffect(() => {
+    resetBidderCounter();
+  }, []);
   const { data: bidHistory, isLoading } = useGetBidHistory(auctionId);
   const bids = bidHistory?.bids || [];
 
@@ -21,15 +26,20 @@ export default function BidHistory({ auctionId }: { auctionId: string }) {
         <div className="space-y-2">
           {bids.map((bid: any, index: number) => (
             <div key={bid._id || index} className="flex items-center justify-between py-2 border-b border-slate-200 last:border-0">
-              <div className="flex items-center gap-3">
-                <div className="size-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-bold text-blue-600">{bid.bidder?.name?.charAt(0) || "?"}</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-900">{bid.bidder?.name || "Anonymous"}</p>
-                  <p className="text-xs text-slate-600">{new Date(bid.createdAt).toLocaleTimeString()}</p>
-                </div>
-              </div>
+                {(() => {
+                  const anon = getAnonymousBidder(bid.bidder?._id || bid.bidder, bid.bidder?.address?.city);
+                  return (
+                    <div className="flex items-center gap-3">
+                      <div className="size-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-blue-600">{anon.avatar}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{anon.name} {anon.city && `(${anon.city})`}</p>
+                        <p className="text-xs text-slate-600">{new Date(bid.createdAt).toLocaleTimeString()}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
               <div className="text-right">
                 <p className="text-sm font-bold text-slate-900">£{bid.amount?.toLocaleString()}</p>
                 {index === 0 && <span className="text-xs text-green-600 font-medium">Highest Bid</span>}

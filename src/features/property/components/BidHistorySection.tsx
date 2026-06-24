@@ -1,19 +1,26 @@
 import { Gavel } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import {
+  getAnonymousBidder,
+  resetBidderCounter,
+} from "@/features/shared/utils/anonymizeBidder";
+import { useEffect } from "react";
 
 interface BidHistorySectionProps {
   show: boolean;
   history: any;
   loading: boolean;
   onToggle: () => void;
+  isLive?: boolean;
 }
 
 export default function BidHistorySection({
-  show,
-  history,
-  loading,
-  onToggle,
+  show, history, loading, onToggle, isLive,
 }: BidHistorySectionProps) {
+  useEffect(() => {
+    resetBidderCounter();
+  }, []);
+  if (!isLive) return null;
   return (
     <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
       <div className="flex items-center justify-between mb-4">
@@ -51,19 +58,24 @@ export default function BidHistorySection({
                     key={i}
                     className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="size-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                        {bid.bidder?.name?.charAt(0) || "?"}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900">
-                          {bid.bidder?.name || "Anonymous"}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {new Date(bid.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
+                    {(() => {
+                      const anon = getAnonymousBidder(bid.bidder?._id || bid.bidder, bid.bidder?.address?.city);
+                      return (
+                        <div className="flex items-center gap-3">
+                          <div className="size-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                            {anon.avatar}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">
+                              {anon.name} {anon.city && `(${anon.city})`}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {new Date(bid.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div className="text-right">
                       <p className="text-lg font-black text-green-600">
                         £{bid.amount?.toLocaleString()}

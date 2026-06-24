@@ -14,6 +14,8 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
 import { useAuthStore } from "@/stores/authStore";
+import { getAnonymousBidder, resetBidderCounter } from "@/features/shared/utils/anonymizeBidder";
+import { useEffect } from "react";
 
 interface LotCardProps {
   property: any;
@@ -44,6 +46,9 @@ export default function LotCard({
   isLoadingHistory,
 }: LotCardProps) {
   const { user } = useAuthStore();
+    useEffect(() => {
+    resetBidderCounter();
+  }, []);
   const isOwnProperty = !!(
     property?.createdBy &&
     (user?.id || (user as any)?._id) &&
@@ -179,25 +184,25 @@ export default function LotCard({
               {auction.status === "completed" ? "Auction Ended" : "Not Started"}
             </div>
           )}
-          <button
-            onClick={() => onLoadHistory(property._id)}
-            className={`px-4 py-3.5 rounded-xl font-bold transition-all flex items-center gap-2 ${
-              isExpanded
-                ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-            }`}
-          >
-            <Eye className="size-4" />
-            {isExpanded ? "Hide History" : "Bid History"}
-            <ChevronDown
-              className={`size-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-            />
-          </button>
+          {auction.status === "live" && (
+            <button
+              onClick={() => onLoadHistory(property._id)}
+              className={`px-4 py-3.5 rounded-xl font-bold transition-all flex items-center gap-2 ${
+                isExpanded
+                  ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              <Eye className="size-4" />
+              {isExpanded ? "Hide History" : "Bid History"}
+              <ChevronDown className={`size-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+            </button>
+          )}
         </div>
 
         {/* Expandable Bid History */}
         <AnimatePresence>
-          {isExpanded && (
+          {auction.status === "live" && isExpanded && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -216,19 +221,24 @@ export default function LotCard({
                         key={bid._id || i}
                         className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="size-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-                            {bid.bidder?.name?.charAt(0) || "?"}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">
-                              {bid.bidder?.name || "Anonymous"}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {new Date(bid.createdAt).toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
+                        {(() => {
+                          const anon = getAnonymousBidder(bid.bidder?._id || bid.bidder, bid.bidder?.address?.city);
+                          return (
+                            <div className="flex items-center gap-3">
+                              <div className="size-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                                {anon.avatar}
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-slate-900">
+                                  {anon.name} {anon.city && `(${anon.city})`}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  {new Date(bid.createdAt).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })()}
                         <div className="text-right">
                           <p className="text-lg font-black text-green-600">
                             £{bid.amount?.toLocaleString()}

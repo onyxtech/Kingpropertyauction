@@ -216,11 +216,9 @@ export default function AuctionCard({ auction }: any) {
 
                 // For live auctions, get winning bidder name from global data
                 const liveWinnerObj = latestData?.winningBidder || latestData?.soldTo || property.winningBidder;
-                const liveWinnerName = liveWinnerObj && typeof liveWinnerObj === "object" && liveWinnerObj.name
-                  ? liveWinnerObj.name
-                  : liveWinnerObj && typeof liveWinnerObj === "string"
-                  ? "Bidder #" + liveWinnerObj.slice(-6)
-                  : "No bids yet";
+                  const liveWinnerName = liveWinnerObj && typeof liveWinnerObj === "object" && liveWinnerObj.name
+                    ? "Winning Bidder"
+                    : "—";
 
                 const title = latestData?.propertyTitle || property.propertyTitle;
 

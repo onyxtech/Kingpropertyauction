@@ -167,8 +167,8 @@ export default function Invoices() {
         ],
         [`VAT (${invoice.vatPercent}%)`, formatPrice(invoice.vatAmount)],
         ["Additional Fees", formatPrice(invoice.additionalFees || 0)],
-        ["Total Amount", formatPrice(invoice.totalAmount)],
-        ["Deposit Due", formatPrice(invoice.depositAmount)],
+        [`Deposit Due (${invoice.depositPercent}%)`, formatPrice(invoice.depositAmount)],
+        ["Total | Payable", formatPrice(invoice.totalAmount)],
       ],
       theme: "grid",
       headStyles: { fillColor: [37, 99, 235], textColor: 255, fontSize: 9 },
@@ -187,9 +187,9 @@ export default function Invoices() {
     setPreview(null);
     setSelectedProperty(null);
     const [propsRes, usersRes, invoicesRes] = await Promise.all([
-      apiClient.fetch("/properties?limit=200"),
-      apiClient.fetch("/users?limit=200"),
-      apiClient.fetch("/invoices?limit=200"),
+      apiClient.fetch("/properties?limit=500&status=sold"),
+      apiClient.fetch("/users?limit=500"),
+      apiClient.fetch("/invoices?limit=500"),
     ]);
     // Exclude properties that have an active invoice (not cancelled/withdrawn)
     const activeInvoicedIds = (invoicesRes?.invoices || invoicesRes?.data || [])
@@ -630,16 +630,16 @@ export default function Invoices() {
                         <td className="py-2 text-right font-bold">{value}</td>
                       </tr>
                     ))}
-                    <tr className="text-lg">
-                      <td className="py-3 font-black text-slate-900">Total</td>
-                      <td className="py-3 text-right font-black text-green-700">
-                        {formatPrice(selectedInvoice.totalAmount)}
-                      </td>
-                    </tr>
                     <tr>
-                      <td className="py-2 text-slate-600">Deposit Due</td>
+                      <td className="py-2 text-slate-600">Deposit Due ({selectedInvoice.depositPercent}%)</td>
                       <td className="py-2 text-right font-bold text-amber-600">
                         {formatPrice(selectedInvoice.depositAmount)}
+                      </td>
+                    </tr>
+                    <tr className="text-lg">
+                      <td className="py-3 font-black text-slate-900">Total | Payable</td>
+                      <td className="py-3 text-right font-black text-green-700">
+                        {formatPrice(selectedInvoice.totalAmount)}
                       </td>
                     </tr>
                   </tbody>
@@ -941,21 +941,13 @@ export default function Invoices() {
                           £{preview.additionalFees?.toLocaleString()}
                         </td>
                       </tr>
-                      <tr className="border-b-2 border-slate-300">
-                        <td className="py-3 font-black text-slate-900 text-base">
-                          Total Due
-                        </td>
-                        <td className="py-3 text-right font-black text-green-700 text-lg">
-                          £{preview.totalAmount?.toLocaleString()}
-                        </td>
-                      </tr>
                       <tr>
-                        <td className="py-2 text-slate-600">
-                          Deposit Required ({preview.depositPercent}%)
-                        </td>
-                        <td className="py-2 text-right font-bold text-purple-700">
-                          £{preview.depositAmount?.toLocaleString()}
-                        </td>
+                        <td className="py-2 text-slate-600">Deposit Required ({preview.depositPercent}%)</td>
+                        <td className="py-2 text-right font-bold text-purple-700">£{preview.depositAmount?.toLocaleString()}</td>
+                      </tr>
+                      <tr className="border-b-2 border-slate-300">
+                        <td className="py-3 font-black text-slate-900 text-base">Total | Payable</td>
+                        <td className="py-3 text-right font-black text-green-700 text-lg">£{preview.totalAmount?.toLocaleString()}</td>
                       </tr>
                     </tbody>
                   </table>

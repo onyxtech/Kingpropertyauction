@@ -545,8 +545,9 @@ export default function PropertyInfo({
       )}
 
       {/* Bid History */}
-      {isInLiveAuction && (
+        {isInLiveAuction && (
         <BidHistorySection
+          isLive={isLiveNow}
           show={showBidHistory}
           history={bidHistory}
           loading={loadingHistory}
