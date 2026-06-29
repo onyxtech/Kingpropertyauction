@@ -17,6 +17,7 @@ import {
   TrendingUp,
   AlertCircle,
   Home,
+  MapPin,
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -124,11 +125,7 @@ export default function Invoices() {
     doc.text(`Invoice: ${invoice.invoiceNumber}`, m, y);
     y += 8;
     doc.setFontSize(10);
-    doc.text(
-      `Date: ${new Date(invoice.issuedDate).toLocaleDateString("en-GB")}`,
-      m,
-      y,
-    );
+    doc.text(`Purchase Date: ${new Date(invoice.issuedDate).toLocaleDateString("en-GB")}`, m, y);
     y += 6;
     doc.text(
       `Due Date: ${new Date(invoice.dueDate).toLocaleDateString("en-GB")}`,
@@ -147,14 +144,33 @@ export default function Invoices() {
     doc.text(`  ${invoice.buyer?.name || "N/A"}`, m, y);
     y += 5;
     doc.text(`  ${invoice.buyer?.email || ""}`, m, y);
-    y += 8;
+
+    y += 5;
+    const buyerAddr = invoice.buyer?.address
+      ? [invoice.buyer.address.street, invoice.buyer.address.city, invoice.buyer.address.postcode].filter(Boolean).join(", ")
+      : "";
+    if (buyerAddr) {
+      doc.setFontSize(8);
+      doc.text(`  ${buyerAddr}`, m, y);
+      y += 5;
+    }
+    y += 3;
 
     doc.setFont("helvetica", "bold");
     doc.text("Property:", m, y);
     y += 6;
     doc.setFont("helvetica", "normal");
     doc.text(`  ${invoice.property?.propertyTitle || "N/A"}`, m, y);
-    y += 10;
+    y += 5;
+    const propAddr = invoice.property?.location 
+      ? [invoice.property.location.streetAddress, invoice.property.location.city, invoice.property.location.postalCode].filter(Boolean).join(", ")
+      : "";
+    if (propAddr) {
+      doc.setFontSize(8);
+      doc.text(`  ${propAddr}`, m, y); 
+      y += 5;
+    }
+    y += 5;
 
     autoTable(doc, {
       startY: y,
@@ -175,9 +191,6 @@ export default function Invoices() {
       bodyStyles: { fontSize: 9 },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 10;
-    doc.setFontSize(8);
-    doc.text(invoice.termsOfSale || "", m, y, { maxWidth: 180 });
 
     doc.save(`${invoice.invoiceNumber}.pdf`);
   };
@@ -305,6 +318,17 @@ export default function Invoices() {
     }
     setProcessing(true);
     try {
+      const customSettings: any = {};
+      if (selectedProperty?.termsOfSale) {
+        const t = selectedProperty.termsOfSale;
+        if (t.buyersFeePercent) customSettings.buyersFeePercent = t.buyersFeePercent;
+        if (t.buyersFeeMin) customSettings.buyersFeeMin = t.buyersFeeMin;
+        if (t.depositPercent) customSettings.depositPercent = t.depositPercent;
+        if (t.depositMin) customSettings.depositMin = t.depositMin;
+        if (t.vatPercent) customSettings.vatPercent = t.vatPercent;
+        if (t.additionalFees != null && t.additionalFees > 0) customSettings.additionalFees = t.additionalFees;
+      }
+
       const result = await apiClient.fetch("/invoices", {
         method: "POST",
         body: JSON.stringify({
@@ -314,6 +338,7 @@ export default function Invoices() {
           salePrice: parseFloat(generateForm.salePrice),
           notes: generateForm.notes,
           invoiceType: "manual",
+          customSettings,
         }),
       });
       if (result.success) {
@@ -576,21 +601,37 @@ export default function Invoices() {
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
+                <div className="col-span-2">
                   <p className="text-slate-500 text-xs">Buyer</p>
                   <p className="font-bold">{selectedInvoice.buyer?.name}</p>
-                  <p className="text-xs text-slate-500">
-                    {selectedInvoice.buyer?.email}
-                  </p>
+                  <p className="text-xs text-slate-500">{selectedInvoice.buyer?.email}</p>
+                  {selectedInvoice.buyer?.address && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {[
+                        selectedInvoice.buyer.address.street,
+                        selectedInvoice.buyer.address.city,
+                        selectedInvoice.buyer.address.postcode,
+                      ].filter(Boolean).join(", ")}
+                    </p>
+                  )}
                 </div>
-                <div>
+                <div className="col-span-2">
                   <p className="text-slate-500 text-xs">Property</p>
-                  <p className="font-bold">
-                    {selectedInvoice.property?.propertyTitle}
-                  </p>
+                  <p className="font-bold">{selectedInvoice.property?.propertyTitle}</p>
+                  {selectedInvoice.property?.location && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      <MapPin className="size-3 inline mr-1" />
+                      {[
+                        selectedInvoice.property.location.streetAddress,
+                        selectedInvoice.property.location.area,
+                        selectedInvoice.property.location.city,
+                        selectedInvoice.property.location.postalCode,
+                      ].filter(Boolean).join(", ")}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <p className="text-slate-500 text-xs">Issued</p>
+                 <p className="text-slate-500 text-xs">Purchase Date</p>
                   <p className="font-bold">
                     {new Date(selectedInvoice.issuedDate).toLocaleDateString(
                       "en-GB",

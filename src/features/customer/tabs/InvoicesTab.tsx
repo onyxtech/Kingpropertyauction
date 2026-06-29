@@ -9,6 +9,7 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
+  MapPin,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
@@ -90,14 +91,38 @@ export default function InvoicesTab() {
     doc.setFontSize(12);
     doc.text(`Invoice: ${invoice.invoiceNumber}`, m, y);
     y += 8;
+
+    // Buyer info in PDF
+    const buyerAddr = invoice.buyer?.address
+      ? [invoice.buyer.address.street, invoice.buyer.address.city, invoice.buyer.address.postcode].filter(Boolean).join(", ")
+      : "";
+    if (invoice.buyer?.name) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("Buyer:", m, y); y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.text(`  ${invoice.buyer.name}`, m, y); y += 5;
+      if (invoice.buyer.email) {
+        doc.text(`  ${invoice.buyer.email}`, m, y); y += 5;
+      }
+      if (buyerAddr) {
+        doc.setFontSize(8);
+        doc.text(`  ${buyerAddr}`, m, y); y += 5;
+      }
+      y += 3;
+    }
+
     doc.setFontSize(10);
-    doc.text(`Property: ${invoice.property?.propertyTitle || "N/A"}`, m, y);
-    y += 6;
-    doc.text(
-      `Date: ${new Date(invoice.issuedDate).toLocaleDateString("en-GB")}`,
-      m,
-      y,
-    );
+    doc.text(`Property: ${invoice.property?.propertyTitle || "N/A"}`, m, y); y += 5;
+    const propAddr = invoice.property?.location 
+      ? [invoice.property.location.streetAddress, invoice.property.location.city, invoice.property.location.postalCode].filter(Boolean).join(", ")
+      : "";
+    if (propAddr) {
+      doc.setFontSize(8);
+      doc.text(`  ${propAddr}`, m, y); y += 5;
+    }
+    y += 3;
+    doc.text(`Purchase Date: ${new Date(invoice.issuedDate).toLocaleDateString("en-GB")}`, m, y);
     y += 6;
     doc.text(
       `Due: ${new Date(invoice.dueDate).toLocaleDateString("en-GB")}`,
@@ -328,11 +353,20 @@ export default function InvoicesTab() {
             <div className="p-6 space-y-4">
               {/* Key Info */}
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-slate-50 rounded-xl p-3">
+                <div className="bg-slate-50 rounded-xl p-3 col-span-2">
                   <p className="text-xs text-slate-500">Property</p>
-                  <p className="font-bold text-slate-900">
-                    {selectedInvoice.property?.propertyTitle}
-                  </p>
+                  <p className="font-bold text-slate-900">{selectedInvoice.property?.propertyTitle}</p>
+                  {selectedInvoice.property?.location && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      <MapPin className="size-3 inline mr-1" />
+                      {[
+                        selectedInvoice.property.location.streetAddress,
+                        selectedInvoice.property.location.area,
+                        selectedInvoice.property.location.city,
+                        selectedInvoice.property.location.postalCode,
+                      ].filter(Boolean).join(", ")}
+                    </p>
+                  )}
                 </div>
                 <div className="bg-slate-50 rounded-xl p-3">
                   <p className="text-xs text-slate-500">Due Date</p>
@@ -343,7 +377,7 @@ export default function InvoicesTab() {
                   </p>
                 </div>
                 <div className="bg-slate-50 rounded-xl p-3">
-                  <p className="text-xs text-slate-500">Issued</p>
+                  <p className="text-xs text-slate-500">Purchase Date</p>
                   <p className="font-bold text-slate-900">
                     {new Date(selectedInvoice.issuedDate).toLocaleDateString(
                       "en-GB",
@@ -351,13 +385,20 @@ export default function InvoicesTab() {
                   </p>
                 </div>
 
-                {isSellerView && (
+                {isSellerView && selectedInvoice.buyer && (
                   <div className="bg-slate-50 rounded-xl p-3 col-span-2">
                     <p className="text-xs text-slate-500">Buyer</p>
-                    <p className="font-bold text-slate-900">
-                      {selectedInvoice.buyer?.name} •{" "}
-                      {selectedInvoice.buyer?.email}
-                    </p>
+                    <p className="font-bold text-slate-900">{selectedInvoice.buyer?.name}</p>
+                    <p className="text-xs text-slate-500">{selectedInvoice.buyer?.email}</p>
+                    {selectedInvoice.buyer?.address && (
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {[
+                          selectedInvoice.buyer.address.street,
+                          selectedInvoice.buyer.address.city,
+                          selectedInvoice.buyer.address.postcode,
+                        ].filter(Boolean).join(", ")}
+                      </p>
+                    )}
                   </div>
                 )}
                 {!isSellerView && selectedInvoice.seller && (

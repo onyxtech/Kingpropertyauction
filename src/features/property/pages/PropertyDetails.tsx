@@ -33,6 +33,13 @@ import PropertyActionCard from "@/features/property/components/PropertyActionCar
 export default function PropertyDetails() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const openOfferFromUrl = searchParams.get("offer") === "true";
+  
+  useEffect(() => {
+    if (openOfferFromUrl) {
+      setShowOfferModal(true);
+    }
+  }, [openOfferFromUrl]);
   const { slug } = useParams();
   const queryId = searchParams.get("id");
   const propertyId = queryId || slug || "1";

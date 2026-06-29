@@ -580,7 +580,7 @@ export default function PropertyActionCard({
         </a>
       )}
 
-      {(isLiveNow || isAuctionType) && !isCompleted && (
+      {((isLiveNow || isAuctionType || isDirectSale) && !isCompleted) && (
         <button
           onClick={onOfferNow}
           className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-black text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2 text-center"

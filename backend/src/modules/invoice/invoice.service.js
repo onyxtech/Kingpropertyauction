@@ -3,7 +3,7 @@ import { getSetting } from "../settings/settings.service.js";
 
 // Get invoice settings
 export const getInvoiceSettings = async () => {
-  const general = await getSetting("general") || {};
+  const general = (await getSetting("general")) || {};
   return {
     buyersFeePercent: general.invoiceBuyersFeePercent || 3,
     buyersFeeMin: general.invoiceBuyersFeeMin || 3250,
@@ -18,17 +18,19 @@ export const getInvoiceSettings = async () => {
 // Calculate invoice amounts
 export const calculateInvoice = async (salePrice, customSettings = {}) => {
   const settings = { ...(await getInvoiceSettings()), ...customSettings };
-  
+
   const buyersFeeAmount = Math.max(
     (salePrice * settings.buyersFeePercent) / 100,
-    settings.buyersFeeMin
+    settings.buyersFeeMin,
   );
   const vatAmount = (buyersFeeAmount * settings.vatPercent) / 100;
   const depositAmount = Math.max(
     (salePrice * settings.depositPercent) / 100,
-    settings.depositMin
+    settings.depositMin,
   );
-  const totalAmount = salePrice + buyersFeeAmount + vatAmount + (settings.additionalFees || 0);
+  // Total payable = fees + deposit (not including sale price)
+  const totalAmount =
+    buyersFeeAmount + vatAmount + (settings.additionalFees || 0) + depositAmount;
 
   return {
     salePrice,
@@ -50,20 +52,28 @@ export const generateInvoice = async (data, userId) => {
   let prop = null;
   if (data.propertyId) {
     const Property = (await import("../property/property.model.js")).default;
-    prop = await Property.findById(data.propertyId).select("termsOfSale").lean();
+    prop = await Property.findById(data.propertyId)
+      .select("termsOfSale")
+      .lean();
     if (prop?.termsOfSale) {
-      if (prop.termsOfSale.buyersFeePercent) customSettings.buyersFeePercent = prop.termsOfSale.buyersFeePercent;
-      if (prop.termsOfSale.buyersFeeMin) customSettings.buyersFeeMin = prop.termsOfSale.buyersFeeMin;
-      if (prop.termsOfSale.depositPercent) customSettings.depositPercent = prop.termsOfSale.depositPercent;
-      if (prop.termsOfSale.depositMin) customSettings.depositMin = prop.termsOfSale.depositMin;
-      if (prop.termsOfSale.vatPercent) customSettings.vatPercent = prop.termsOfSale.vatPercent;
-      if (prop.termsOfSale.additionalFees) customSettings.additionalFees = prop.termsOfSale.additionalFees;
+      if (prop.termsOfSale.buyersFeePercent)
+        customSettings.buyersFeePercent = prop.termsOfSale.buyersFeePercent;
+      if (prop.termsOfSale.buyersFeeMin)
+        customSettings.buyersFeeMin = prop.termsOfSale.buyersFeeMin;
+      if (prop.termsOfSale.depositPercent)
+        customSettings.depositPercent = prop.termsOfSale.depositPercent;
+      if (prop.termsOfSale.depositMin)
+        customSettings.depositMin = prop.termsOfSale.depositMin;
+      if (prop.termsOfSale.vatPercent)
+        customSettings.vatPercent = prop.termsOfSale.vatPercent;
+      if (prop.termsOfSale.additionalFees)
+        customSettings.additionalFees = prop.termsOfSale.additionalFees;
     }
   }
 
   const amounts = await calculateInvoice(data.salePrice, customSettings);
 
-  const general = await getSetting("general") || {};
+  const general = (await getSetting("general")) || {};
   const dueHours = data.dueHours || general.paymentDueHours || 48;
   const dueDate = new Date(Date.now() + dueHours * 60 * 60 * 1000);
 
@@ -79,8 +89,15 @@ export const generateInvoice = async (data, userId) => {
     notes: data.notes || "",
     createdBy: userId,
     invoiceType: data.invoiceType || "auction_sale",
-        termsOfSale: data.termsOfSale || prop?.termsOfSale?.text || general.defaultTermsOfSale || "Standard Terms: 4 week completion with 1 week extension.",
+    termsOfSale:
+      data.termsOfSale ||
+      prop?.termsOfSale?.text ||
+      (`*${amounts.depositPercent}% Deposit (Minimum £${amounts.depositAmount?.toLocaleString()})\n` +
+        `Standard Completion (Unless specified differently in any Special Conditions of Sale)\n` +
+        `*Buyers Fee = ${amounts.buyersFeePercent}% of Sale Price (Minimum £${amounts.buyersFeeAmount?.toLocaleString()} + vat)\n\n` +
+        `STANDARD TERMS OF SALE are 4 week completion with 1 week extension.`),
   });
+  console.log("TERMS SAVED:", invoice.termsOfSale?.substring(0, 80));
 
   const populated = await Invoice.findById(invoice._id)
     .populate("property", "propertyTitle slug location media")
@@ -93,13 +110,24 @@ export const generateInvoice = async (data, userId) => {
   // Send email + notification to buyer
   try {
     const { sendEmail } = await import("../notifications/email.service.js");
-    const { isNotificationEnabled } = await import("../settings/settings.service.js");
-    const Notification = (await import("../notifications/notification.model.js")).default;
+    const { isNotificationEnabled } =
+      await import("../settings/settings.service.js");
+    const Notification = (
+      await import("../notifications/notification.model.js")
+    ).default;
     const { emitToUser } = await import("../../socket.js");
     const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
 
-    const buyer = await (await import("../user/user.model.js")).default.findById(data.buyerId).select("name email").lean();
-    const property = await (await import("../property/property.model.js")).default.findById(data.propertyId).select("propertyTitle").lean();
+    const buyer = await (await import("../user/user.model.js")).default
+      .findById(data.buyerId)
+      .select("name email")
+      .lean();
+    const property = await (
+      await import("../property/property.model.js")
+    ).default
+      .findById(data.propertyId)
+      .select("propertyTitle")
+      .lean();
 
     if (buyer?.email) {
       const enabled = await isNotificationEnabled("invoiceGenerated");
@@ -117,7 +145,7 @@ export const generateInvoice = async (data, userId) => {
             due_date: dueDate.toLocaleDateString("en-GB"),
             dashboard_url: `${siteUrl}/dashboard/invoices`,
           },
-        }).catch(e => console.warn("Invoice email failed:", e.message));
+        }).catch((e) => console.warn("Invoice email failed:", e.message));
       }
     }
 
@@ -136,7 +164,7 @@ export const generateInvoice = async (data, userId) => {
       link: "/dashboard/invoices",
     });
 
-        // Also notify seller/agent
+    // Also notify seller/agent
     if (data.sellerId && data.sellerId !== data.buyerId) {
       await Notification.create({
         type: "system",
@@ -152,7 +180,6 @@ export const generateInvoice = async (data, userId) => {
         link: "/dashboard/invoices",
       });
     }
-    
   } catch (e) {
     console.warn("Invoice notification failed:", e.message);
   }
@@ -170,9 +197,11 @@ export const getInvoices = async (query = {}) => {
 
   if (search) {
     const User = (await import("../user/user.model.js")).default;
-    const users = await User.find({ name: new RegExp(search, "i") }).select("_id").lean();
+    const users = await User.find({ name: new RegExp(search, "i") })
+      .select("_id")
+      .lean();
     filter.$or = [
-      { buyer: { $in: users.map(u => u._id) } },
+      { buyer: { $in: users.map((u) => u._id) } },
       { invoiceNumber: new RegExp(search, "i") },
     ];
   }
@@ -183,8 +212,8 @@ export const getInvoices = async (query = {}) => {
       .sort("-createdAt")
       .skip(skip)
       .limit(parseInt(limit))
-      .populate("property", "propertyTitle slug")
-      .populate("buyer", "name email")
+      .populate("property", "propertyTitle slug location pricing")
+      .populate("buyer", "name email address")
       .populate("seller", "name email")
       .populate("auction", "auctionTitle")
       .lean(),
@@ -193,7 +222,12 @@ export const getInvoices = async (query = {}) => {
 
   return {
     invoices,
-    pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) },
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      pages: Math.ceil(total / parseInt(limit)),
+    },
   };
 };
 
@@ -209,14 +243,12 @@ export const getInvoiceById = async (id) => {
 };
 
 export const getUserInvoices = async (userId, view = "buyer") => {
-  const filter = view === "seller" 
-    ? { seller: userId }
-    : { buyer: userId };
-    
+  const filter = view === "seller" ? { seller: userId } : { buyer: userId };
+
   return Invoice.find(filter)
     .sort("-createdAt")
-    .populate("property", "propertyTitle slug")
-    .populate("buyer", "name email")
+    .populate("property", "propertyTitle slug location")
+    .populate("buyer", "name email address")
     .populate("seller", "name email")
     .populate("auction", "auctionTitle slug")
     .lean();
@@ -226,16 +258,22 @@ export const getUserInvoices = async (userId, view = "buyer") => {
 export const updateInvoiceStatus = async (id, status, userId) => {
   const update = { status };
   if (status === "paid") update.paidDate = new Date();
-  
+
   const invoice = await Invoice.findByIdAndUpdate(id, update, { new: true });
 
   // Send paid notification
   if (status === "paid") {
     try {
-      const inv = await Invoice.findById(id).populate("buyer", "name email").populate("property", "propertyTitle").lean();
+      const inv = await Invoice.findById(id)
+        .populate("buyer", "name email address")
+        .populate("property", "propertyTitle")
+        .lean();
       const { sendEmail } = await import("../notifications/email.service.js");
-      const { isNotificationEnabled } = await import("../settings/settings.service.js");
-      const Notification = (await import("../notifications/notification.model.js")).default;
+      const { isNotificationEnabled } =
+        await import("../settings/settings.service.js");
+      const Notification = (
+        await import("../notifications/notification.model.js")
+      ).default;
       const { emitToUser } = await import("../../socket.js");
       const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
 
@@ -271,8 +309,11 @@ export const updateInvoiceStatus = async (id, status, userId) => {
         message: "Invoice marked as paid",
         link: "/dashboard/invoices",
       });
-            // Also notify seller
-      if (inv?.seller?._id && inv.seller._id.toString() !== inv?.buyer?._id?.toString()) {
+      // Also notify seller
+      if (
+        inv?.seller?._id &&
+        inv.seller._id.toString() !== inv?.buyer?._id?.toString()
+      ) {
         await Notification.create({
           type: "system",
           icon: "check-circle",
@@ -302,7 +343,9 @@ export const getInvoiceStats = async () => {
     Invoice.countDocuments({ status: "pending" }),
     Invoice.countDocuments({ status: "paid" }),
     Invoice.countDocuments({ status: "overdue" }),
-    Invoice.aggregate([{ $group: { _id: null, total: { $sum: "$totalAmount" } } }]),
+    Invoice.aggregate([
+      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+    ]),
   ]);
 
   return {

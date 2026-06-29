@@ -12,12 +12,36 @@ export const submitOffer = async (data, userId = null) => {
   const property = await Property.findById(data.property).lean();
   if (!property) throw new Error("Property not found");
 
-  // 2. Create the offer
-  const offer = await PropertyOffer.create({
-    ...data,
-    submittedBy: userId || null,
+  // 2. Check if user already has a pending offer for this property - update it instead
+  let offer = await PropertyOffer.findOne({
+    property: data.property,
+    email: data.email,
     status: "pending",
   });
+
+  if (offer) {
+    // Update existing offer with new price
+    offer.offerAmount = data.offerAmount;
+    offer.offerAmountInWords = data.offerAmountInWords;
+    offer.phone = data.phone || offer.phone;
+    offer.address = data.address || offer.address;
+    offer.city = data.city || offer.city;
+    offer.postcode = data.postcode || offer.postcode;
+    offer.solicitorDetails = data.solicitorDetails || offer.solicitorDetails;
+    offer.signature = data.signature || offer.signature;
+    offer.termsAccepted = data.termsAccepted;
+    offer.adminNotes = ""; // Clear old notes
+    offer.reviewedBy = null;
+    offer.reviewedAt = null;
+    await offer.save();
+  } else {
+    // Create new offer
+    offer = await PropertyOffer.create({
+      ...data,
+      submittedBy: userId || null,
+      status: "pending",
+    });
+  }
 
   // 3. Populate property details for emails
   const populatedOffer = await PropertyOffer.findById(offer._id)
@@ -175,7 +199,7 @@ export const getOffers = async (query = {}) => {
       .sort("-createdAt")
       .skip(skip)
       .limit(parseInt(limit))
-      .populate("property", "propertyTitle slug media pricing")
+      .populate("property", "propertyTitle slug media pricing location")
       .populate("submittedBy", "name email")
       .populate("lead", "status")
       .lean(),
@@ -289,16 +313,6 @@ export const respondToOffer = async (offerId, status, message, adminId) => {
     console.warn("Owner offer notification failed:", e.message);
   }
 
-  // Notify admins
-  await Notification.create({
-    type: "offer",
-    icon: status === "accepted" ? "check-circle" : "x-circle",
-    message: `Offer ${status}: £${offer.offerAmount.toLocaleString()} for ${offer.property?.propertyTitle || "property"}`,
-    link: "/admin/offers",
-    color: status === "accepted" ? "green" : "red",
-    targetUser: null,
-  }).catch(() => {});
-
   return updated;
 };
 
@@ -312,4 +326,45 @@ export const getAgentOffers = async (agentId) => {
     .populate("property", "propertyTitle slug media pricing")
     .sort("-createdAt")
     .lean();
+};
+
+export const requestPriceChange = async (offerId, message, suggestedPrice, adminId) => {
+  const offer = await PropertyOffer.findById(offerId)
+    .populate("property", "propertyTitle slug")
+    .lean();
+  if (!offer) throw new Error("Offer not found");
+
+  const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const propertyUrl = `${siteUrl}/properties/${offer.property?.slug || offer.property?._id}?offer=true`;
+
+  // Update offer with admin notes
+  await PropertyOffer.findByIdAndUpdate(offerId, {
+    adminNotes: message || "",
+    reviewedBy: adminId,
+    reviewedAt: new Date(),
+  });
+
+  // Send email to offeror
+  const { sendEmail } = await import("../notifications/email.service.js");
+  const { isNotificationEnabled } = await import("../settings/settings.service.js");
+  
+  const enabled = await isNotificationEnabled("offerReply");
+  if (enabled) {
+    await sendEmail({
+      to: offer.email,
+      subject: `📩 Price Change Request - ${offer.property?.propertyTitle || "Property"}`,
+      templateKey: "offerPriceRequest",
+      variables: {
+        offeror_name: offer.name,
+        property_title: offer.property?.propertyTitle || "Property",
+        offer_amount: `£${offer.offerAmount.toLocaleString()}`,
+        suggested_price: suggestedPrice ? `£${suggestedPrice.toLocaleString()}` : "Not specified",
+        admin_message: message || "The agent has requested you to submit a new offer price.",
+        property_url: propertyUrl,
+        site_url: siteUrl,
+      },
+    }).catch(e => console.warn("Price request email failed:", e.message));
+  }
+
+  return { success: true };
 };

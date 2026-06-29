@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, CheckCircle, FileText, PenLine, Loader2 } from "lucide-react";
+import { X, CheckCircle, FileText, PenLine, Loader2, MapPin } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
 import { showSuccess, showError } from "@/lib/toast";
 import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
@@ -288,6 +288,19 @@ export default function OfferFormModal({ show, onClose, property, user }: OfferF
                     <p className="text-white/80 text-sm font-medium truncate max-w-md">
                       {property?.propertyTitle || "Property"}
                     </p>
+                    {property?.location && (
+                      <p className="text-white/60 text-xs mt-1 flex items-start gap-1">
+                        <MapPin className="size-3 mt-0.5 flex-shrink-0" />
+                        <span>
+                          {[
+                            property.location.streetAddress,
+                            property.location.area,
+                            property.location.city,
+                            property.location.postalCode,
+                          ].filter(Boolean).join(", ")}
+                        </span>
+                      </p>
+                    )}
                   </div>
                 </div>
                 <button onClick={onClose} className="size-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-all">

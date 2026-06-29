@@ -1,5 +1,5 @@
 import express from "express";
-import { submit, getAll, getById, update, getStats, acceptOffer, declineOffer, getAgentOffers } from "./offer.controller.js";
+import { submit, getAll, getById, update, getStats, acceptOffer, declineOffer, getAgentOffers, requestPriceChange } from "./offer.controller.js";
 import { protect } from "../../middlewares/auth.middleware.js";
 import { authorize } from "../../middlewares/role.middleware.js";
 
@@ -17,5 +17,6 @@ router.put("/:id", protect, authorize("admin"), update);
 router.put("/:id/accept", protect, authorize("admin"), acceptOffer);
 router.put("/:id/decline", protect, authorize("admin"), declineOffer);
 router.get("/agent/my", protect, getAgentOffers);
+router.post("/:id/request-price", protect, authorize("admin"), requestPriceChange);
 
 export default router;

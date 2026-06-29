@@ -91,3 +91,13 @@ export const getAgentOffers = async (req, res) => {
     res.status(500).json({ success: false, message: e.message });
   }
 };
+
+export const requestPriceChange = async (req, res) => {
+  try {
+    const { message, suggestedPrice } = req.body;
+    const result = await offerService.requestPriceChange(req.params.id, message, suggestedPrice, req.user._id);
+    res.json({ success: true, message: "Price change request sent to offeror" });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+};
