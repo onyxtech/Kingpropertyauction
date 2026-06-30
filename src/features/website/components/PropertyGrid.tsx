@@ -53,6 +53,19 @@ export default function PropertyGrid({
   const [sortBy, setSortBy] = useState("recent");
 
   let filteredProperties = properties.filter((property: any) => {
+    // 🔥 Only show approved and available properties
+    if (property.approvalStatus !== "approved") return false;
+    if (property.propertyStatus !== "available") return false;
+
+    // 🔥 If it's an auction property, check if the auction is completed
+    if (property.listingType === "auction") {
+      const info = getAuctionInfo(property, allAuctions);
+      // If auction is completed or withdrawn, hide it
+      if (info?.status === "completed" || info?.status === "withdrawn") {
+        return false;
+      }
+    }
+    
     if (activeTab === "auction") {
       if (property.listingType !== "auction") return false;
       const info = getAuctionInfo(property, allAuctions);
@@ -159,10 +172,8 @@ export default function PropertyGrid({
   });
 
   filteredProperties = [...filteredProperties].sort((a: any, b: any) => {
-    const priceA =
-      a.pricing?.startingAuctionPrice || 0;
-    const priceB =
-      b.pricing?.startingAuctionPrice || 0;
+    const priceA = a.pricing?.startingAuctionPrice || 0;
+    const priceB = b.pricing?.startingAuctionPrice || 0;
     const dateA = new Date(a.createdAt || 0).getTime();
     const dateB = new Date(b.createdAt || 0).getTime();
 
@@ -368,7 +379,7 @@ export default function PropertyGrid({
               />
             ))}
           </div>
-            )}
+        )}
 
         {/* Load More Button */}
         {hasMore && onLoadMore && (
@@ -381,8 +392,20 @@ export default function PropertyGrid({
               {isLoadingMore ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin size-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
                   </svg>
                   Loading...
                 </span>

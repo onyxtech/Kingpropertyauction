@@ -1,5 +1,5 @@
 import { mediaUrl } from "@/lib/mediaUrl";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import AddressAutocomplete from "@/features/shared/components/AddressAutocomplete";
 import { useInitGoogleMaps } from "@/hooks/useInitGoogleMaps";
@@ -22,6 +22,16 @@ import { usePropertyApi } from "@/features/property/api/usePropertyApi";
 import { useAuctionApi } from "@/features/auction/api/useAuctionApi";
 import CountdownTimer from "@/features/shared/ui/CountdownTimer";
 import AuctionTimer from "@/features/shared/components/AuctionTimer";
+
+// 🔥 Helper function to get auction info for a property
+const getAuctionInfo = (property: any, allAuctions: any[]) => {
+  const matchingAuction = allAuctions.find((auction: any) =>
+    auction.properties?.some(
+      (p: any) => (typeof p === "string" ? p : p._id) === property._id,
+    ),
+  );
+  return matchingAuction || null;
+};
 
 export default function ViewAllLots() {
   const navigate = useNavigate();
@@ -83,26 +93,52 @@ export default function ViewAllLots() {
   const lotsTotal = lotsData?.total || 0;
   const hasMoreLots = allLots.length < lotsTotal;
 
-  // Append new lots
-  useEffect(() => {
-    if (lots.length > 0) {
-      setAllLots((prev) => {
-        const existingIds = new Set(prev.map((p: any) => p._id));
-        const newOnes = lots.filter((p: any) => !existingIds.has(p._id));
-        return [...prev, ...newOnes];
-      });
-    }
-  }, [lots]);
-
-  const handleLoadMoreLots = () => setLotsPage((prev) => prev + 1);
-
-  const displayLots = allLots.length > 0 ? allLots : lots;
-
   // Get all auctions to match per-lot and show correct badges/timers
   const { useGetAuctions } = useAuctionApi();
   const { data: auctionsData } = useGetAuctions({});
   const auctions = auctionsData?.data || [];
   const auction = slug ? auctions.find((a: any) => a.slug === slug) : null;
+
+  // 🔥 Apply the same filter as homepage - ONLY show approved, available properties with live/upcoming auctions
+  const filteredLots = React.useMemo(() => {
+    return lots.filter((property: any) => {
+      // Only show approved and available properties
+      if (property.approvalStatus !== "approved") return false;
+      if (property.propertyStatus !== "available") return false;
+
+      // If it's an auction property, check auction status
+      if (property.listingType === "auction") {
+        const info = getAuctionInfo(property, auctions);
+        // Hide completed or withdrawn auctions
+        if (
+          info &&
+          (info?.status === "completed" || info?.status === "withdrawn")
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [lots, auctions]);
+
+  // Append new lots - updated to use filteredLots
+  useEffect(() => {
+    if (filteredLots.length > 0) {
+      setAllLots((prev) => {
+        const existingIds = new Set(prev.map((p: any) => p._id));
+        const newOnes = filteredLots.filter(
+          (p: any) => !existingIds.has(p._id),
+        );
+        return [...prev, ...newOnes];
+      });
+    }
+  }, [filteredLots]);
+
+  const handleLoadMoreLots = () => setLotsPage((prev) => prev + 1);
+
+  // 🔥 Updated to use filteredLots
+  const displayLots = allLots.length > 0 ? allLots : filteredLots;
 
   const formatPrice = (val: number, currency = "GBP") =>
     new Intl.NumberFormat("en-GB", {
@@ -135,7 +171,7 @@ export default function ViewAllLots() {
               <Sparkles className="size-4 text-yellow-300 animate-pulse" />
               <span className="text-sm font-bold text-white">
                 📦 {displayLots.length}{" "}
-                {lots.length === 1 ? "Property" : "Properties"}{" "}
+                {displayLots.length === 1 ? "Property" : "Properties"}{" "}
                 {auction ? `in ${auction.auctionTitle}` : "Available"}
               </span>
             </div>
@@ -189,13 +225,22 @@ export default function ViewAllLots() {
         <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-5 mb-8">
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex-1 min-w-[220px]">
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Location</label>
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                Location
+              </label>
               <AddressAutocomplete
                 value={filterValues.search}
-                onChange={(v) => setFilterValues({ ...filterValues, search: v })}
+                onChange={(v) =>
+                  setFilterValues({ ...filterValues, search: v })
+                }
                 onAddressSelect={(data: any) => {
-                  const parts = [data.city, data.area, data.postalCode].filter(Boolean);
-                  setFilterValues({ ...filterValues, search: parts.join(", ") || data.formattedAddress || "" });
+                  const parts = [data.city, data.area, data.postalCode].filter(
+                    Boolean,
+                  );
+                  setFilterValues({
+                    ...filterValues,
+                    search: parts.join(", ") || data.formattedAddress || "",
+                  });
                 }}
                 placeholder="Search by city, postcode or area..."
                 country="gb"
@@ -203,8 +248,16 @@ export default function ViewAllLots() {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Type</label>
-              <select value={filterValues.type} onChange={e => setFilterValues({ ...filterValues, type: e.target.value })} className="px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                Type
+              </label>
+              <select
+                value={filterValues.type}
+                onChange={(e) =>
+                  setFilterValues({ ...filterValues, type: e.target.value })
+                }
+                className="px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
                 <option value="">All Types</option>
                 <option value="house">House</option>
                 <option value="apartment">Apartment</option>
@@ -214,47 +267,113 @@ export default function ViewAllLots() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Min Price</label>
-              <input type="number" value={filterValues.minPrice} onChange={e => setFilterValues({ ...filterValues, minPrice: e.target.value })} placeholder="£ Min" className="w-24 px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                Min Price
+              </label>
+              <input
+                type="number"
+                value={filterValues.minPrice}
+                onChange={(e) =>
+                  setFilterValues({ ...filterValues, minPrice: e.target.value })
+                }
+                placeholder="£ Min"
+                className="w-24 px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Max Price</label>
-              <input type="number" value={filterValues.maxPrice} onChange={e => setFilterValues({ ...filterValues, maxPrice: e.target.value })} placeholder="£ Max" className="w-24 px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                Max Price
+              </label>
+              <input
+                type="number"
+                value={filterValues.maxPrice}
+                onChange={(e) =>
+                  setFilterValues({ ...filterValues, maxPrice: e.target.value })
+                }
+                placeholder="£ Max"
+                className="w-24 px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Min Beds</label>
-              <select value={filterValues.minBeds} onChange={e => setFilterValues({ ...filterValues, minBeds: e.target.value })} className="px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                Min Beds
+              </label>
+              <select
+                value={filterValues.minBeds}
+                onChange={(e) =>
+                  setFilterValues({ ...filterValues, minBeds: e.target.value })
+                }
+                className="px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
                 <option value="">Any</option>
-                {[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n}{n===6?"+":""}</option>)}
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                    {n === 6 ? "+" : ""}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Max Beds</label>
-              <select value={filterValues.maxBeds} onChange={e => setFilterValues({ ...filterValues, maxBeds: e.target.value })} className="px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                Max Beds
+              </label>
+              <select
+                value={filterValues.maxBeds}
+                onChange={(e) =>
+                  setFilterValues({ ...filterValues, maxBeds: e.target.value })
+                }
+                className="px-3 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
                 <option value="">Any</option>
-                {[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n}{n===6?"+":""}</option>)}
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                    {n === 6 ? "+" : ""}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">&nbsp;</label>
-              <button onClick={() => {
-                const p = new URLSearchParams();
-                if (filterValues.search) p.set("search", filterValues.search);
-                if (filterValues.type) p.set("propertyType", filterValues.type);
-                if (filterValues.minPrice) p.set("minPrice", filterValues.minPrice);
-                if (filterValues.maxPrice) p.set("maxPrice", filterValues.maxPrice);
-                if (filterValues.minBeds) p.set("minBeds", filterValues.minBeds);
-                if (filterValues.maxBeds) p.set("maxBeds", filterValues.maxBeds);
-                sessionStorage.setItem("viewAllLotsScroll", window.scrollY.toString());
-                window.location.href = `/view-all-lots?${p.toString()}`;
-              }} className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all whitespace-nowrap">
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                &nbsp;
+              </label>
+              <button
+                onClick={() => {
+                  const p = new URLSearchParams();
+                  if (filterValues.search) p.set("search", filterValues.search);
+                  if (filterValues.type)
+                    p.set("propertyType", filterValues.type);
+                  if (filterValues.minPrice)
+                    p.set("minPrice", filterValues.minPrice);
+                  if (filterValues.maxPrice)
+                    p.set("maxPrice", filterValues.maxPrice);
+                  if (filterValues.minBeds)
+                    p.set("minBeds", filterValues.minBeds);
+                  if (filterValues.maxBeds)
+                    p.set("maxBeds", filterValues.maxBeds);
+                  sessionStorage.setItem(
+                    "viewAllLotsScroll",
+                    window.scrollY.toString(),
+                  );
+                  window.location.href = `/view-all-lots?${p.toString()}`;
+                }}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all whitespace-nowrap"
+              >
                 Show Results
               </button>
             </div>
-            {Object.values(filterValues).some(v => v) && (
+            {Object.values(filterValues).some((v) => v) && (
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">&nbsp;</label>
-                                <button onClick={() => window.location.href = "/view-all-lots"} className="px-4 py-3 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-100 transition-all">Clear</button>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                  &nbsp;
+                </label>
+                <button
+                  onClick={() => (window.location.href = "/view-all-lots")}
+                  className="px-4 py-3 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-100 transition-all"
+                >
+                  Clear
+                </button>
               </div>
             )}
           </div>
@@ -458,7 +577,7 @@ export default function ViewAllLots() {
                             {formatPrice(nextMinBid, lot.pricing?.currency)}
                           </span>
                         </div>
-                      
+
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-500">Bids</span>
                           <span className="font-bold text-slate-700">
@@ -476,7 +595,6 @@ export default function ViewAllLots() {
                             {formatPrice(displayBid, lot.pricing?.currency)}
                           </span>
                         </div>
-                        
                       </div>
                     )}
 

@@ -100,7 +100,7 @@ export const generateInvoice = async (data, userId) => {
   console.log("TERMS SAVED:", invoice.termsOfSale?.substring(0, 80));
 
   const populated = await Invoice.findById(invoice._id)
-    .populate("property", "propertyTitle slug location media")
+    .populate("property", "propertyTitle slug location media propertyID ")
     .populate("buyer", "name email phone address")
     .populate("seller", "name email phone")
     .populate("auction", "auctionTitle slug")
@@ -212,7 +212,7 @@ export const getInvoices = async (query = {}) => {
       .sort("-createdAt")
       .skip(skip)
       .limit(parseInt(limit))
-      .populate("property", "propertyTitle slug location pricing")
+      .populate("property", "propertyTitle slug location pricing propertyType propertyID")
       .populate("buyer", "name email address")
       .populate("seller", "name email")
       .populate("auction", "auctionTitle")
@@ -234,7 +234,7 @@ export const getInvoices = async (query = {}) => {
 // Get invoice by ID
 export const getInvoiceById = async (id) => {
   return Invoice.findById(id)
-    .populate("property", "propertyTitle slug location media pricing")
+    .populate("property", "propertyTitle slug location media pricing propertyID ")
     .populate("buyer", "name email phone address")
     .populate("seller", "name email phone")
     .populate("auction", "auctionTitle slug startDateTime")
@@ -247,7 +247,7 @@ export const getUserInvoices = async (userId, view = "buyer") => {
 
   return Invoice.find(filter)
     .sort("-createdAt")
-    .populate("property", "propertyTitle slug location")
+    .populate("property", "propertyTitle slug location propertyID ")
     .populate("buyer", "name email address")
     .populate("seller", "name email")
     .populate("auction", "auctionTitle slug")
@@ -266,7 +266,7 @@ export const updateInvoiceStatus = async (id, status, userId) => {
     try {
       const inv = await Invoice.findById(id)
         .populate("buyer", "name email address")
-        .populate("property", "propertyTitle")
+        .populate("property", "propertyTitle propertyID ")
         .lean();
       const { sendEmail } = await import("../notifications/email.service.js");
       const { isNotificationEnabled } =

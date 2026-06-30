@@ -55,6 +55,8 @@ export default function Invoices() {
   const [showPropertyList, setShowPropertyList] = useState(false);
   const [showBuyerList, setShowBuyerList] = useState(false);
 
+  const [topBidders, setTopBidders] = useState<any[]>([]);
+
   const { data, isLoading } = useQuery({
     queryKey: ["admin-invoices", statusFilter],
     queryFn: () => apiClient.fetch(`/invoices?status=${statusFilter}`),
@@ -110,22 +112,51 @@ export default function Invoices() {
     const m = 14;
     let y = 20;
 
+    // Header
     doc.setFillColor(30, 64, 175);
-    doc.rect(0, 0, 210, 35, "F");
-    doc.setTextColor(255, 255, 255);
+    doc.rect(0, 0, 210, 36, "F");
+    
+    // Company name - "King" in gold, "Property Auction" in white
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
-    doc.text("KING PROPERTY AUCTION", m, 18);
-    doc.setFontSize(10);
-    doc.text("Invoice", m, 28);
+    doc.setTextColor(255, 215, 0);
+    doc.text("KING", m, 16);
+    const kingWidth = doc.getTextWidth("KING");
+    doc.setTextColor(255, 255, 255);
+    doc.text(" PROPERTY AUCTION", m + kingWidth, 16);
+    
+    // Tagline
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(200, 215, 255);
+    doc.text("Scotland's Premier Property Auction Platform", m, 22);
+    
+    // Address & Contact
+    doc.setTextColor(180, 195, 240);
+    doc.text("123 Auction House, Glasgow, G1 2AB  |  www.kingpropertyauction.co.uk  |  info@kingpropertyauction.co.uk", m, 27);
+    
+    // Gold divider
+    doc.setDrawColor(255, 215, 0);
+    doc.setLineWidth(0.6);
+    doc.line(m, 32, 196, 32);
+    
+    // Invoice title right-aligned
+    doc.setTextColor(255, 215, 0);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("TAX INVOICE", 196, 16, { align: "right" });
 
     doc.setTextColor(0);
     doc.setFontSize(12);
-    y = 42;
+    y = 54;
     doc.text(`Invoice: ${invoice.invoiceNumber}`, m, y);
     y += 8;
     doc.setFontSize(10);
-    doc.text(`Purchase Date: ${new Date(invoice.issuedDate).toLocaleDateString("en-GB")}`, m, y);
+    doc.text(
+      `Purchase Date: ${new Date(invoice.issuedDate).toLocaleDateString("en-GB")}`,
+      m,
+      y,
+    );
     y += 6;
     doc.text(
       `Due Date: ${new Date(invoice.dueDate).toLocaleDateString("en-GB")}`,
@@ -147,7 +178,13 @@ export default function Invoices() {
 
     y += 5;
     const buyerAddr = invoice.buyer?.address
-      ? [invoice.buyer.address.street, invoice.buyer.address.city, invoice.buyer.address.postcode].filter(Boolean).join(", ")
+      ? [
+          invoice.buyer.address.street,
+          invoice.buyer.address.city,
+          invoice.buyer.address.postcode,
+        ]
+          .filter(Boolean)
+          .join(", ")
       : "";
     if (buyerAddr) {
       doc.setFontSize(8);
@@ -162,12 +199,22 @@ export default function Invoices() {
     doc.setFont("helvetica", "normal");
     doc.text(`  ${invoice.property?.propertyTitle || "N/A"}`, m, y);
     y += 5;
-    const propAddr = invoice.property?.location 
-      ? [invoice.property.location.streetAddress, invoice.property.location.city, invoice.property.location.postalCode].filter(Boolean).join(", ")
+    const lotNo = invoice.property?.propertyID || `LOT-${invoice.property?._id?.slice(-6) || "—"}`;
+    doc.setFontSize(8);
+    doc.text(`  Lot: ${lotNo}`, m, y);
+    y += 5;
+    const propAddr = invoice.property?.location
+      ? [
+          invoice.property.location.streetAddress,
+          invoice.property.location.city,
+          invoice.property.location.postalCode,
+        ]
+          .filter(Boolean)
+          .join(", ")
       : "";
     if (propAddr) {
       doc.setFontSize(8);
-      doc.text(`  ${propAddr}`, m, y); 
+      doc.text(`  ${propAddr}`, m, y);
       y += 5;
     }
     y += 5;
@@ -183,14 +230,16 @@ export default function Invoices() {
         ],
         [`VAT (${invoice.vatPercent}%)`, formatPrice(invoice.vatAmount)],
         ["Additional Fees", formatPrice(invoice.additionalFees || 0)],
-        [`Deposit Due (${invoice.depositPercent}%)`, formatPrice(invoice.depositAmount)],
+        [
+          `Deposit Due (${invoice.depositPercent}%)`,
+          formatPrice(invoice.depositAmount),
+        ],
         ["Total | Payable", formatPrice(invoice.totalAmount)],
       ],
       theme: "grid",
       headStyles: { fillColor: [37, 99, 235], textColor: 255, fontSize: 9 },
       bodyStyles: { fontSize: 9 },
     });
-
 
     doc.save(`${invoice.invoiceNumber}.pdf`);
   };
@@ -274,6 +323,34 @@ export default function Invoices() {
         if (result.success) setPreview(result.data);
       } catch {}
     }
+
+    // Fetch top 3 bidders - find auction for this property first
+    try {
+      // Find which auction this property belongs to
+      const auctionsRes = await apiClient.fetch("/auctions?limit=50");
+      const auction = (auctionsRes?.data || auctionsRes?.auctions || []).find(
+        (a: any) => a.properties?.some((p: any) => (typeof p === "string" ? p : p._id) === propertyId)
+      );
+      
+      if (auction) {
+        const bidsRes = await apiClient.fetch(`/bids/auction/${auction._id}/property/${propertyId}`);
+        if (bidsRes.success && bidsRes.data?.bids) {
+          const seen = new Set();
+          const uniqueBidders = bidsRes.data.bids
+            .filter((b: any) => {
+              const id = b.bidder?._id || b.bidder;
+              if (seen.has(id)) return false;
+              seen.add(id);
+              return true;
+            })
+            .sort((a: any, b: any) => b.amount - a.amount)
+            .slice(0, 3);
+          setTopBidders(uniqueBidders);
+        }
+      }
+    } catch {
+      setTopBidders([]);
+    }
   };
 
   const handlePriceChange = async (price: string) => {
@@ -321,12 +398,14 @@ export default function Invoices() {
       const customSettings: any = {};
       if (selectedProperty?.termsOfSale) {
         const t = selectedProperty.termsOfSale;
-        if (t.buyersFeePercent) customSettings.buyersFeePercent = t.buyersFeePercent;
+        if (t.buyersFeePercent)
+          customSettings.buyersFeePercent = t.buyersFeePercent;
         if (t.buyersFeeMin) customSettings.buyersFeeMin = t.buyersFeeMin;
         if (t.depositPercent) customSettings.depositPercent = t.depositPercent;
         if (t.depositMin) customSettings.depositMin = t.depositMin;
         if (t.vatPercent) customSettings.vatPercent = t.vatPercent;
-        if (t.additionalFees != null && t.additionalFees > 0) customSettings.additionalFees = t.additionalFees;
+        if (t.additionalFees != null && t.additionalFees > 0)
+          customSettings.additionalFees = t.additionalFees;
       }
 
       const result = await apiClient.fetch("/invoices", {
@@ -346,6 +425,13 @@ export default function Invoices() {
         queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
         queryClient.invalidateQueries({ queryKey: ["invoice-stats"] });
         setShowGenerateModal(false);
+        // Reset form
+        setGenerateForm({ propertyId: "", buyerId: "", sellerId: "", salePrice: "", notes: "" });
+        setSelectedProperty(null);
+        setPreview(null);
+        setTopBidders([]);
+        setPropertySearch("");
+        setBuyerSearch("");
       }
     } catch (e: any) {
       showError("Failed", e.message);
@@ -456,8 +542,9 @@ export default function Invoices() {
                 <tr>
                   {[
                     "Invoice #",
+                    "Lot No",
                     "Buyer",
-                    "Property",
+                    "Property Purchased",
                     "Sale Price",
                     "Total",
                     "Status",
@@ -483,11 +570,35 @@ export default function Invoices() {
                     <td className="px-4 py-3 font-bold text-blue-600 text-xs">
                       {inv.invoiceNumber}
                     </td>
-                    <td className="px-4 py-3 text-sm font-semibold text-slate-900">
-                      {inv.buyer?.name || "N/A"}
+                    <td className="px-4 py-3 text-xs font-bold text-slate-500">
+                      {inv.property?.propertyID ||
+                        `LOT-${inv.property?._id?.slice(-6) || "—"}`}
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-700">
-                      {inv.property?.propertyTitle || "N/A"}
+                    <td className="px-4 py-3 text-sm">
+                      <p className="font-semibold text-slate-900">
+                        {inv.buyer?.name || "N/A"}
+                      </p>
+                      {inv.buyer?.address && (
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {[
+                            inv.buyer.address.street,
+                            inv.buyer.address.city,
+                            inv.buyer.address.postcode,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <p className="font-semibold text-slate-900">
+                        {inv.property?.propertyTitle || "N/A"}
+                      </p>
+                      {inv.property?.propertyType && (
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-bold capitalize mt-0.5 inline-block">
+                          {inv.property.propertyType}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 font-bold text-slate-900">
                       {formatPrice(inv.salePrice)}
@@ -604,20 +715,27 @@ export default function Invoices() {
                 <div className="col-span-2">
                   <p className="text-slate-500 text-xs">Buyer</p>
                   <p className="font-bold">{selectedInvoice.buyer?.name}</p>
-                  <p className="text-xs text-slate-500">{selectedInvoice.buyer?.email}</p>
+                  <p className="text-xs text-slate-500">
+                    {selectedInvoice.buyer?.email}
+                  </p>
                   {selectedInvoice.buyer?.address && (
                     <p className="text-xs text-slate-500 mt-0.5">
                       {[
                         selectedInvoice.buyer.address.street,
                         selectedInvoice.buyer.address.city,
                         selectedInvoice.buyer.address.postcode,
-                      ].filter(Boolean).join(", ")}
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
                     </p>
                   )}
                 </div>
                 <div className="col-span-2">
-                  <p className="text-slate-500 text-xs">Property</p>
+                  <p className="text-slate-500 text-xs">Property Purchased</p>
                   <p className="font-bold">{selectedInvoice.property?.propertyTitle}</p>
+                  <p className="text-xs text-slate-500">
+                    Lot: {selectedInvoice.property?.propertyID || `LOT-${selectedInvoice.property?._id?.slice(-6) || "—"}`}
+                  </p>
                   {selectedInvoice.property?.location && (
                     <p className="text-xs text-slate-500 mt-0.5">
                       <MapPin className="size-3 inline mr-1" />
@@ -626,12 +744,14 @@ export default function Invoices() {
                         selectedInvoice.property.location.area,
                         selectedInvoice.property.location.city,
                         selectedInvoice.property.location.postalCode,
-                      ].filter(Boolean).join(", ")}
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
                     </p>
                   )}
                 </div>
                 <div>
-                 <p className="text-slate-500 text-xs">Purchase Date</p>
+                  <p className="text-slate-500 text-xs">Purchase Date</p>
                   <p className="font-bold">
                     {new Date(selectedInvoice.issuedDate).toLocaleDateString(
                       "en-GB",
@@ -672,13 +792,17 @@ export default function Invoices() {
                       </tr>
                     ))}
                     <tr>
-                      <td className="py-2 text-slate-600">Deposit Due ({selectedInvoice.depositPercent}%)</td>
+                      <td className="py-2 text-slate-600">
+                        Deposit Due ({selectedInvoice.depositPercent}%)
+                      </td>
                       <td className="py-2 text-right font-bold text-amber-600">
                         {formatPrice(selectedInvoice.depositAmount)}
                       </td>
                     </tr>
                     <tr className="text-lg">
-                      <td className="py-3 font-black text-slate-900">Total | Payable</td>
+                      <td className="py-3 font-black text-slate-900">
+                        Total | Payable
+                      </td>
                       <td className="py-3 text-right font-black text-green-700">
                         {formatPrice(selectedInvoice.totalAmount)}
                       </td>
@@ -931,6 +1055,45 @@ export default function Invoices() {
                 </div>
               </div>
 
+              {/* Top 3 Bidders Quick Select */}
+              {topBidders.length > 0 && (
+                <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-4 border-2 border-amber-200">
+                  <p className="text-xs font-black text-amber-800 mb-3 flex items-center gap-1">
+                    🏆 Top Bidders - Click to Select
+                  </p>
+                  <div className="space-y-2">
+                    {topBidders.map((bid: any, i: number) => {
+                      const isSelected = generateForm.buyerId === (bid.bidder?._id || bid.bidder);
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setGenerateForm({ ...generateForm, buyerId: bid.bidder?._id || bid.bidder })}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all ${
+                            isSelected
+                              ? "bg-amber-200 border-2 border-amber-400 font-bold"
+                              : "bg-white border border-amber-100 hover:bg-amber-50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={`size-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                              i === 0 ? "bg-yellow-400 text-yellow-900" : "bg-slate-200 text-slate-600"
+                            }`}>
+                              {i + 1}
+                            </span>
+                            <span className="font-medium text-slate-700">
+                              {bid.bidder?.name || "Bidder"}
+                            </span>
+                            {i === 0 && <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold">Winner</span>}
+                          </div>
+                          <span className="font-bold text-green-700">£{bid.amount?.toLocaleString()}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Sale Price */}
               <div>
                 <label className="block text-sm font-black text-slate-800 mb-2">
@@ -983,12 +1146,20 @@ export default function Invoices() {
                         </td>
                       </tr>
                       <tr>
-                        <td className="py-2 text-slate-600">Deposit Required ({preview.depositPercent}%)</td>
-                        <td className="py-2 text-right font-bold text-purple-700">£{preview.depositAmount?.toLocaleString()}</td>
+                        <td className="py-2 text-slate-600">
+                          Deposit Required ({preview.depositPercent}%)
+                        </td>
+                        <td className="py-2 text-right font-bold text-purple-700">
+                          £{preview.depositAmount?.toLocaleString()}
+                        </td>
                       </tr>
                       <tr className="border-b-2 border-slate-300">
-                        <td className="py-3 font-black text-slate-900 text-base">Total | Payable</td>
-                        <td className="py-3 text-right font-black text-green-700 text-lg">£{preview.totalAmount?.toLocaleString()}</td>
+                        <td className="py-3 font-black text-slate-900 text-base">
+                          Total | Payable
+                        </td>
+                        <td className="py-3 text-right font-black text-green-700 text-lg">
+                          £{preview.totalAmount?.toLocaleString()}
+                        </td>
                       </tr>
                     </tbody>
                   </table>

@@ -78,51 +78,102 @@ export default function InvoicesTab() {
     const m = 14;
     let y = 20;
 
+    // Header
     doc.setFillColor(30, 64, 175);
-    doc.rect(0, 0, 210, 35, "F");
-    doc.setTextColor(255, 255, 255);
+    doc.rect(0, 0, 210, 36, "F");
+    
+    // Company name - "King" in gold, "Property Auction" in white
     doc.setFontSize(20);
-    doc.text("KING PROPERTY AUCTION", m, 18);
-    doc.setFontSize(10);
-    doc.text("Invoice", m, 28);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 215, 0);
+    doc.text("KING", m, 16);
+    const kingWidth = doc.getTextWidth("KING");
+    doc.setTextColor(255, 255, 255);
+    doc.text(" PROPERTY AUCTION", m + kingWidth, 16);
+    
+    // Tagline
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(200, 215, 255);
+    doc.text("Scotland's Premier Property Auction Platform", m, 22);
+    
+    // Address & Contact
+    doc.setTextColor(180, 195, 240);
+    doc.text("123 Auction House, Glasgow, G1 2AB  |  www.kingpropertyauction.co.uk  |  info@kingpropertyauction.co.uk", m, 27);
+    
+    // Gold divider
+    doc.setDrawColor(255, 215, 0);
+    doc.setLineWidth(0.6);
+    doc.line(m, 32, 196, 32);
+    
+    // Invoice title right-aligned
+    doc.setTextColor(255, 215, 0);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("TAX INVOICE", 196, 16, { align: "right" });
 
     doc.setTextColor(0);
-    y = 42;
     doc.setFontSize(12);
+    y = 54;
+    
     doc.text(`Invoice: ${invoice.invoiceNumber}`, m, y);
     y += 8;
 
     // Buyer info in PDF
     const buyerAddr = invoice.buyer?.address
-      ? [invoice.buyer.address.street, invoice.buyer.address.city, invoice.buyer.address.postcode].filter(Boolean).join(", ")
+      ? [
+          invoice.buyer.address.street,
+          invoice.buyer.address.city,
+          invoice.buyer.address.postcode,
+        ]
+          .filter(Boolean)
+          .join(", ")
       : "";
     if (invoice.buyer?.name) {
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("Buyer:", m, y); y += 5;
+      doc.text("Buyer:", m, y);
+      y += 5;
       doc.setFont("helvetica", "normal");
-      doc.text(`  ${invoice.buyer.name}`, m, y); y += 5;
+      doc.text(`  ${invoice.buyer.name}`, m, y);
+      y += 5;
       if (invoice.buyer.email) {
-        doc.text(`  ${invoice.buyer.email}`, m, y); y += 5;
+        doc.text(`  ${invoice.buyer.email}`, m, y);
+        y += 5;
       }
       if (buyerAddr) {
         doc.setFontSize(8);
-        doc.text(`  ${buyerAddr}`, m, y); y += 5;
+        doc.text(`  ${buyerAddr}`, m, y);
+        y += 5;
       }
       y += 3;
     }
 
     doc.setFontSize(10);
     doc.text(`Property: ${invoice.property?.propertyTitle || "N/A"}`, m, y); y += 5;
-    const propAddr = invoice.property?.location 
-      ? [invoice.property.location.streetAddress, invoice.property.location.city, invoice.property.location.postalCode].filter(Boolean).join(", ")
+    const lotNo = invoice.property?.propertyID || `LOT-${invoice.property?._id?.slice(-6) || "—"}`;
+    doc.setFontSize(8);
+    doc.text(`Lot: ${lotNo}`, m, y); y += 5;
+    const propAddr = invoice.property?.location
+      ? [
+          invoice.property.location.streetAddress,
+          invoice.property.location.city,
+          invoice.property.location.postalCode,
+        ]
+          .filter(Boolean)
+          .join(", ")
       : "";
     if (propAddr) {
       doc.setFontSize(8);
-      doc.text(`  ${propAddr}`, m, y); y += 5;
+      doc.text(`  ${propAddr}`, m, y);
+      y += 5;
     }
     y += 3;
-    doc.text(`Purchase Date: ${new Date(invoice.issuedDate).toLocaleDateString("en-GB")}`, m, y);
+    doc.text(
+      `Purchase Date: ${new Date(invoice.issuedDate).toLocaleDateString("en-GB")}`,
+      m,
+      y,
+    );
     y += 6;
     doc.text(
       `Due: ${new Date(invoice.dueDate).toLocaleDateString("en-GB")}`,
@@ -143,9 +194,12 @@ export default function InvoicesTab() {
           formatPrice(invoice.buyersFeeAmount),
         ],
         [`VAT (${invoice.vatPercent}%)`, formatPrice(invoice.vatAmount)],
-          ["Additional Fees", formatPrice(invoice.additionalFees || 0)],
-          [`Deposit Due (${invoice.depositPercent}%)`, formatPrice(invoice.depositAmount)],
-          ["Total | Payable", formatPrice(invoice.totalAmount)],
+        ["Additional Fees", formatPrice(invoice.additionalFees || 0)],
+        [
+          `Deposit Due (${invoice.depositPercent}%)`,
+          formatPrice(invoice.depositAmount),
+        ],
+        ["Total | Payable", formatPrice(invoice.totalAmount)],
       ],
       theme: "grid",
       headStyles: { fillColor: [37, 99, 235], textColor: 255, fontSize: 9 },
@@ -264,7 +318,8 @@ export default function InvoicesTab() {
                 {(isSellerView
                   ? [
                       "Invoice #",
-                      "Property",
+                      "Lot No",
+                      "Property Purchased",
                       "Buyer",
                       "Amount",
                       "Status",
@@ -292,12 +347,25 @@ export default function InvoicesTab() {
                   <td className="px-4 py-3 font-bold text-blue-600 text-xs">
                     {inv.invoiceNumber}
                   </td>
+                  <td className="px-4 py-3 text-xs font-bold text-slate-500">
+                    {inv.property?.propertyID ||
+                      `LOT-${inv.property?._id?.slice(-6) || "—"}`}
+                  </td>
                   <td className="px-4 py-3 font-medium text-slate-900 text-xs">
                     {inv.property?.propertyTitle || "N/A"}
                   </td>
                   {isSellerView && (
-                    <td className="px-4 py-3 font-medium text-slate-700 text-xs">
-                      {inv.buyer?.name || "N/A"}
+                    <td className="px-4 py-3 text-xs">
+                      <p className="font-medium text-slate-700">{inv.buyer?.name || "N/A"}</p>
+                      {inv.buyer?.address && (
+                        <p className="text-slate-500 mt-0.5">
+                          {[
+                            inv.buyer.address.street,
+                            inv.buyer.address.city,
+                            inv.buyer.address.postcode,
+                          ].filter(Boolean).join(", ")}
+                        </p>
+                      )}
                     </td>
                   )}
                   <td className="px-4 py-3 font-black text-green-700 text-xs">
@@ -354,8 +422,15 @@ export default function InvoicesTab() {
               {/* Key Info */}
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="bg-slate-50 rounded-xl p-3 col-span-2">
-                  <p className="text-xs text-slate-500">Property</p>
-                  <p className="font-bold text-slate-900">{selectedInvoice.property?.propertyTitle}</p>
+                  <p className="text-xs text-slate-500">Property Purchased</p>
+                  <p className="font-bold text-slate-900">
+                    {selectedInvoice.property?.propertyTitle}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Lot:{" "}
+                    {selectedInvoice.property?.propertyID ||
+                      `LOT-${selectedInvoice.property?._id?.slice(-6) || "—"}`}
+                  </p>
                   {selectedInvoice.property?.location && (
                     <p className="text-xs text-slate-500 mt-0.5">
                       <MapPin className="size-3 inline mr-1" />
@@ -364,7 +439,9 @@ export default function InvoicesTab() {
                         selectedInvoice.property.location.area,
                         selectedInvoice.property.location.city,
                         selectedInvoice.property.location.postalCode,
-                      ].filter(Boolean).join(", ")}
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
                     </p>
                   )}
                 </div>
@@ -388,15 +465,21 @@ export default function InvoicesTab() {
                 {isSellerView && selectedInvoice.buyer && (
                   <div className="bg-slate-50 rounded-xl p-3 col-span-2">
                     <p className="text-xs text-slate-500">Buyer</p>
-                    <p className="font-bold text-slate-900">{selectedInvoice.buyer?.name}</p>
-                    <p className="text-xs text-slate-500">{selectedInvoice.buyer?.email}</p>
+                    <p className="font-bold text-slate-900">
+                      {selectedInvoice.buyer?.name}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {selectedInvoice.buyer?.email}
+                    </p>
                     {selectedInvoice.buyer?.address && (
                       <p className="text-xs text-slate-500 mt-0.5">
                         {[
                           selectedInvoice.buyer.address.street,
                           selectedInvoice.buyer.address.city,
                           selectedInvoice.buyer.address.postcode,
-                        ].filter(Boolean).join(", ")}
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
                       </p>
                     )}
                   </div>
@@ -454,7 +537,9 @@ export default function InvoicesTab() {
                       </td>
                     </tr>
                     <tr className="border-b-2 border-slate-300">
-                      <td className="py-3 font-black text-base">Total | Payable</td>
+                      <td className="py-3 font-black text-base">
+                        Total | Payable
+                      </td>
                       <td className="py-3 text-right font-black text-green-700 text-lg">
                         {formatPrice(selectedInvoice.totalAmount)}
                       </td>

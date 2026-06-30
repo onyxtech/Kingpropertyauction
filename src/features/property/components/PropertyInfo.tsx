@@ -148,12 +148,6 @@ export default function PropertyInfo({
               value: property.specifications?.parkingSpaces || 0,
               label: "Parking",
             },
-            {
-              icon: Home,
-              gradient: "from-rose-500 to-red-600",
-              value: property.specifications?.yearBuilt || "N/A",
-              label: "Built",
-            },
           ].map((stat, idx) => (
             <div key={idx} className="flex items-center gap-3">
               <div
@@ -252,61 +246,83 @@ export default function PropertyInfo({
                 />
               </div>
             )}
-            {isAuctionType &&
-              !isInLiveAuction &&
-              property.auctionDetails?.auctionEndDate && (
-                <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-4 border-2 border-amber-200 flex items-center justify-between">
-                  <span className="text-sm font-bold text-amber-700">
-                    📅 Auction Date:
-                  </span>
-                  <span className="font-bold text-amber-900">
-                    {new Date(
-                      property.auctionDetails.auctionEndDate,
-                    ).toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
-              )}
+
+            {/* Bidding Details */}
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200 space-y-2">
-              <div className="flex justify-between text-sm font-semibold">
-                <span className="text-slate-600">Next Min Bid</span>
-                <span className="text-slate-900 font-bold">
-                  {formatPrice(nextMinBid)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm font-semibold">
-                <span className="text-slate-600">Bid Increment</span>
-                <span className="text-slate-900 font-bold">
-                  {formatPrice(bidIncrement)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm font-semibold">
-                <span className="text-slate-600">Total Bids</span>
-                <span className="text-slate-900 font-bold">
-                  {property.totalBids || 0}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm font-semibold">
-                <span className="text-slate-600">Status</span>
-                <span
-                  className={`font-bold ${
-                    isLiveNow
-                      ? "text-green-600"
-                      : isCompleted
-                        ? "text-slate-600"
-                        : "text-amber-600"
-                  }`}
-                >
-                  {isLiveNow
-                    ? "🟢 Live"
-                    : isCompleted
-                      ? "✅ Completed"
-                      : "🟡 Not in live auction"}
-                </span>
-              </div>
+              {!matchingAuction ? (
+                <>
+                  <p className="text-sm font-bold text-purple-700">
+                    Bidding not yet open
+                  </p>
+                  <div className="flex justify-between text-sm font-semibold">
+                    <span className="text-slate-600">Status</span>
+                    <span className="font-bold text-amber-600">
+                      🟡 Not in live auction
+                    </span>
+                  </div>
+                </>
+              ) : matchingAuction.status === "scheduled" ? (
+                <>
+                  <p className="text-sm font-bold text-purple-700">
+                    Bidding not yet open
+                  </p>
+                  <div className="flex justify-between text-sm font-semibold">
+                    <span className="text-slate-600">Status</span>
+                    <span className="font-bold text-amber-600">
+                      🟡 Auction Scheduled
+                    </span>
+                  </div>
+                </>
+              ) : matchingAuction.status === "live" &&
+                property.totalBids === 0 ? (
+                <>
+                  <p className="text-sm font-bold text-purple-700">
+                    No bids placed yet
+                  </p>
+                  <div className="flex justify-between text-sm font-semibold">
+                    <span className="text-slate-600">Status</span>
+                    <span className="font-bold text-red-600">
+                      🔴 In Live Auction
+                    </span>
+                  </div>
+                </>
+              ) : matchingAuction.status === "live" ? (
+                <>
+                  <div className="flex justify-between text-sm font-semibold">
+                    <span className="text-slate-600">Next Min Bid</span>
+                    <span className="text-slate-900 font-bold">
+                      {formatPrice(nextMinBid)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold">
+                    <span className="text-slate-600">Bid Increment</span>
+                    <span className="text-slate-900 font-bold">
+                      {formatPrice(bidIncrement)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold">
+                    <span className="text-slate-600">Total Bids</span>
+                    <span className="text-slate-900 font-bold">
+                      {property.totalBids || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold">
+                    <span className="text-slate-600">Status</span>
+                    <span className="font-bold text-red-600">
+                      🔴 In Live Auction
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between text-sm font-semibold">
+                    <span className="text-slate-600">Status</span>
+                    <span className="font-bold text-slate-600">
+                      ✅ Completed
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -385,8 +401,6 @@ export default function PropertyInfo({
         </div>
       )}
 
-
-      
       {/* Special Terms of Sale */}
       {property.legalInfo?.specialTerms && (
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border-2 border-white/60">
@@ -545,7 +559,7 @@ export default function PropertyInfo({
       )}
 
       {/* Bid History */}
-        {isInLiveAuction && (
+      {isInLiveAuction && (
         <BidHistorySection
           isLive={isLiveNow}
           show={showBidHistory}

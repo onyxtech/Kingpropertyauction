@@ -12,6 +12,7 @@ import {
   X,
   MapPin,
   MessageSquare,
+  Home,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageWithFallback } from "@/features/shared/figma/ImageWithFallback";
@@ -34,7 +35,7 @@ export default function PropertyDetails() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const openOfferFromUrl = searchParams.get("offer") === "true";
-  
+
   useEffect(() => {
     if (openOfferFromUrl) {
       setShowOfferModal(true);
@@ -427,23 +428,23 @@ export default function PropertyDetails() {
     );
   }
 
-  // If property is sold and user is not admin, show sold message
-  const isSold = property?.propertyStatus === "sold";
+  // Only show available properties to public
+  const isAvailable = property?.propertyStatus === "available";
   const isAdmin = user?.role === "admin";
 
-  if (isSold && !isAdmin) {
+  if (!isAvailable && !isAdmin) {
     return (
       <PublicLayout>
         <div className="container mx-auto px-6 py-20 text-center">
           <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-xl rounded-3xl p-12 shadow-xl border-2 border-white/60">
-            <div className="size-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="size-10 text-green-600" />
+            <div className="size-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Home className="size-10 text-slate-400" />
             </div>
             <h2 className="text-3xl font-black text-slate-900 mb-3">
-              Property Sold!
+              Property Unavailable
             </h2>
             <p className="text-slate-600 font-medium mb-8">
-              This property has been sold and is no longer available.
+              This property is no longer available for viewing.
             </p>
             <button
               onClick={() => navigate("/")}
@@ -759,8 +760,13 @@ export default function PropertyDetails() {
             <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-6 relative">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-2xl font-black text-white">Property Location</h3>
-                  <p className="text-white/90">{property.location?.streetAddress}, {property.location?.city}</p>
+                  <h3 className="text-2xl font-black text-white">
+                    Property Location
+                  </h3>
+                  <p className="text-white/90">
+                    {property.location?.streetAddress},{" "}
+                    {property.location?.city}
+                  </p>
                 </div>
                 <button
                   onClick={() => setShowMapModal(false)}
@@ -789,15 +795,20 @@ export default function PropertyDetails() {
                     rel="noopener noreferrer"
                     className="absolute bottom-4 right-4 px-4 py-2 bg-white rounded-xl shadow-lg text-sm font-bold text-slate-700 hover:bg-slate-100 transition-all flex items-center gap-2 z-10"
                   >
-                    <MapPin className="size-4 text-emerald-600" /> View Larger Map
+                    <MapPin className="size-4 text-emerald-600" /> View Larger
+                    Map
                   </a>
                 </>
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
                     <MapPin className="size-20 text-red-500 mx-auto animate-bounce" />
-                    <p className="text-xl font-bold text-slate-700 mt-4">{property.location?.streetAddress}</p>
-                    <p className="text-slate-500">{property.location?.city}, {property.location?.area}</p>
+                    <p className="text-xl font-bold text-slate-700 mt-4">
+                      {property.location?.streetAddress}
+                    </p>
+                    <p className="text-slate-500">
+                      {property.location?.city}, {property.location?.area}
+                    </p>
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.location?.streetAddress + " " + property.location?.city)}`}
                       target="_blank"
