@@ -14,6 +14,10 @@ import {
   Sparkles,
   Info,
   ExternalLink,
+  Building2,
+  TreePine,
+  Building,
+  Factory,
 } from "lucide-react";
 import AuctionTimer from "@/features/shared/components/AuctionTimer";
 import { formatUKDateTime } from "@/features/shared/utils/dateUtils";
@@ -142,12 +146,12 @@ export default function PropertyInfo({
               value: property.specifications?.bathrooms || 0,
               label: "Bathrooms",
             },
-            {
-              icon: Car,
-              gradient: "from-orange-500 to-amber-600",
-              value: property.specifications?.parkingSpaces || 0,
-              label: "Parking",
-            },
+            // {
+            //   icon: Car,
+            //   gradient: "from-orange-500 to-amber-600",
+            //   value: property.specifications?.parkingSpaces || 0,
+            //   label: "Parking",
+            // },
           ].map((stat, idx) => (
             <div key={idx} className="flex items-center gap-3">
               <div
@@ -338,21 +342,29 @@ export default function PropertyInfo({
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border-2 border-blue-100">
             <p className="text-sm font-bold text-blue-600 mb-1">Status</p>
             <p className="text-lg font-bold text-slate-900">
-              {property.propertyStatus === "sold" ? "🎉 Sold" : "✅ Available"}
+              {property.propertyStatus === "sold" ? "✅ Occupied" : " Unoccupied"}
             </p>
           </div>
           <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-5 border-2 border-purple-100">
             <p className="text-sm font-bold text-purple-600 mb-1">Type</p>
-            <p className="text-lg font-bold text-slate-900 capitalize">
-              {property.propertyType || "N/A"}
-            </p>
+              <p className="text-lg font-bold text-slate-900 capitalize flex items-center gap-2">
+                {property.propertyType === "house" && <><Home className="size-5 text-blue-600" /> House</>}
+                {property.propertyType === "apartment" && <><Building2 className="size-5 text-purple-600" /> Apartment</>}
+                {property.propertyType === "land" && <><TreePine className="size-5 text-green-600" /> Land</>}
+                {property.propertyType === "commercial" && <><Building className="size-5 text-amber-600" /> Commercial</>}
+                {property.propertyType === "farmhouse" && <><Home className="size-5 text-orange-600" /> Farmhouse</>}
+                {property.propertyType === "villa" && <><Building2 className="size-5 text-rose-600" /> Villa</>}
+                {property.propertyCategory === "residential" && !["house","apartment","farmhouse","villa"].includes(property.propertyType) && <><Building2 className="size-5 text-indigo-600" /> Residential</>}
+                {property.propertyCategory === "industrial" && <><Factory className="size-5 text-slate-600" /> Industrial</>}
+                {!["house","apartment","land","commercial","farmhouse","villa"].includes(property.propertyType) && !["residential","industrial"].includes(property.propertyCategory) && <><Building2 className="size-5 text-slate-600" /> {property.propertyType || "N/A"}</>}
+              </p>
           </div>
           <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-5 border-2 border-emerald-100">
             <p className="text-sm font-bold text-emerald-600 mb-1">
               Occupation
             </p>
             <p className="text-lg font-bold text-slate-900">
-              {property.propertyStatus === "sold" ? "Occupied" : "Vacant"}
+              {property.propertyStatus === "sold" ? "Occupied" : "Unoccupied"}
             </p>
           </div>
           <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border-2 border-amber-100">

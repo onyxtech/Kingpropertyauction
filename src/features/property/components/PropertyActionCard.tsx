@@ -632,10 +632,10 @@ export default function PropertyActionCard({
                 property.propertyCategory?.charAt(0).toUpperCase() +
                   property.propertyCategory?.slice(1) || "N/A",
             },
-            {
-              label: "Year Built",
-              value: property.specifications?.yearBuilt || "N/A",
-            },
+            // {
+            //   label: "Year Built",
+            //   value: property.specifications?.yearBuilt || "N/A",
+            // },
             {
               label: "Floors",
               value: property.specifications?.floors || "N/A",
