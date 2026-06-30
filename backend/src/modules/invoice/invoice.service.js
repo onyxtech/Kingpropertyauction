@@ -81,7 +81,10 @@ export const generateInvoice = async (data, userId) => {
     ...amounts,
     property: data.propertyId,
     auction: data.auctionId || null,
-    buyer: data.buyerId,
+    buyer: data.buyerId || null,
+    buyerName: data.buyerName || null,
+    buyerEmail: data.buyerEmail || null,
+    buyerAddress: data.buyerAddress || null,
     seller: data.sellerId || null,
     payment: data.paymentId || null,
     commission: data.commissionId || null,
@@ -110,34 +113,39 @@ export const generateInvoice = async (data, userId) => {
   // Send email + notification to buyer
   try {
     const { sendEmail } = await import("../notifications/email.service.js");
-    const { isNotificationEnabled } =
-      await import("../settings/settings.service.js");
-    const Notification = (
-      await import("../notifications/notification.model.js")
-    ).default;
+    const { isNotificationEnabled } = await import("../settings/settings.service.js");
+    const Notification = (await import("../notifications/notification.model.js")).default;
     const { emitToUser } = await import("../../socket.js");
     const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
 
-    const buyer = await (await import("../user/user.model.js")).default
-      .findById(data.buyerId)
-      .select("name email")
-      .lean();
-    const property = await (
-      await import("../property/property.model.js")
-    ).default
+    // Get buyer info - from user account or from data (for guests)
+    let buyerName = data.buyerName || "";
+    let buyerEmail = data.buyerEmail || "";
+    let buyerId = data.buyerId || null;
+
+    if (data.buyerId) {
+      const buyer = await (await import("../user/user.model.js")).default
+        .findById(data.buyerId)
+        .select("name email")
+        .lean();
+      buyerName = buyer?.name || buyerName;
+      buyerEmail = buyer?.email || buyerEmail;
+    }
+
+    const property = await (await import("../property/property.model.js")).default
       .findById(data.propertyId)
       .select("propertyTitle")
       .lean();
 
-    if (buyer?.email) {
+    if (buyerEmail) {
       const enabled = await isNotificationEnabled("invoiceGenerated");
       if (enabled) {
         await sendEmail({
-          to: buyer.email,
+          to: buyerEmail,
           subject: `📄 Invoice Generated - ${property?.propertyTitle || "Property"}`,
           templateKey: "invoiceGenerated",
           variables: {
-            user_name: buyer.name,
+            user_name: buyerName,
             property_title: property?.propertyTitle || "Property",
             invoice_number: invoice.invoiceNumber,
             total_amount: `£${amounts.totalAmount.toLocaleString()}`,
@@ -149,23 +157,26 @@ export const generateInvoice = async (data, userId) => {
       }
     }
 
-    await Notification.create({
-      type: "system",
-      icon: "file-text",
-      message: `📄 Invoice ${invoice.invoiceNumber} generated for ${property?.propertyTitle}`,
-      link: "/dashboard/invoices",
-      color: "blue",
-      targetUser: data.buyerId,
-    }).catch(() => {});
+    // Bell notification for buyer (only if has user account)
+    if (buyerId) {
+      await Notification.create({
+        type: "system",
+        icon: "file-text",
+        message: `📄 Invoice ${invoice.invoiceNumber} generated for ${property?.propertyTitle}`,
+        link: "/dashboard/invoices",
+        color: "blue",
+        targetUser: buyerId,
+      }).catch(() => {});
 
-    emitToUser(data.buyerId.toString(), "new_notification", {
-      type: "system",
-      message: `New invoice for ${property?.propertyTitle}`,
-      link: "/dashboard/invoices",
-    });
+      emitToUser(buyerId.toString(), "new_notification", {
+        type: "system",
+        message: `New invoice for ${property?.propertyTitle}`,
+        link: "/dashboard/invoices",
+      });
+    }
 
-    // Also notify seller/agent
-    if (data.sellerId && data.sellerId !== data.buyerId) {
+    // Notify seller/agent
+    if (data.sellerId && data.sellerId !== buyerId) {
       await Notification.create({
         type: "system",
         icon: "file-text",

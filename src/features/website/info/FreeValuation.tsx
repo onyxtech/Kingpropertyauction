@@ -62,7 +62,10 @@ export default function FreeValuation() {
       });
       form.reset();
       setSubmitted(true);
-      showSuccess("Valuation request sent!", "We'll contact you within 24 hours.");
+      showSuccess(
+        "Valuation request sent!",
+        "We'll contact you within 24 hours.",
+      );
     } catch (e: any) {
       showError("Submission failed", "Please try again.");
       setError("Failed to submit. Please try again.");
@@ -120,23 +123,25 @@ export default function FreeValuation() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md rounded-full mb-6 border-2 border-white/30 shadow-xl">
               <Sparkles className="size-4 text-yellow-300 animate-pulse" />
-              <span className="text-sm font-bold text-white">
-                100% FREE • No Obligation • Instant Results
+              <span className="text-sm font-bold text-white animate-pulse">
+                 FREE Valuation • Instant Results • No Obligation
               </span>
             </div>
 
-            <h1 className="text-6xl font-black text-white mb-6 leading-tight drop-shadow-lg">
-              Free Property Valuation
+            <h1 className="text-5xl md:text-6xl font-black text-white mb-6 leading-tight drop-shadow-lg">
+              <span className="bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-400 bg-clip-text text-transparent animate-pulse">
+                Find Out What Your Property Is Worth
+              </span>
               <br />
-              <span className="text-yellow-200">Know Your Worth Today</span>
+              <span className="text-3xl md:text-4xl font-bold text-white/90 mt-2 block">
+                FREE, Fast & No Obligation
+              </span>
             </h1>
 
-            <p className="text-2xl text-white/90 mb-10 font-medium">
-              Get an accurate, instant property valuation powered by AI and
-              expert analysis
-              <br />
-              <span className="text-yellow-200">
-                ✨ Completely free with no hidden fees
+            <p className="text-xl text-white/80 mb-10 font-medium max-w-2xl mx-auto">
+              
+              <span className="inline-block mt-3 px-6 py-2 bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-900 rounded-full font-bold text-sm animate-bounce shadow-lg">
+                ⚡ 100% Free – No Hidden Fees – No Commitment
               </span>
             </p>
 
@@ -180,7 +185,9 @@ export default function FreeValuation() {
             {submitted ? (
               <div className="text-center py-12">
                 <CheckCircle className="size-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-2xl font-black text-slate-900">Thank You!</h3>
+                <h3 className="text-2xl font-black text-slate-900">
+                  Thank You!
+                </h3>
                 <p className="text-slate-600 mt-2">
                   We'll be in touch within 48 hours with your free valuation.
                 </p>
@@ -192,166 +199,190 @@ export default function FreeValuation() {
                 </button>
               </div>
             ) : (
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  name="fullName"
-                  required
-                  placeholder="John Doe"
-                  className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
-                />
-              </div>
-              <div>
-                <AddressAutocomplete
-                  label="Property Address"
-                  value={addressValue}
-                  onChange={setAddressValue}
-                  onAddressSelect={(addr) => {
-                    setAddressValue(addr.streetAddress || addr.formattedAddress);
-                    setAddressFields(addr);
-                  }}
-                  placeholder="Start typing your property address..."
-                  inputClassName="px-5 py-4 bg-white/80 rounded-2xl focus:ring-orange-500 focus:border-orange-500"
-                />
-                <input type="hidden" name="address" value={addressValue} />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
+              <form className="space-y-6" onSubmit={handleSubmit}>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">
-                    City
+                    Full Name
                   </label>
                   <input
                     type="text"
-                    name="city"
+                    name="fullName"
                     required
-                    value={addressFields?.city || ""}
-                    onChange={(e) => setAddressFields((f: any) => ({ ...f, city: e.target.value }))}
-                    placeholder="London"
+                    placeholder="John Doe"
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Postcode
-                  </label>
-                  <input
-                    type="text"
-                    name="postcode"
-                    required
-                    value={addressFields?.postalCode || ""}
-                    onChange={(e) => setAddressFields((f: any) => ({ ...f, postalCode: e.target.value }))}
-                    placeholder="W1A 1AA"
-                    className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
+                  <AddressAutocomplete
+                    label="Property Address"
+                    value={addressValue}
+                    onChange={setAddressValue}
+                    onAddressSelect={(addr) => {
+                      setAddressValue(
+                        addr.streetAddress || addr.formattedAddress,
+                      );
+                      setAddressFields(addr);
+                    }}
+                    placeholder="Start typing your property address..."
+                    inputClassName="px-5 py-4 bg-white/80 rounded-2xl focus:ring-orange-500 focus:border-orange-500"
                   />
+                  <input type="hidden" name="address" value={addressValue} />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Property Type
-                </label>
-                <select name="propertyType" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium">
-                  <option>Select type...</option>
-                  <option>Detached House</option>
-                  <option>Semi-Detached House</option>
-                  <option>Terraced House</option>
-                  <option>Flat/Apartment</option>
-                  <option>Bungalow</option>
-                  <option>Land</option>
-                </select>
-              </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      required
+                      value={addressFields?.city || ""}
+                      onChange={(e) =>
+                        setAddressFields((f: any) => ({
+                          ...f,
+                          city: e.target.value,
+                        }))
+                      }
+                      placeholder="London"
+                      className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Postcode
+                    </label>
+                    <input
+                      type="text"
+                      name="postcode"
+                      required
+                      value={addressFields?.postalCode || ""}
+                      onChange={(e) =>
+                        setAddressFields((f: any) => ({
+                          ...f,
+                          postalCode: e.target.value,
+                        }))
+                      }
+                      placeholder="W1A 1AA"
+                      className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
+                    />
+                  </div>
+                </div>
 
-              <div className="grid md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Bedrooms
+                    Property Type
                   </label>
-                  <select name="bedrooms" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium">
-                    <option>1</option>
-                    <option>2</option>
-                    <option>3</option>
-                    <option>4</option>
-                    <option>5+</option>
+                  <select
+                    name="propertyType"
+                    className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
+                  >
+                    <option>Select type...</option>
+                    <option>Detached House</option>
+                    <option>Semi-Detached House</option>
+                    <option>Terraced House</option>
+                    <option>Flat/Apartment</option>
+                    <option>Bungalow</option>
+                    <option>Land</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Bathrooms
-                  </label>
-                  <select name="bathrooms" className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium">
-                    <option>1</option>
-                    <option>2</option>
-                    <option>3</option>
-                    <option>4+</option>
-                  </select>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Bedrooms
+                    </label>
+                    <select
+                      name="bedrooms"
+                      className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
+                    >
+                      <option>1</option>
+                      <option>2</option>
+                      <option>3</option>
+                      <option>4</option>
+                      <option>5+</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Bathrooms
+                    </label>
+                    <select
+                      name="bathrooms"
+                      className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
+                    >
+                      <option>1</option>
+                      <option>2</option>
+                      <option>3</option>
+                      <option>4+</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Square Feet
+                    </label>
+                    <input
+                      type="number"
+                      name="sqft"
+                      min="0"
+                      placeholder="2000"
+                      onKeyDown={(e) => {
+                        if (e.key === "-" || e.key === "e" || e.key === "E")
+                          e.preventDefault();
+                      }}
+                      className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
+                    />
+                  </div>
                 </div>
+
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Square Feet
+                    Your Email
                   </label>
                   <input
-                    type="number"
-                    name="sqft"
-                    min="0"
-                    placeholder="2000"
-                    onKeyDown={(e) => { if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
+                    type="email"
+                    name="email"
+                    required
+                    placeholder="your.email@example.com"
                     className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Your Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  placeholder="your.email@example.com"
-                  className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Phone Number (Optional)
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  required
-                  placeholder="+44 7xxx xxx xxx"
-                  pattern="[\+\d\s\-\(\)]{10,15}"
-                  title="Please enter a valid phone number (10–15 digits)"
-                  className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
-                />
-              </div>
-
-              {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-                  <p className="text-sm font-bold text-red-700">{error}</p>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Phone Number (Optional)
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    required
+                    placeholder="+44 7xxx xxx xxx"
+                    pattern="[\+\d\s\-\(\)]{10,15}"
+                    title="Please enter a valid phone number (10–15 digits)"
+                    className="w-full px-5 py-4 bg-white/80 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all font-medium"
+                  />
                 </div>
-              )}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-5 bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-orange-500/50 transition-all hover:scale-105 flex items-center justify-center gap-3"
-              >
-                <Calculator className="size-6" />
-                Get My Free Valuation
-              </button>
 
-              <p className="text-sm text-slate-500 text-center font-medium">
-                By submitting, you agree to our Terms of Service and Privacy
-                Policy
-              </p>
-            </form>
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-sm font-bold text-red-700">{error}</p>
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-5 bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:shadow-orange-500/50 transition-all hover:scale-105 flex items-center justify-center gap-3"
+                >
+                  <Calculator className="size-6" />
+                  Get My Free Valuation
+                </button>
+
+                <p className="text-sm text-slate-500 text-center font-medium">
+                  By submitting, you agree to our Terms of Service and Privacy
+                  Policy
+                </p>
+              </form>
             )}
           </div>
 
@@ -475,7 +506,6 @@ export default function FreeValuation() {
           </div>
         </div>
       </div>
-
     </PublicLayout>
   );
 }

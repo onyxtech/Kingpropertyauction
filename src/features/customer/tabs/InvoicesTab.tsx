@@ -81,7 +81,7 @@ export default function InvoicesTab() {
     // Header
     doc.setFillColor(30, 64, 175);
     doc.rect(0, 0, 210, 36, "F");
-    
+
     // Company name - "King" in gold, "Property Auction" in white
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
@@ -90,22 +90,26 @@ export default function InvoicesTab() {
     const kingWidth = doc.getTextWidth("KING");
     doc.setTextColor(255, 255, 255);
     doc.text(" PROPERTY AUCTION", m + kingWidth, 16);
-    
+
     // Tagline
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(200, 215, 255);
     doc.text("Scotland's Premier Property Auction Platform", m, 22);
-    
+
     // Address & Contact
     doc.setTextColor(180, 195, 240);
-    doc.text("123 Auction House, Glasgow, G1 2AB  |  www.kingpropertyauction.co.uk  |  info@kingpropertyauction.co.uk", m, 27);
-    
+    doc.text(
+      "123 Auction House, Glasgow, G1 2AB  |  www.kingpropertyauction.co.uk  |  info@kingpropertyauction.co.uk",
+      m,
+      27,
+    );
+
     // Gold divider
     doc.setDrawColor(255, 215, 0);
     doc.setLineWidth(0.6);
     doc.line(m, 32, 196, 32);
-    
+
     // Invoice title right-aligned
     doc.setTextColor(255, 215, 0);
     doc.setFontSize(11);
@@ -115,19 +119,14 @@ export default function InvoicesTab() {
     doc.setTextColor(0);
     doc.setFontSize(12);
     y = 54;
-    
+
     doc.text(`Invoice: ${invoice.invoiceNumber}`, m, y);
     y += 8;
 
     // Buyer info in PDF
-    const buyerAddr = invoice.buyer?.address
-      ? [
-          invoice.buyer.address.street,
-          invoice.buyer.address.city,
-          invoice.buyer.address.postcode,
-        ]
-          .filter(Boolean)
-          .join(", ")
+    const buyerAddressData = invoice.buyer?.address || invoice.buyerAddress;
+    const buyerAddr = buyerAddressData
+      ? [buyerAddressData.street, buyerAddressData.city, buyerAddressData.postcode].filter(Boolean).join(", ")
       : "";
     if (invoice.buyer?.name) {
       doc.setFontSize(10);
@@ -135,10 +134,10 @@ export default function InvoicesTab() {
       doc.text("Buyer:", m, y);
       y += 5;
       doc.setFont("helvetica", "normal");
-      doc.text(`  ${invoice.buyer.name}`, m, y);
+      doc.text(`  ${invoice.buyer?.name || invoice.buyerName || "N/A"}`, m, y);
       y += 5;
       if (invoice.buyer.email) {
-        doc.text(`  ${invoice.buyer.email}`, m, y);
+        doc.text(`  ${invoice.buyer?.email || invoice.buyerEmail || ""}`, m, y);
         y += 5;
       }
       if (buyerAddr) {
@@ -150,10 +149,14 @@ export default function InvoicesTab() {
     }
 
     doc.setFontSize(10);
-    doc.text(`Property: ${invoice.property?.propertyTitle || "N/A"}`, m, y); y += 5;
-    const lotNo = invoice.property?.propertyID || `LOT-${invoice.property?._id?.slice(-6) || "—"}`;
+    doc.text(`Property: ${invoice.property?.propertyTitle || "N/A"}`, m, y);
+    y += 5;
+    const lotNo =
+      invoice.property?.propertyID ||
+      `LOT-${invoice.property?._id?.slice(-6) || "—"}`;
     doc.setFontSize(8);
-    doc.text(`Lot: ${lotNo}`, m, y); y += 5;
+    doc.text(`Lot: ${lotNo}`, m, y);
+    y += 5;
     const propAddr = invoice.property?.location
       ? [
           invoice.property.location.streetAddress,
@@ -326,7 +329,7 @@ export default function InvoicesTab() {
                       "Date",
                       "",
                     ]
-                  : ["Invoice #", "Property", "Amount", "Status", "Date", ""]
+                  : ["Invoice #", "Lot #", "Property", "Amount", "Status", "Date", ""]
                 ).map((h) => (
                   <th
                     key={h}
@@ -355,14 +358,14 @@ export default function InvoicesTab() {
                     {inv.property?.propertyTitle || "N/A"}
                   </td>
                   {isSellerView && (
-                    <td className="px-4 py-3 text-xs">
-                      <p className="font-medium text-slate-700">{inv.buyer?.name || "N/A"}</p>
-                      {inv.buyer?.address && (
-                        <p className="text-slate-500 mt-0.5">
+                    <td className="px-4 py-3 text-sm">
+                      <p className="font-semibold text-slate-900">{inv.buyer?.name || inv.buyerName || "N/A"}</p>
+                      {(inv.buyer?.address || inv.buyerAddress) && (
+                        <p className="text-xs text-slate-500 mt-0.5">
                           {[
-                            inv.buyer.address.street,
-                            inv.buyer.address.city,
-                            inv.buyer.address.postcode,
+                            (inv.buyer?.address || inv.buyerAddress)?.street,
+                            (inv.buyer?.address || inv.buyerAddress)?.city,
+                            (inv.buyer?.address || inv.buyerAddress)?.postcode,
                           ].filter(Boolean).join(", ")}
                         </p>
                       )}
@@ -471,25 +474,25 @@ export default function InvoicesTab() {
                     <p className="text-xs text-slate-500">
                       {selectedInvoice.buyer?.email}
                     </p>
-                    {selectedInvoice.buyer?.address && (
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {[
-                          selectedInvoice.buyer.address.street,
-                          selectedInvoice.buyer.address.city,
-                          selectedInvoice.buyer.address.postcode,
-                        ]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    )}
+                  {(selectedInvoice.buyer?.address || selectedInvoice.buyerAddress) && (
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {[
+                        (selectedInvoice.buyer?.address || selectedInvoice.buyerAddress)?.street,
+                        (selectedInvoice.buyer?.address || selectedInvoice.buyerAddress)?.city,
+                        (selectedInvoice.buyer?.address || selectedInvoice.buyerAddress)?.postcode,
+                      ].filter(Boolean).join(", ")}
+                    </p>
+                  )}
                   </div>
                 )}
                 {!isSellerView && selectedInvoice.seller && (
                   <div className="bg-slate-50 rounded-xl p-3 col-span-2">
                     <p className="text-xs text-slate-500">Seller/Agent</p>
                     <p className="font-bold text-slate-900">
-                      {selectedInvoice.seller?.name} •{" "}
-                      {selectedInvoice.seller?.email}
+                      {selectedInvoice.seller?.name || "N/A"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {selectedInvoice.seller?.email || ""}
                     </p>
                   </div>
                 )}

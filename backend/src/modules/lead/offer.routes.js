@@ -1,12 +1,12 @@
 import express from "express";
-import { submit, getAll, getById, update, getStats, acceptOffer, declineOffer, getAgentOffers, requestPriceChange } from "./offer.controller.js";
-import { protect } from "../../middlewares/auth.middleware.js";
+import { submit, getAll, getById, update, getStats, acceptOffer, declineOffer, getAgentOffers, requestPriceChange, getMyOffers } from "./offer.controller.js";
+import { protect, optionalProtect } from "../../middlewares/auth.middleware.js";
 import { authorize } from "../../middlewares/role.middleware.js";
 
 const router = express.Router();
 
 // Public - anyone can submit an offer (guest or logged in)
-router.post("/", submit);
+router.post("/", optionalProtect, submit);
 
 // Admin routes
 router.get("/", protect, authorize("admin", "agent"), getAll);
@@ -18,5 +18,6 @@ router.put("/:id/accept", protect, authorize("admin"), acceptOffer);
 router.put("/:id/decline", protect, authorize("admin"), declineOffer);
 router.get("/agent/my", protect, getAgentOffers);
 router.post("/:id/request-price", protect, authorize("admin"), requestPriceChange);
+router.get("/my/offers", protect, getMyOffers);
 
 export default router;

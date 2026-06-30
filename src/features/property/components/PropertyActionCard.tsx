@@ -580,7 +580,7 @@ export default function PropertyActionCard({
         </a>
       )}
 
-      {((isLiveNow || isAuctionType || isDirectSale) && !isCompleted) && (
+      {((isLiveNow || isAuctionType || isDirectSale) && !isCompleted && !isOwnProperty) && (
         <button
           onClick={onOfferNow}
           className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-black text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center gap-2 text-center"
@@ -589,56 +589,24 @@ export default function PropertyActionCard({
         </button>
       )}
 
-      {/* Agent Contact Card */}
+      {/* Enquire Button */}
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border-2 border-white/60">
-        <h3 className="text-xl font-black text-slate-900 mb-4">
-          Contact Agent
-        </h3>
-        <div className="flex items-center gap-4 mb-6">
-          <div className="size-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-black text-xl">
-            {(property.sellerInfo?.agentName || "A")?.charAt(0)}
+        <button
+          onClick={onEnquire}
+          className="w-full flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 border-2 border-emerald-200 rounded-xl transition-all hover:scale-105 group"
+        >
+          <div className="size-10 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
+            <MessageSquare className="size-5 text-white" />
           </div>
-          <div>
-            <div className="font-black text-slate-900 text-lg">
-              {property.sellerInfo?.agentName || "Agent"}
-            </div>
-            <div className="text-sm text-slate-600 font-semibold">
-              Property Agent
-            </div>
+          <div className="text-left">
+            <p className="font-black text-slate-900 text-sm">
+              Enquire About This Property
+            </p>
+            <p className="text-xs text-slate-500 font-medium">
+              Get more details from the agent
+            </p>
           </div>
-        </div>
-        <div className="space-y-3">
-          {property.sellerInfo?.agentContact && (
-            <a
-              href={`tel:${property.sellerInfo.agentContact}`}
-              className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:scale-105 transition-all"
-            >
-              <div className="size-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Phone className="size-5 text-white" />
-              </div>
-              <span className="font-bold text-slate-900">
-                {property.sellerInfo.agentContact}
-              </span>
-            </a>
-          )}
-          {/* Enquiry Button */}
-          <button
-            onClick={onEnquire}
-            className="w-full flex items-center justify-center gap-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 border-2 border-emerald-200 rounded-xl transition-all hover:scale-105 group"
-          >
-            <div className="size-10 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
-              <MessageSquare className="size-5 text-white" />
-            </div>
-            <div className="text-left">
-              <p className="font-black text-slate-900 text-sm">
-                Enquire About This Property
-              </p>
-              <p className="text-xs text-slate-500 font-medium">
-                Get more details from the agent
-              </p>
-            </div>
-          </button>
-        </div>
+        </button>
       </div>
 
       {/* Property Information Card */}

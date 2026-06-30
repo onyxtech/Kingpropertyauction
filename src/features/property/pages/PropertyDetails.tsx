@@ -35,9 +35,29 @@ export default function PropertyDetails() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const openOfferFromUrl = searchParams.get("offer") === "true";
+  const offerIdFromUrl = searchParams.get("offerId") || "";
+  const suggestedPriceFromUrl = searchParams.get("price") || "";
+  const [prefillData, setPrefillData] = useState<any>(null);
 
   useEffect(() => {
     if (openOfferFromUrl) {
+      // Fetch existing offer data if offerId provided
+      if (offerIdFromUrl) {
+        apiClient.fetch(`/offers/${offerIdFromUrl}`).then(res => {
+          if (res.success) {
+            setPrefillData({
+              name: res.data.name || "",
+              email: res.data.email || "",
+              phone: res.data.phone || "",
+              address: res.data.address || "",
+              city: res.data.city || "",
+              postcode: res.data.postcode || "",
+              offerAmount: suggestedPriceFromUrl || res.data.offerAmount?.toString() || "",
+              solicitorDetails: res.data.solicitorDetails || "",
+            });
+          }
+        }).catch(() => {});
+      }
       setShowOfferModal(true);
     }
   }, [openOfferFromUrl]);
@@ -723,6 +743,7 @@ export default function PropertyDetails() {
         onClose={() => setShowOfferModal(false)}
         property={property}
         user={user || {}}
+        prefillData={prefillData}
       />
 
       {/* Image Modal */}

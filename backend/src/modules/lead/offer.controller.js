@@ -101,3 +101,12 @@ export const requestPriceChange = async (req, res) => {
     res.status(500).json({ success: false, message: e.message });
   }
 };
+
+export const getMyOffers = async (req, res) => {
+  try {
+    const offers = await offerService.getBuyerOffers(req.user._id);
+    res.json({ success: true, data: offers });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+};

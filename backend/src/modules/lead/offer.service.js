@@ -11,6 +11,11 @@ export const submitOffer = async (data, userId = null) => {
   // 1. Validate property exists
   const property = await Property.findById(data.property).lean();
   if (!property) throw new Error("Property not found");
+  
+    // Prevent owner from offering on their own property
+  if (userId && property.createdBy?.toString() === userId.toString()) {
+    throw new Error("You cannot submit an offer on your own property");
+  }
 
   // 2. Check if user already has a pending offer for this property - update it instead
   let offer = await PropertyOffer.findOne({
@@ -19,29 +24,22 @@ export const submitOffer = async (data, userId = null) => {
     status: "pending",
   });
 
-  if (offer) {
-    // Update existing offer with new price
-    offer.offerAmount = data.offerAmount;
-    offer.offerAmountInWords = data.offerAmountInWords;
-    offer.phone = data.phone || offer.phone;
-    offer.address = data.address || offer.address;
-    offer.city = data.city || offer.city;
-    offer.postcode = data.postcode || offer.postcode;
-    offer.solicitorDetails = data.solicitorDetails || offer.solicitorDetails;
-    offer.signature = data.signature || offer.signature;
-    offer.termsAccepted = data.termsAccepted;
-    offer.adminNotes = ""; // Clear old notes
-    offer.reviewedBy = null;
-    offer.reviewedAt = null;
-    await offer.save();
-  } else {
-    // Create new offer
-    offer = await PropertyOffer.create({
-      ...data,
-      submittedBy: userId || null,
-      status: "pending",
-    });
-  }
+  // Mark ALL previous pending offers from this person for this property as "updated"
+  await PropertyOffer.updateMany(
+    { 
+      property: data.property, 
+      email: data.email, 
+      status: "pending"
+    },
+    { status: "updated" }
+  );
+
+  // Always create a new offer (maintains negotiation history)
+  offer = await PropertyOffer.create({
+    ...data,
+    submittedBy: userId || null,
+    status: "pending",
+  });
 
   // 3. Populate property details for emails
   const populatedOffer = await PropertyOffer.findById(offer._id)
@@ -264,6 +262,45 @@ export const respondToOffer = async (offerId, status, message, adminId) => {
     { new: true }
   );
 
+  // If accepted, mark property as sold and auto-generate invoice
+  if (status === "accepted") {
+    try {
+      const Property = (await import("../property/property.model.js")).default;
+
+      // Mark property as sold
+      await Property.findByIdAndUpdate(offer.property, {
+        propertyStatus: "sold",
+        soldPrice: offer.offerAmount,
+        currentBid: offer.offerAmount,
+      });
+
+      // Get property owner for seller reference
+      const property = await Property.findById(offer.property).select('createdBy').lean();
+
+      // Generate invoice with buyer details from offer
+      const { generateInvoice } = await import("../invoice/invoice.service.js");
+      const invoice = await generateInvoice({
+        propertyId: offer.property,
+        buyerId: offer.submittedBy || null,
+        buyerName: offer.name,
+        buyerEmail: offer.email,
+        buyerAddress: {
+          street: offer.address,
+          city: offer.city,
+          postcode: offer.postcode,
+        },
+        sellerId: property?.createdBy || null,
+        salePrice: offer.offerAmount,
+        invoiceType: "offer_accept",
+        notes: `Offer accepted. Offeror: ${offer.name}`,
+      }, adminId);
+
+      console.log(`[Offer] Invoice ${invoice?.invoiceNumber} generated for ${offer.name}`);
+    } catch (e) {
+      console.warn("[Offer] Failed:", e.message);
+    }
+  }
+
   // Send email to offeror
   const templateKey = status === "accepted" ? "offerAccepted" : "offerDeclined";
   const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
@@ -335,7 +372,7 @@ export const requestPriceChange = async (offerId, message, suggestedPrice, admin
   if (!offer) throw new Error("Offer not found");
 
   const siteUrl = process.env.CLIENT_URL || "http://localhost:5173";
-  const propertyUrl = `${siteUrl}/properties/${offer.property?.slug || offer.property?._id}?offer=true`;
+  const propertyUrl = `${siteUrl}/properties/${offer.property?.slug || offer.property?._id}?offer=true&offerId=${offerId}&price=${suggestedPrice || ""}`;
 
   // Update offer with admin notes
   await PropertyOffer.findByIdAndUpdate(offerId, {
@@ -367,4 +404,12 @@ export const requestPriceChange = async (offerId, message, suggestedPrice, admin
   }
 
   return { success: true };
+};
+
+
+export const getBuyerOffers = async (userId) => {
+  return PropertyOffer.find({ submittedBy: userId })
+    .populate("property", "propertyTitle slug location media pricing")
+    .sort("-createdAt")
+    .lean();
 };

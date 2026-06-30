@@ -115,7 +115,7 @@ export default function Invoices() {
     // Header
     doc.setFillColor(30, 64, 175);
     doc.rect(0, 0, 210, 36, "F");
-    
+
     // Company name - "King" in gold, "Property Auction" in white
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
@@ -124,22 +124,26 @@ export default function Invoices() {
     const kingWidth = doc.getTextWidth("KING");
     doc.setTextColor(255, 255, 255);
     doc.text(" PROPERTY AUCTION", m + kingWidth, 16);
-    
+
     // Tagline
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(200, 215, 255);
     doc.text("Scotland's Premier Property Auction Platform", m, 22);
-    
+
     // Address & Contact
     doc.setTextColor(180, 195, 240);
-    doc.text("123 Auction House, Glasgow, G1 2AB  |  www.kingpropertyauction.co.uk  |  info@kingpropertyauction.co.uk", m, 27);
-    
+    doc.text(
+      "123 Auction House, Glasgow, G1 2AB  |  www.kingpropertyauction.co.uk  |  info@kingpropertyauction.co.uk",
+      m,
+      27,
+    );
+
     // Gold divider
     doc.setDrawColor(255, 215, 0);
     doc.setLineWidth(0.6);
     doc.line(m, 32, 196, 32);
-    
+
     // Invoice title right-aligned
     doc.setTextColor(255, 215, 0);
     doc.setFontSize(11);
@@ -172,16 +176,17 @@ export default function Invoices() {
     doc.text("Buyer:", m, y);
     y += 6;
     doc.setFont("helvetica", "normal");
-    doc.text(`  ${invoice.buyer?.name || "N/A"}`, m, y);
+    doc.text(`  ${invoice.buyer?.name || invoice.buyerName || "N/A"}`, m, y);
     y += 5;
-    doc.text(`  ${invoice.buyer?.email || ""}`, m, y);
+    doc.text(`  ${invoice.buyer?.email || invoice.buyerEmail || ""}`, m, y);
 
     y += 5;
-    const buyerAddr = invoice.buyer?.address
+    const buyerAddressData = invoice.buyer?.address || invoice.buyerAddress;
+    const buyerAddr = buyerAddressData
       ? [
-          invoice.buyer.address.street,
-          invoice.buyer.address.city,
-          invoice.buyer.address.postcode,
+          buyerAddressData.street,
+          buyerAddressData.city,
+          buyerAddressData.postcode,
         ]
           .filter(Boolean)
           .join(", ")
@@ -199,7 +204,9 @@ export default function Invoices() {
     doc.setFont("helvetica", "normal");
     doc.text(`  ${invoice.property?.propertyTitle || "N/A"}`, m, y);
     y += 5;
-    const lotNo = invoice.property?.propertyID || `LOT-${invoice.property?._id?.slice(-6) || "—"}`;
+    const lotNo =
+      invoice.property?.propertyID ||
+      `LOT-${invoice.property?._id?.slice(-6) || "—"}`;
     doc.setFontSize(8);
     doc.text(`  Lot: ${lotNo}`, m, y);
     y += 5;
@@ -329,11 +336,16 @@ export default function Invoices() {
       // Find which auction this property belongs to
       const auctionsRes = await apiClient.fetch("/auctions?limit=50");
       const auction = (auctionsRes?.data || auctionsRes?.auctions || []).find(
-        (a: any) => a.properties?.some((p: any) => (typeof p === "string" ? p : p._id) === propertyId)
+        (a: any) =>
+          a.properties?.some(
+            (p: any) => (typeof p === "string" ? p : p._id) === propertyId,
+          ),
       );
-      
+
       if (auction) {
-        const bidsRes = await apiClient.fetch(`/bids/auction/${auction._id}/property/${propertyId}`);
+        const bidsRes = await apiClient.fetch(
+          `/bids/auction/${auction._id}/property/${propertyId}`,
+        );
         if (bidsRes.success && bidsRes.data?.bids) {
           const seen = new Set();
           const uniqueBidders = bidsRes.data.bids
@@ -426,7 +438,13 @@ export default function Invoices() {
         queryClient.invalidateQueries({ queryKey: ["invoice-stats"] });
         setShowGenerateModal(false);
         // Reset form
-        setGenerateForm({ propertyId: "", buyerId: "", sellerId: "", salePrice: "", notes: "" });
+        setGenerateForm({
+          propertyId: "",
+          buyerId: "",
+          sellerId: "",
+          salePrice: "",
+          notes: "",
+        });
         setSelectedProperty(null);
         setPreview(null);
         setTopBidders([]);
@@ -576,14 +594,14 @@ export default function Invoices() {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <p className="font-semibold text-slate-900">
-                        {inv.buyer?.name || "N/A"}
+                        {inv.buyer?.name || inv.buyerName || "N/A"}
                       </p>
-                      {inv.buyer?.address && (
+                      {(inv.buyer?.address || inv.buyerAddress) && (
                         <p className="text-xs text-slate-500 mt-0.5">
                           {[
-                            inv.buyer.address.street,
-                            inv.buyer.address.city,
-                            inv.buyer.address.postcode,
+                            (inv.buyer?.address || inv.buyerAddress)?.street,
+                            (inv.buyer?.address || inv.buyerAddress)?.city,
+                            (inv.buyer?.address || inv.buyerAddress)?.postcode,
                           ]
                             .filter(Boolean)
                             .join(", ")}
@@ -714,16 +732,32 @@ export default function Invoices() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="col-span-2">
                   <p className="text-slate-500 text-xs">Buyer</p>
-                  <p className="font-bold">{selectedInvoice.buyer?.name}</p>
-                  <p className="text-xs text-slate-500">
-                    {selectedInvoice.buyer?.email}
+                  <p className="font-bold">
+                    {selectedInvoice.buyer?.name ||
+                      selectedInvoice.buyerName ||
+                      "N/A"}
                   </p>
-                  {selectedInvoice.buyer?.address && (
+                  <p className="text-xs text-slate-500">
+                    {selectedInvoice.buyer?.email ||
+                      selectedInvoice.buyerEmail ||
+                      ""}
+                  </p>
+                  {(selectedInvoice.buyer?.address ||
+                    selectedInvoice.buyerAddress) && (
                     <p className="text-xs text-slate-500 mt-0.5">
                       {[
-                        selectedInvoice.buyer.address.street,
-                        selectedInvoice.buyer.address.city,
-                        selectedInvoice.buyer.address.postcode,
+                        (
+                          selectedInvoice.buyer?.address ||
+                          selectedInvoice.buyerAddress
+                        )?.street,
+                        (
+                          selectedInvoice.buyer?.address ||
+                          selectedInvoice.buyerAddress
+                        )?.city,
+                        (
+                          selectedInvoice.buyer?.address ||
+                          selectedInvoice.buyerAddress
+                        )?.postcode,
                       ]
                         .filter(Boolean)
                         .join(", ")}
@@ -732,9 +766,13 @@ export default function Invoices() {
                 </div>
                 <div className="col-span-2">
                   <p className="text-slate-500 text-xs">Property Purchased</p>
-                  <p className="font-bold">{selectedInvoice.property?.propertyTitle}</p>
+                  <p className="font-bold">
+                    {selectedInvoice.property?.propertyTitle}
+                  </p>
                   <p className="text-xs text-slate-500">
-                    Lot: {selectedInvoice.property?.propertyID || `LOT-${selectedInvoice.property?._id?.slice(-6) || "—"}`}
+                    Lot:{" "}
+                    {selectedInvoice.property?.propertyID ||
+                      `LOT-${selectedInvoice.property?._id?.slice(-6) || "—"}`}
                   </p>
                   {selectedInvoice.property?.location && (
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -990,20 +1028,27 @@ export default function Invoices() {
                     <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
                       <div className="size-10 bg-green-200 rounded-xl flex items-center justify-center text-green-700 font-bold">
                         {buyers
-                          .find((b) => b._id === generateForm.buyerId)
+                          .find(
+                            (b) =>
+                              String(b._id) === String(generateForm.buyerId),
+                          )
                           ?.name?.charAt(0) || "?"}
                       </div>
                       <div>
                         <p className="font-bold text-green-900 text-sm">
                           {
-                            buyers.find((b) => b._id === generateForm.buyerId)
-                              ?.name
+                            buyers.find(
+                              (b) =>
+                                String(b._id) === String(generateForm.buyerId),
+                            )?.name
                           }
                         </p>
                         <p className="text-xs text-green-600">
                           {
-                            buyers.find((b) => b._id === generateForm.buyerId)
-                              ?.email
+                            buyers.find(
+                              (b) =>
+                                String(b._id) === String(generateForm.buyerId),
+                            )?.email
                           }
                         </p>
                       </div>
@@ -1063,12 +1108,19 @@ export default function Invoices() {
                   </p>
                   <div className="space-y-2">
                     {topBidders.map((bid: any, i: number) => {
-                      const isSelected = generateForm.buyerId === (bid.bidder?._id || bid.bidder);
+                      const isSelected =
+                        String(generateForm.buyerId) ===
+                        String(bid.bidder?._id || bid.bidder);
                       return (
                         <button
                           key={i}
                           type="button"
-                          onClick={() => setGenerateForm({ ...generateForm, buyerId: bid.bidder?._id || bid.bidder })}
+                          onClick={() =>
+                            setGenerateForm({
+                              ...generateForm,
+                              buyerId: bid.bidder?._id || bid.bidder,
+                            })
+                          }
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all ${
                             isSelected
                               ? "bg-amber-200 border-2 border-amber-400 font-bold"
@@ -1076,17 +1128,27 @@ export default function Invoices() {
                           }`}
                         >
                           <div className="flex items-center gap-2">
-                            <span className={`size-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                              i === 0 ? "bg-yellow-400 text-yellow-900" : "bg-slate-200 text-slate-600"
-                            }`}>
+                            <span
+                              className={`size-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                i === 0
+                                  ? "bg-yellow-400 text-yellow-900"
+                                  : "bg-slate-200 text-slate-600"
+                              }`}
+                            >
                               {i + 1}
                             </span>
                             <span className="font-medium text-slate-700">
                               {bid.bidder?.name || "Bidder"}
                             </span>
-                            {i === 0 && <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold">Winner</span>}
+                            {i === 0 && (
+                              <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-bold">
+                                Winner
+                              </span>
+                            )}
                           </div>
-                          <span className="font-bold text-green-700">£{bid.amount?.toLocaleString()}</span>
+                          <span className="font-bold text-green-700">
+                            £{bid.amount?.toLocaleString()}
+                          </span>
                         </button>
                       );
                     })}

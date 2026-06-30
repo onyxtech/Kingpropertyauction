@@ -111,10 +111,16 @@ export default function CustomerSidebar({
       show: user?.role !== "admin" && user?.role !== "seller",
     },
     {
-        id: "invoices",
-        icon: FileText,
-        label: "Invoices",
-        show: true,
+      id: "invoices",
+      icon: FileText,
+      label: "Invoices",
+      show: true,
+    },
+    {
+      id: "my-offers",
+      icon: FileText,
+      label: "My Offers",
+      show: showBuyerView,
     },
     {
       id: "offers",
@@ -123,10 +129,10 @@ export default function CustomerSidebar({
       show: showBuyerView,
     },
     {
-        id: "property-offers",
-        icon: FileText,
-        label: "Property Offers",
-        show: (isAgent || isSeller) && showSellerView,
+      id: "property-offers",
+      icon: FileText,
+      label: "Property Offers",
+      show: (isAgent || isSeller) && showSellerView,
     },
     {
       id: "won-auctions",

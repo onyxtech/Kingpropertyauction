@@ -12,6 +12,7 @@ import MyAuctionsTab from "../tabs/MyAuctionsTab";
 import OffersTab from "../tabs/OffersTab";
 import WonAuctionsTab from "../tabs/WonAuctionsTab";
 import InvoicesTab from "../tabs/InvoicesTab";
+import MyOffersTab from "../tabs/MyOffersTab";
 import WatchlistTab from "../tabs/WatchlistTab";
 import EnquiriesTab from "../tabs/EnquiriesTab";
 import { useCustomerRole } from "../hooks/useCustomerRole";
@@ -72,6 +73,8 @@ export default function CustomerDashboard() {
         return <MessagesTab />;
       case "invoices":
         return <InvoicesTab />;
+      case "my-offers":
+        return <MyOffersTab />;
       case "profile":
         return <ProfileTab />;
       default:

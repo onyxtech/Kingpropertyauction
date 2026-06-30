@@ -316,12 +316,14 @@ export default function PropertyCard({
                     </span>
                   </div>                
                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">Bids</span>
-                    <span className="font-bold text-slate-700">
-                      {property.totalBids || 0}
-                    </span>
-                  </div>
+                    {property.totalBids > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Bids</span>
+                        <span className="font-bold text-slate-700">
+                          {property.totalBids}
+                        </span>
+                      </div>
+                    )}
                 </div>
               ) : isUnsold ? (
                 <div className="space-y-2">
@@ -350,12 +352,14 @@ export default function PropertyCard({
                   </div>
                 
                   
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">Bids</span>
-                    <span className="font-bold text-slate-700">
-                      {property.totalBids || 0}
-                    </span>
-                  </div>
+                    {property.totalBids > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 font-medium">Bids</span>
+                        <span className="font-bold text-slate-700">
+                          {property.totalBids}
+                        </span>
+                      </div>
+                    )}
                 </div>
               )}
               <button

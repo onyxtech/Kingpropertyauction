@@ -24,10 +24,10 @@ import {
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
-  reviewed: "bg-blue-100 text-blue-700",
   accepted: "bg-green-100 text-green-700",
   declined: "bg-red-100 text-red-700",
   withdrawn: "bg-slate-100 text-slate-500",
+  updated: "bg-blue-100 text-blue-700",
 };
 
 export default function PropertyOffers() {
@@ -156,7 +156,7 @@ export default function PropertyOffers() {
           >
             <option value="">All Status</option>
             <option value="pending">Pending</option>
-            <option value="reviewed">Reviewed</option>
+            <option value="updated">Updated</option>
             <option value="accepted">Accepted</option>
             <option value="declined">Declined</option>
           </select>

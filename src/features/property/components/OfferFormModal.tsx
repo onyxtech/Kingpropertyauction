@@ -10,9 +10,10 @@ interface OfferFormModalProps {
   onClose: () => void;
   property: any;
   user: any;
+  prefillData?: any;
 }
 
-export default function OfferFormModal({ show, onClose, property, user }: OfferFormModalProps) {
+export default function OfferFormModal({ show, onClose, property, user, prefillData }: OfferFormModalProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastPos, setLastPos] = useState<{ x: number; y: number } | null>(null);
@@ -37,16 +38,18 @@ export default function OfferFormModal({ show, onClose, property, user }: OfferF
   // ---- Reset form when modal opens ----
   useEffect(() => {
     if (show) {
+      // Use prefill data from previous offer if available, otherwise use user data
+      const initialData = prefillData || {};
       setForm({
-        name: (user as any)?.name || "",
-        email: (user as any)?.email || "",
-        phone: "",
-        address: "",
-        city: "",
-        postcode: "",
-        offerAmount: "",
-        offerAmountInWords: "",
-        solicitorDetails: "",
+        name: initialData.name || (user as any)?.name || "",
+        email: initialData.email || (user as any)?.email || "",
+        phone: initialData.phone || (user as any)?.phone || "",
+        address: initialData.address || (user as any)?.address?.street || "",
+        city: initialData.city || (user as any)?.address?.city || "",
+        postcode: initialData.postcode || (user as any)?.address?.postcode || "",
+        offerAmount: initialData.offerAmount || "",
+        offerAmountInWords: initialData.offerAmount ? numberToWords(parseFloat(initialData.offerAmount)) + " Pounds Sterling" : "",
+        solicitorDetails: initialData.solicitorDetails || "",
         termsAccepted: false,
       });
       setSignature("");
@@ -54,7 +57,7 @@ export default function OfferFormModal({ show, onClose, property, user }: OfferF
       setSubmitted(false);
       clearCanvas();
     }
-  }, [show]);
+  }, [show, prefillData]);
 
   // ---- Address Selected from Google Places ----
   const handleAddressSelect = (address: ParsedAddress) => {

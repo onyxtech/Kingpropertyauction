@@ -20,11 +20,18 @@ const invoiceSchema = new mongoose.Schema(
     buyer: {
       type: mongoose.Schema.ObjectId,
       ref: "User",
-      required: true,
+      required: false,
     },
+    buyerName: { type: String },
+    buyerEmail: { type: String },
     seller: {
       type: mongoose.Schema.ObjectId,
       ref: "User",
+    },
+    buyerAddress: {
+      street: { type: String },
+      city: { type: String },
+      postcode: { type: String },
     },
     payment: {
       type: mongoose.Schema.ObjectId,
@@ -71,7 +78,14 @@ const invoiceSchema = new mongoose.Schema(
     // Status
     status: {
       type: String,
-      enum: ["pending", "paid", "overdue", "cancelled", "refunded", "withdrawn"],
+      enum: [
+        "pending",
+        "paid",
+        "overdue",
+        "cancelled",
+        "refunded",
+        "withdrawn",
+      ],
       default: "pending",
     },
     // Dates
@@ -97,16 +111,23 @@ const invoiceSchema = new mongoose.Schema(
     // Invoice type
     invoiceType: {
       type: String,
-      enum: ["auction_sale", "direct_sale", "offer_accept", "reassigned", "manual"],
+      enum: [
+        "auction_sale",
+        "direct_sale",
+        "offer_accept",
+        "reassigned",
+        "manual",
+      ],
       default: "auction_sale",
     },
     // Terms text
     termsOfSale: {
       type: String,
-      default: "Standard Terms: 4 week completion with 1 week extension. 10% deposit (minimum £3,000). Buyer's fee: 3% of sale price (minimum £3,250 + VAT).",
+      default:
+        "Standard Terms: 4 week completion with 1 week extension. 10% deposit (minimum £3,000). Buyer's fee: 3% of sale price (minimum £3,250 + VAT).",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 invoiceSchema.index({ buyer: 1, status: 1 });
