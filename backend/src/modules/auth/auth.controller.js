@@ -370,3 +370,31 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// ─── Mobile Auth ───
+
+export const refreshMobile = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(401).json({ success: false, message: "No refresh token provided" });
+    }
+    const result = await refreshAccessToken(refreshToken);
+    res.json({ success: true, accessToken: result.accessToken });
+  } catch (error) {
+    res.status(401).json({ success: false, message: error.message });
+  }
+};
+
+export const mobileGoogleAuth = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ success: false, message: "Google ID token required" });
+    }
+    const result = await authService.mobileGoogleLogin(idToken);
+    res.json({ success: true, user: result.user, accessToken: result.accessToken, refreshToken: result.refreshToken });
+  } catch (error) {
+    res.status(401).json({ success: false, message: error.message });
+  }
+};

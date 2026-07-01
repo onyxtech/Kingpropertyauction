@@ -9,6 +9,8 @@ import {
   changePassword,
   forgotPassword,
   resetPassword,
+  refreshMobile,
+  mobileGoogleAuth,
 } from "./auth.controller.js";
 import { protect } from "../../middlewares/auth.middleware.js";
 import passport, {
@@ -144,5 +146,9 @@ router.get('/facebook/callback', async (req, res, next) => {
     res.redirect(`${process.env.CLIENT_URL}/oauth-callback?token=${accessToken}&user=${JSON.stringify({ id: user._id, name: user.name, email: user.email, role: user.role, permissions: user.permissions })}`);
   })(req, res, next);
 });
+
+// Mobile auth
+router.post("/mobile/refresh", refreshMobile);
+router.post("/mobile/google", mobileGoogleAuth);
 
 export default router;

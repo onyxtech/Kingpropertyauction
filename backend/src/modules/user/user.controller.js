@@ -597,7 +597,6 @@ export const deleteIdDocument = async (req, res) => {
   }
 };
 
-// Get single user with full stats (admin only)
 export const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
@@ -611,31 +610,61 @@ export const getUserById = async (req, res) => {
 
     const Property = (await import("../property/property.model.js")).default;
     const Bid = (await import("../bid/bid.model.js")).default;
+    const Auction = (await import("../auction/auction.model.js")).default;
     const Commission = (await import("../commission/commission.model.js"))
       .default;
     const Payment = (await import("../payment/payment.model.js")).default;
 
-    const [totalProperties, totalBids, wonBids, commissions, payments] =
-      await Promise.all([
-        Property.countDocuments({ createdBy: user._id }),
-        Bid.countDocuments({ bidder: user._id }),
-        Bid.countDocuments({ bidder: user._id, status: "won" }),
-        Commission.find({ agent: user._id })
-          .populate("property", "propertyTitle")
-          .lean(),
-        Payment.find({ buyer: user._id })
-          .populate("property", "propertyTitle")
-          .lean(),
-      ]);
+    // ─── Properties Count ──────────────────────────────────────────────
+    // Properties user LISTED (createdBy)
+    const listedProperties = await Property.countDocuments({ createdBy: user._id });
+    
+    // Properties user PURCHASED/WON (soldTo)
+    const purchasedProperties = await Property.countDocuments({ soldTo: user._id });
+
+    // ─── Auctions Count ────────────────────────────────────────────────
+    // Auctions user PLACED BIDS IN (as buyer)
+    const auctionIdsFromBids = await Bid.distinct("auction", { bidder: user._id });
+    const bidAuctionsCount = auctionIdsFromBids.length;
+
+    // Auctions where user's LISTED properties are included (as seller/agent)
+    const listedPropertyIds = await Property.find({ createdBy: user._id }).distinct("_id");
+    const listedAuctionsCount = await Auction.countDocuments({
+      properties: { $in: listedPropertyIds }
+    });
+
+    // ─── Bids Count ─────────────────────────────────────────────────────
+    const totalBids = await Bid.countDocuments({ bidder: user._id });
+    const wonBids = await Bid.countDocuments({ bidder: user._id, status: "won" });
+
+    // ─── Commissions & Payments ────────────────────────────────────────
+    const commissions = await Commission.find({ agent: user._id })
+      .populate("property", "propertyTitle")
+      .lean();
+    const payments = await Payment.find({ buyer: user._id })
+      .populate("property", "propertyTitle")
+      .lean();
 
     res.json({
       success: true,
       data: {
         ...user,
         stats: {
-          totalProperties,
+          // Properties
+          listedProperties,
+          purchasedProperties,
+          totalProperties: listedProperties + purchasedProperties,
+          
+          // Auctions
+          bidAuctionsCount,
+          listedAuctionsCount,
+          totalAuctions: bidAuctionsCount + listedAuctionsCount,
+          
+          // Bids
           totalBids,
           wonBids,
+          
+          // Commissions
           totalCommissions: commissions.length,
           pendingCommission: commissions
             .filter((c) => c.status === "pending")
@@ -650,6 +679,600 @@ export const getUserById = async (req, res) => {
     });
   } catch (error) {
     console.error("[User] getUserById error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getUserProperties = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // ─── Pagination ──────────────────────────────────────────────────────
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const Property = (await import("../property/property.model.js")).default;
+    const Bid = (await import("../bid/bid.model.js")).default;
+    const Auction = (await import("../auction/auction.model.js")).default;
+    const User = (await import("./user.model.js")).default;
+
+    const user = await User.findById(userId).lean();
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    let properties = [];
+    const propertyIds = new Set();
+
+    // ─── 1. Properties LISTED by user (createdBy) ──────────────────────
+    const listedProperties = await Property.find({ createdBy: userId })
+      .populate("createdBy", "name email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    for (const prop of listedProperties) {
+      const propId = prop._id.toString();
+      if (!propertyIds.has(propId)) {
+        propertyIds.add(propId);
+        
+        // Determine type
+        let type = 'Listing'; // Default for auction properties
+        let status = prop.propertyStatus || 'available';
+        
+        // If direct sale
+        if (prop.listingType === 'direct_sale') {
+          type = 'Sale';
+          // Status for direct sale
+          if (prop.propertyStatus === 'sold') {
+            status = `Sold ${formatPrice(prop.soldPrice || prop.pricing?.startingAuctionPrice || 0)}`;
+          } else {
+            status = prop.propertyStatus || 'available';
+          }
+        } else {
+          // Auction property - check if it's in an auction
+          const auction = await Auction.findOne({
+            properties: prop._id
+          }).lean();
+          
+          if (auction) {
+            // Property is in an auction
+            if (auction.status === 'live') {
+              status = 'Active';
+            } else if (auction.status === 'upcoming' || auction.status === 'scheduled') {
+              status = 'Scheduled';
+            } else if (auction.status === 'completed') {
+              if (prop.propertyStatus === 'sold') {
+                status = `Sold ${formatPrice(prop.soldPrice || 0)}`;
+              } else if (prop.propertyStatus === 'unsold') {
+                status = 'Unsold';
+              } else {
+                status = 'Completed';
+              }
+            } else {
+              status = prop.propertyStatus || 'available';
+            }
+          } else {
+            // Not in any auction yet
+            status = prop.propertyStatus || 'available';
+          }
+        }
+        
+        properties.push({
+          ...prop,
+          _relation: 'listed',
+          _displayType: type,
+          _displayStatus: status
+        });
+      }
+    }
+
+    // ─── 2. Properties PURCHASED by user (soldTo) ──────────────────────
+    const purchasedProperties = await Property.find({ soldTo: userId })
+      .populate("createdBy", "name email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    purchasedProperties.forEach(prop => {
+      const propId = prop._id.toString();
+      if (!propertyIds.has(propId)) {
+        propertyIds.add(propId);
+        properties.push({
+          ...prop,
+          _relation: 'purchased',
+          _displayType: 'Purchase',
+          _displayStatus: 'Purchased'
+        });
+      }
+    });
+
+    // ─── 3. Properties in WATCHLIST (savedBy) ──────────────────────────
+    const watchlistProperties = await Property.find({
+      savedBy: userId
+    })
+    .populate("createdBy", "name email")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+    watchlistProperties.forEach(prop => {
+      const propId = prop._id.toString();
+      if (!propertyIds.has(propId)) {
+        propertyIds.add(propId);
+        properties.push({
+          ...prop,
+          _relation: 'watchlist',
+          _displayType: 'Watchlist',
+          _displayStatus: 'Watching'
+        });
+      }
+    });
+
+    // ─── 4. Properties with ACTIVE BIDS (live auctions) ──────────────────
+    const activeBids = await Bid.find({
+      bidder: userId,
+      status: { $in: ['winning', 'outbid', 'bidding'] }
+    })
+    .populate('property')
+    .populate({
+      path: 'auction',
+      match: { status: 'live' }
+    })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+    activeBids.forEach(bid => {
+      if (bid.property && bid.auction) {
+        const propId = bid.property._id.toString();
+        if (!propertyIds.has(propId)) {
+          propertyIds.add(propId);
+          properties.push({
+            ...bid.property,
+            _relation: 'active_bid',
+            _displayType: 'Active Bid',
+            _displayStatus: 'Bidding Active',
+            _bidAmount: bid.amount,
+            _bidStatus: bid.status,
+            _auctionId: bid.auction._id
+          });
+        }
+      }
+    });
+
+    // ─── 5. Properties with LOST BIDS (completed auctions) ──────────────
+    const lostBids = await Bid.find({
+      bidder: userId,
+      status: 'lost'
+    })
+    .populate('property')
+    .populate({
+      path: 'auction',
+      match: { status: 'completed' }
+    })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+    lostBids.forEach(bid => {
+      if (bid.property && bid.auction) {
+        const propId = bid.property._id.toString();
+        if (!propertyIds.has(propId)) {
+          propertyIds.add(propId);
+          properties.push({
+            ...bid.property,
+            _relation: 'bid_lost',
+            _displayType: 'Past Bid',
+            _displayStatus: 'Lost Bid',
+            _bidAmount: bid.amount,
+            _auctionId: bid.auction._id
+          });
+        }
+      }
+    });
+
+    // Sort by createdAt (most recent first)
+    properties.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json({
+      success: true,
+      data: properties,
+      pagination: {
+        page,
+        limit,
+        total: properties.length
+      }
+    });
+
+  } catch (error) {
+    console.error("[User] getUserProperties error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Helper function to format price (needed inside the function)
+const formatPrice = (val) => {
+  if (!val) return '£0';
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    maximumFractionDigits: 0,
+  }).format(val);
+};
+
+export const getUserAuctions = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // ─── Pagination ──────────────────────────────────────────────────────
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const Bid = (await import("../bid/bid.model.js")).default;
+    const Auction = (await import("../auction/auction.model.js")).default;
+    const Property = (await import("../property/property.model.js")).default;
+    const User = (await import("./user.model.js")).default;
+
+    const user = await User.findById(userId).lean();
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    let auctions = [];
+    const auctionIds = new Set();
+
+    // ─── Check permissions ──────────────────────────────────────────────
+    // ✅ Admin can list properties (canList = true)
+    const canBid = user.permissions?.canBid || user.role === "buyer" || user.role === "user";
+    const canList = user.permissions?.canListProperties || user.role === "seller" || user.role === "agent" || user.role === "admin";
+
+    // ─── 1. Get BID DATA (if user can bid) ──────────────────────────────
+    if (canBid) {
+      const bids = await Bid.find({ bidder: userId })
+        .populate({
+          path: 'auction',
+          populate: { 
+            path: 'properties', 
+            model: 'Property' 
+          }
+        })
+        .populate('property')
+        .lean()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      // Group by auction
+      const auctionMap = new Map();
+      
+      bids.forEach(bid => {
+        if (!bid.auction) return;
+        const auctionId = bid.auction._id.toString();
+        
+        if (!auctionMap.has(auctionId)) {
+          auctionMap.set(auctionId, {
+            auction: bid.auction,
+            userBids: [],
+            allBids: [],
+            userHighestBid: 0,
+            auctionHighestBid: 0,
+            properties: bid.auction.properties || [],
+            propertyBids: {}
+          });
+        }
+        
+        const entry = auctionMap.get(auctionId);
+        entry.allBids.push(bid);
+        if (bid.amount > entry.auctionHighestBid) {
+          entry.auctionHighestBid = bid.amount;
+        }
+        
+        if (bid.bidder.toString() === userId) {
+          entry.userBids.push(bid);
+          if (bid.amount > entry.userHighestBid) {
+            entry.userHighestBid = bid.amount;
+          }
+        }
+        
+        const propertyId = bid.property?._id?.toString();
+        if (propertyId) {
+          if (!entry.propertyBids[propertyId]) {
+            entry.propertyBids[propertyId] = {
+              property: bid.property,
+              bids: [],
+              propertyHighestBid: 0,
+              userBidsForProperty: [],
+              userHighestForProperty: 0
+            };
+          }
+          entry.propertyBids[propertyId].bids.push(bid);
+          if (bid.amount > entry.propertyBids[propertyId].propertyHighestBid) {
+            entry.propertyBids[propertyId].propertyHighestBid = bid.amount;
+          }
+          if (bid.bidder.toString() === userId) {
+            entry.propertyBids[propertyId].userBidsForProperty.push(bid);
+            if (bid.amount > entry.propertyBids[propertyId].userHighestForProperty) {
+              entry.propertyBids[propertyId].userHighestForProperty = bid.amount;
+            }
+          }
+        }
+      });
+
+      // Process each auction - create one entry per property
+      for (const [auctionId, entry] of auctionMap) {
+        const auction = entry.auction;
+        const propertyIds = Object.keys(entry.propertyBids);
+        
+        for (const propId of propertyIds) {
+          const propData = entry.propertyBids[propId];
+          const property = propData.property;
+          
+          if (!property) continue;
+          
+          let result = 'Registered';
+          let hammerPrice = 0;
+          
+          // Get total bids for this property from ALL bidders
+          const totalBidsForProperty = await Bid.countDocuments({ 
+            property: property._id,
+            auction: auction._id
+          });
+          
+          const userBidsForProperty = propData.userBidsForProperty.length;
+          
+          // Check if user won this property
+          if (property.soldTo) {
+            const winnerId = typeof property.soldTo === 'object' 
+              ? property.soldTo._id?.toString() 
+              : property.soldTo?.toString();
+            
+            if (winnerId === userId) {
+              result = 'Won';
+              hammerPrice = property.soldPrice || propData.propertyHighestBid || 0;
+            } else if (propData.userBidsForProperty.length > 0) {
+              result = 'Lost';
+              hammerPrice = property.soldPrice || propData.propertyHighestBid || 0;
+            }
+          } 
+          // If property not sold yet
+          else {
+            if (auction.status === 'live') {
+              if (propData.userHighestForProperty === propData.propertyHighestBid && propData.userHighestForProperty > 0) {
+                result = 'Winning';
+              } else if (propData.userBidsForProperty.length > 0 && propData.userHighestForProperty < propData.propertyHighestBid) {
+                result = 'Outbid';
+              } else if (propData.userBidsForProperty.length > 0) {
+                result = 'Bidding';
+              }
+              hammerPrice = propData.propertyHighestBid || 0;
+            }
+            else if (auction.status === 'completed' || auction.status === 'ended') {
+              if (propData.userBidsForProperty.length > 0) {
+                result = 'Lost';
+                hammerPrice = property.soldPrice || propData.propertyHighestBid || 0;
+              }
+            }
+            // Upcoming auction - users can't bid, so no entries
+            else if (auction.status === 'upcoming' || auction.status === 'scheduled') {
+              continue;
+            }
+          }
+          
+          // Only add if user has bids for this property
+          if (propData.userBidsForProperty.length > 0) {
+            const auctionKey = `${auction._id}-${property._id}`;
+            if (!auctionIds.has(auctionKey)) {
+              auctionIds.add(auctionKey);
+              auctions.push({
+                auctionId: auction._id,
+                auctionSlug: auction.slug || auction._id, 
+                auctionTitle: auction.auctionTitle || 'Untitled Auction',
+                propertyTitle: property.propertyTitle || 'N/A',
+                propertyId: property._id,
+                result: result,
+                hammerPrice: hammerPrice,
+                date: auction.endDateTime || auction.createdAt,
+                userBids: userBidsForProperty,
+                totalBids: totalBidsForProperty,
+                status: auction.status,
+                source: 'bid'
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // ─── 2. Get LISTING DATA (if user can list properties) ──────────────
+    // ✅ Admin included here via canList check
+    if (canList) {
+      const properties = await Property.find({ createdBy: userId })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+      const propertyIds = properties.map(p => p._id);
+
+      if (propertyIds.length > 0) {
+        const auctionsData = await Auction.find({
+          'properties': { $in: propertyIds }
+        })
+        .populate('properties')
+        .lean();
+
+        for (const auction of auctionsData) {
+          for (const property of auction.properties || []) {
+            if (property.createdBy?.toString() === userId || 
+                propertyIds.some(id => id.toString() === property._id?.toString())) {
+              
+              let result = auction.status || 'Completed';
+              if (property.propertyStatus === 'sold') result = 'Sold';
+              else if (property.propertyStatus === 'unsold') result = 'Unsold';
+              else if (auction.status === 'live') result = 'Live';
+              else if (auction.status === 'upcoming') result = 'Scheduled';
+              else if (auction.status === 'completed') result = 'Completed';
+
+              // Get total bids for this property in this auction
+              const totalBidsForProperty = await Bid.countDocuments({ 
+                property: property._id,
+                auction: auction._id
+              });
+
+              const auctionKey = `${auction._id}-${property._id}`;
+              if (!auctionIds.has(auctionKey)) {
+                auctionIds.add(auctionKey);
+                auctions.push({
+                  auctionId: auction._id,
+                  auctionSlug: auction.slug || auction._id, 
+                  auctionTitle: auction.auctionTitle,
+                  propertyTitle: property.propertyTitle || 'N/A',
+                  propertyId: property._id,
+                  result: result,
+                  hammerPrice: auction.finalPrice || property.soldPrice || 0,
+                  date: auction.endDateTime || auction.createdAt,
+                  userBids: 0, // No bids for listing
+                  totalBids: totalBidsForProperty,
+                  status: auction.status,
+                  source: 'listing'
+                });
+              } else {
+                // Update existing entry to include listing data
+                const existing = auctions.find(a => a.auctionId === auction._id && a.propertyId === property._id);
+                if (existing && existing.source === 'bid') {
+                  existing.listingResult = result;
+                  existing.listingHammerPrice = auction.finalPrice || property.soldPrice || 0;
+                  // Update totalBids if listing has more accurate count
+                  if (totalBidsForProperty > existing.totalBids) {
+                    existing.totalBids = totalBidsForProperty;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // ─── 3. For ADMIN: REMOVED - Admin now handled by canList above ────
+    // Admin will see their listed properties in auctions
+
+    // Sort by date (most recent first)
+    auctions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json({
+      success: true,
+      data: auctions,
+      pagination: {
+        page,
+        limit,
+        total: auctions.length
+      }
+    });
+
+  } catch (error) {
+    console.error("[User] getUserAuctions error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+export const getUserBids = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // ─── Pagination ──────────────────────────────────────────────────────
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const Bid = (await import("../bid/bid.model.js")).default;
+    const User = (await import("./user.model.js")).default;
+
+    const user = await User.findById(userId).lean();
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // ─── Check if user can bid ──────────────────────────────────────────
+    const canBid = user.permissions?.canBid || user.role === "buyer" || user.role === "user";
+    
+    // If user cannot bid, return empty array
+    if (!canBid) {
+      return res.json({
+        success: true,
+        data: [],
+        pagination: { page, limit, total: 0, pages: 0 }
+      });
+    }
+
+    // ─── Get total count for pagination ────────────────────────────────
+    const total = await Bid.countDocuments({ bidder: userId });
+
+    // ─── Get bids by this user ──────────────────────────────────────────
+    const bids = await Bid.find({ bidder: userId })
+      .populate({
+        path: 'auction',
+        select: 'auctionTitle slug status'
+      })
+      .populate({
+        path: 'property',
+        select: 'propertyTitle slug location'
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // ─── Format bid data ────────────────────────────────────────────────
+    const formattedBids = bids.map(bid => {
+      // Build property address from location
+      let propertyAddress = null;
+      if (bid.property?.location) {
+        const parts = [
+          bid.property.location.streetAddress,
+          bid.property.location.city,
+          bid.property.location.area,
+          bid.property.location.postalCode,
+        ].filter(Boolean);
+        propertyAddress = parts.length > 0 ? parts.join(", ") : null;
+      }
+
+      return {
+        _id: bid._id,
+        bidId: bid._id.toString().slice(-8).toUpperCase(),
+        auctionId: bid.auction?._id || null,
+        auctionTitle: bid.auction?.auctionTitle || 'N/A',
+        auctionSlug: bid.auction?.slug || null,
+        propertyId: bid.property?._id || null,
+        propertyTitle: bid.property?.propertyTitle || 'N/A',
+        propertySlug: bid.property?.slug || null,
+        propertyAddress: propertyAddress,
+        amount: bid.amount || 0,
+        status: bid.status || 'pending',
+        createdAt: bid.createdAt,
+        isAutoBid: bid.isAutoBid || false,
+        maxBid: bid.maxBid || null,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: formattedBids,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error("[User] getUserBids error:", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };

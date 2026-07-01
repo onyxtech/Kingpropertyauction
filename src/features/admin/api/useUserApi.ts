@@ -19,6 +19,50 @@ export const useUserApi = () => {
     });
   };
 
+  const useGetUserProperties = (userId: string) => {
+    const { isAuthenticated } = useAuthStore();
+    return useQuery({
+      queryKey: ["users", userId, "properties"],
+      queryFn: async () => {
+        const result = await apiClient.fetch(`/users/${userId}/properties`);
+        if (!result.success) return [];
+        return result.data;
+      },
+      enabled: !!userId && isAuthenticated,
+      retry: false,
+    });
+  };
+
+  const useGetUserAuctions = (userId: string) => {
+    const { isAuthenticated } = useAuthStore();
+    return useQuery({
+      queryKey: ["users", userId, "auctions"],
+      queryFn: async () => {
+        const result = await apiClient.fetch(`/users/${userId}/auctions`);
+        if (!result.success) return [];
+        return result.data;
+      },
+      enabled: !!userId && isAuthenticated,
+      retry: false,
+    });
+  };
+
+const useGetUserBids = (userId: string, page: number = 1, limit: number = 10) => {
+  const { isAuthenticated } = useAuthStore();
+  return useQuery({
+    queryKey: ["users", userId, "bids", page, limit],
+    queryFn: async () => {
+      const result = await apiClient.fetch(
+        `/users/${userId}/bids?page=${page}&limit=${limit}`
+      );
+      if (!result.success) return { data: [], pagination: { total: 0, pages: 0 } };
+      return result;
+    },
+    enabled: !!userId && isAuthenticated,
+    retry: false,
+  });
+};
+
   const useUpdateUserStatus = () => {
     return useMutation({
       mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -63,7 +107,15 @@ export const useUserApi = () => {
 
   const useReviewRoleRequest = () => {
     return useMutation({
-      mutationFn: async ({ id, decision, reviewNote }: { id: string; decision: "approved" | "rejected"; reviewNote?: string }) => {
+      mutationFn: async ({
+        id,
+        decision,
+        reviewNote,
+      }: {
+        id: string;
+        decision: "approved" | "rejected";
+        reviewNote?: string;
+      }) => {
         const result = await apiClient.fetch(`/users/${id}/review-role`, {
           method: "PATCH",
           body: JSON.stringify({ decision, reviewNote }),
@@ -75,5 +127,14 @@ export const useUserApi = () => {
     });
   };
 
-  return { useGetUsers, useUpdateUserStatus, useDeleteUser, useUpdateUser, useReviewRoleRequest };
+  return {
+    useGetUsers,
+    useGetUserProperties,
+    useGetUserAuctions,
+    useGetUserBids, 
+    useUpdateUserStatus,
+    useDeleteUser,
+    useUpdateUser,
+    useReviewRoleRequest,
+  };
 };

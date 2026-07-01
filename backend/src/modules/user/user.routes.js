@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllUsers, updateUserStatus, updateUser, getUserById, requestRoleSwitch, switchActiveView, reviewRoleRequest, uploadIdDocument, verifyIdDocument, deleteIdDocument } from './user.controller.js';
+import { getAllUsers, updateUserStatus, updateUser, getUserById, getUserProperties, getUserAuctions, getUserBids, requestRoleSwitch, switchActiveView, reviewRoleRequest, uploadIdDocument, verifyIdDocument, deleteIdDocument } from './user.controller.js';
 import { protect } from '../../middlewares/auth.middleware.js';
 import { authorize } from '../../middlewares/role.middleware.js';
 import { uploadIdDocument as uploadIdDoc } from '../../middlewares/upload.middleware.js';
@@ -13,6 +13,9 @@ router.patch('/:id/status', protect, authorize('admin'), updateUserStatus);
 router.patch('/:id/review-role', protect, authorize('admin'), reviewRoleRequest);
 router.put('/:id', protect, authorize('admin'), updateUser);
 router.get('/:id', protect, authorize('admin'), getUserById);
+router.get('/:id/properties', protect, authorize('admin'), getUserProperties);
+router.get('/:id/auctions', protect, authorize('admin'), getUserAuctions);
+router.get('/:id/bids', protect, authorize('admin'), getUserBids);
 
 // ID Document upload
 router.post(
