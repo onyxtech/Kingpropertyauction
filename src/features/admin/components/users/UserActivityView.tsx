@@ -1,5 +1,5 @@
 // src\features\admin\components\users\UserActivityView.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   X,
@@ -22,6 +22,8 @@ import {
   Star,
   Layers,
   UserCheck,
+  FileText,
+  LayoutDashboard,
 } from "lucide-react";
 import { StatusBadge } from "./shared/StatusBadge";
 import { UserAvatar } from "./shared/UserAvatar";
@@ -34,6 +36,8 @@ import {
   PaymentsTab,
   ActivityLogTab,
 } from "./tabs";
+import { OverviewTab } from "./tabs/OverviewTab";
+import { useUserApi } from "@/features/admin/api/useUserApi";
 
 export interface UserRecord {
   _id: string;
@@ -45,6 +49,7 @@ export interface UserRecord {
   createdAt: string;
   isSuperAdmin?: boolean;
   approvalStatus?: string;
+  kycStatus?: string;
   location?: string;
   address?: {
     street?: string;
@@ -77,6 +82,7 @@ export interface UserRecord {
     listedAuctionsCount?: number;
     totalBids: number;
     wonBids: number;
+    totalDocuments?: number;
     totalCommissions: number;
     pendingCommission: number;
     paidCommission: number;
@@ -84,6 +90,7 @@ export interface UserRecord {
 }
 
 const TABS = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "profile", label: "Profile", icon: User },
   { id: "properties", label: "Properties", icon: House },
   { id: "auctions", label: "Auctions", icon: Gavel },
@@ -95,7 +102,7 @@ const TABS = [
 
 const roleConfig: Record<string, { gradient: string; text: string }> = {
   buyer: { gradient: "from-blue-600 to-indigo-600", text: "Buyer" },
-  seller: { gradient: "from-emerald-600 to-teal-600", text: "Owner" }, // ✅ Changed from "Seller" to "Owner"
+  seller: { gradient: "from-emerald-600 to-teal-600", text: "Owner" },
   agent: { gradient: "from-violet-600 to-purple-600", text: "Agent" },
   investor: { gradient: "from-amber-600 to-orange-500", text: "Investor" },
   admin: { gradient: "from-rose-600 to-pink-600", text: "Admin" },
@@ -109,62 +116,75 @@ export function UserActivityView({
   user: UserRecord;
   onClose: () => void;
 }) {
-  const [tab, setTab] = useState("profile");
+  const [tab, setTab] = useState("overview");
+  const [userData, setUserData] = useState<UserRecord>(user);
 
-  const cfg = roleConfig[user.role] || roleConfig.user;
+  const { useGetUserById } = useUserApi();
+
+  // ─── Fetch full user data ──────────────────────────────────────────────
+  const { data: fullUserData, isLoading: isLoadingUser } = useGetUserById(
+    user._id,
+  );
+
+  // Update userData when fullUserData is fetched
+  useEffect(() => {
+    if (fullUserData?.data) {
+      setUserData(fullUserData.data);
+    }
+  }, [fullUserData]);
+
+  const cfg = roleConfig[userData.role] || roleConfig.user;
 
   // ─── Role Formatting (Matches Profile Tab) ──────────────────────────────
   const getFormattedRole = () => {
-    // Admin / Super Admin
-    if (user.role === "admin") {
-      return user.isSuperAdmin ? "Super Admin" : "Administrator";
+    if (userData.role === "admin") {
+      return userData.isSuperAdmin ? "Super Admin" : "Administrator";
     }
-
-    // Agent
-    if (user.role === "agent") {
-      return user.permissions?.canBid ? "Agent & Buyer" : "Agent";
+    if (userData.role === "agent") {
+      return userData.permissions?.canBid ? "Agent & Buyer" : "Agent";
     }
-
-    // Seller (Owner)
-    if (user.role === "seller") {
-      if (user.permissions?.canBid) {
+    if (userData.role === "seller") {
+      if (userData.permissions?.canBid) {
         return "Owner & Buyer";
       }
       return "Owner";
     }
-
-    // Buyer
-    if (user.role === "buyer") {
-      if (user.permissions?.canListProperties) {
+    if (userData.role === "buyer") {
+      if (userData.permissions?.canListProperties) {
         return "Buyer & Owner";
       }
       return "Buyer";
     }
-
-    return user.role || "User";
+    return userData.role || "User";
   };
 
-// ─── Stats based on user role ──────────────────────────────────────────
-const stats = [
-  { 
-    label: "Properties", 
-    value: user.stats?.totalProperties || 0,
-    icon: House,
-    color: "text-blue-500"
-  },
-  { 
-    label: "Auctions", 
-    value: user.stats?.totalAuctions || 0,
-    icon: Gavel,
-    color: "text-rose-500"
-  },
-  { 
-    label: "Bids", 
-    value: user.stats?.totalBids || 0,
-    icon: TrendingUp,
-    color: "text-emerald-500"
-  },
-];
+  // ─── Stats based on user role ──────────────────────────────────────────
+  const stats = [
+    {
+      label: "Properties",
+      value: userData.stats?.totalProperties || 0,
+      icon: House,
+      color: "text-blue-500",
+    },
+    {
+      label: "Auctions",
+      value: userData.stats?.totalAuctions || 0,
+      icon: Gavel,
+      color: "text-rose-500",
+    },
+    {
+      label: "Bids",
+      value: userData.stats?.totalBids || 0,
+      icon: TrendingUp,
+      color: "text-emerald-500",
+    },
+    {
+      label: "Documents",
+      value: userData.stats?.totalDocuments || 0,
+      icon: FileText,
+      color: "text-indigo-500",
+    },
+  ];
 
   return (
     <motion.div
@@ -200,23 +220,22 @@ const stats = [
 
           <div className="relative flex items-start justify-between gap-4 mb-5">
             <div className="flex items-center gap-4">
-              <UserAvatar name={user.name} size="lg" />
+              <UserAvatar name={userData.name} size="lg" />
               <div>
                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                  {/* ✅ Updated to use getFormattedRole() */}
                   <span className="bg-white/20 backdrop-blur text-xs font-black px-2.5 py-1 rounded-full uppercase">
                     {getFormattedRole()}
                   </span>
                   <StatusBadge
-                    status={user.isActive ? "active" : "suspended"}
+                    status={userData.isActive ? "active" : "suspended"}
                   />
-                  {user.approvalStatus && (
-                    <StatusBadge status={user.approvalStatus} />
+                  {userData.approvalStatus && (
+                    <StatusBadge status={userData.approvalStatus} />
                   )}
                 </div>
-                <h2 className="text-2xl font-black">{user.name}</h2>
+                <h2 className="text-2xl font-black">{userData.name}</h2>
                 <p className="text-white/70 text-sm mt-0.5">
-                  {user.email} · {user.phone || "No phone"}
+                  {userData.email} · {userData.phone || "No phone"}
                 </p>
               </div>
             </div>
@@ -230,13 +249,16 @@ const stats = [
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-px bg-white/10 rounded-t-2xl overflow-hidden">
+          <div className="grid grid-cols-4 gap-px bg-white/10 rounded-t-2xl overflow-hidden">
             {stats.map((s) => (
               <div
                 key={s.label}
                 className="bg-white/10 backdrop-blur px-4 py-3 text-center"
               >
-                <p className="text-xl font-black">{s.value}</p>
+                <div className="flex items-center justify-center gap-2">
+                  <s.icon className={`size-4 ${s.color}`} />
+                  <p className="text-xl font-black">{s.value}</p>
+                </div>
                 <p className="text-white/60 text-xs">{s.label}</p>
               </div>
             ))}
@@ -250,14 +272,15 @@ const stats = [
             return (
               <button
                 key={t.id}
+                data-tab={t.id}
                 onClick={() => setTab(t.id)}
-                className={`flex items-center gap-2 px-6 py-3 text-sm font-black whitespace-nowrap border-b-2 transition-all ${
+                className={`flex items-center gap-1.5 px-6 py-3 text-xs font-bold whitespace-nowrap border-b-2 transition-all ${
                   tab === t.id
                     ? "border-blue-600 text-blue-600 bg-white"
                     : "border-transparent text-slate-500 hover:text-slate-700"
                 }`}
               >
-                <Icon className="size-4" /> {t.label}
+                <Icon className="size-3.5" /> {t.label}
               </button>
             );
           })}
@@ -265,20 +288,21 @@ const stats = [
 
         {/* ── Content ── */}
         <div className="flex-1 overflow-y-auto bg-slate-50/50">
-          {tab === "profile" && <ProfileTab user={user} />}
-          {tab === "properties" && <PropertiesTab user={user} />}
-          {tab === "auctions" && <AuctionsTab user={user} />}
-          {tab === "bids" && <BidsTab user={user} />}
-          {tab === "documents" && <DocumentsTab user={user} />}
-          {tab === "payments" && <PaymentsTab user={user} />}
-          {tab === "activity" && <ActivityLogTab user={user} />}
+          {tab === "overview" && <OverviewTab user={userData} />}
+          {tab === "profile" && <ProfileTab user={userData} />}
+          {tab === "properties" && <PropertiesTab user={userData} />}
+          {tab === "auctions" && <AuctionsTab user={userData} />}
+          {tab === "bids" && <BidsTab user={userData} />}
+          {tab === "documents" && <DocumentsTab user={userData} />}
+          {tab === "payments" && <PaymentsTab user={userData} />}
+          {tab === "activity" && <ActivityLogTab user={userData} />}
         </div>
 
         {/* ── Footer ── */}
         <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
           <p className="text-xs text-slate-400">
-            User ID: <strong className="text-slate-600">{user._id}</strong> ·
-            Created: {new Date(user.createdAt).toLocaleDateString()}
+            User ID: <strong className="text-slate-600">{userData._id}</strong>{" "}
+            · Created: {new Date(userData.createdAt).toLocaleDateString()}
           </p>
           <div className="flex items-center gap-2">
             <button

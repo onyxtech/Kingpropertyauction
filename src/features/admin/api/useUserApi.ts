@@ -47,21 +47,47 @@ export const useUserApi = () => {
     });
   };
 
-const useGetUserBids = (userId: string, page: number = 1, limit: number = 10) => {
-  const { isAuthenticated } = useAuthStore();
-  return useQuery({
-    queryKey: ["users", userId, "bids", page, limit],
-    queryFn: async () => {
-      const result = await apiClient.fetch(
-        `/users/${userId}/bids?page=${page}&limit=${limit}`
-      );
-      if (!result.success) return { data: [], pagination: { total: 0, pages: 0 } };
-      return result;
-    },
-    enabled: !!userId && isAuthenticated,
-    retry: false,
-  });
-};
+  const useGetUserBids = (
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) => {
+    const { isAuthenticated } = useAuthStore();
+    return useQuery({
+      queryKey: ["users", userId, "bids", page, limit],
+      queryFn: async () => {
+        const result = await apiClient.fetch(
+          `/users/${userId}/bids?page=${page}&limit=${limit}`,
+        );
+        if (!result.success)
+          return { data: [], pagination: { total: 0, pages: 0 } };
+        return result;
+      },
+      enabled: !!userId && isAuthenticated,
+      retry: false,
+    });
+  };
+
+  const useGetUserDocuments = (
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+  ) => {
+    const { isAuthenticated } = useAuthStore();
+    return useQuery({
+      queryKey: ["users", userId, "documents", page, limit],
+      queryFn: async () => {
+        const result = await apiClient.fetch(
+          `/users/${userId}/documents?page=${page}&limit=${limit}`,
+        );
+        if (!result.success)
+          return { data: [], pagination: { total: 0, pages: 0 } };
+        return result;
+      },
+      enabled: !!userId && isAuthenticated,
+      retry: false,
+    });
+  };
 
   const useUpdateUserStatus = () => {
     return useMutation({
@@ -127,11 +153,90 @@ const useGetUserBids = (userId: string, page: number = 1, limit: number = 10) =>
     });
   };
 
+  const useVerifyDocument = () => {
+    return useMutation({
+      mutationFn: async ({
+        userId,
+        docIndex,
+        status,
+        rejectionReason,
+      }: {
+        userId: string;
+        docIndex: number;
+        status: "verified" | "rejected";
+        rejectionReason?: string;
+      }) => {
+        const result = await apiClient.fetch("/users/verify-id-document", {
+          method: "PUT",
+          body: JSON.stringify({ userId, docIndex, status, rejectionReason }),
+        });
+        if (!result.success) throw new Error(result.message);
+        return result;
+      },
+    });
+  };
+
+  const useGetUserById = (userId: string) => {
+    const { isAuthenticated } = useAuthStore();
+    return useQuery({
+      queryKey: ["users", userId],
+      queryFn: async () => {
+        const result = await apiClient.fetch(`/users/${userId}`);
+        if (!result.success) throw new Error(result.message);
+        return result;
+      },
+      enabled: !!userId && isAuthenticated,
+      retry: false,
+    });
+  };
+
+  const useGetUserPayments = (
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+  ) => {
+    const { isAuthenticated } = useAuthStore();
+    return useQuery({
+      queryKey: ["users", userId, "payments", page, limit],
+      queryFn: async () => {
+        const result = await apiClient.fetch(
+          `/users/${userId}/payments?page=${page}&limit=${limit}`,
+        );
+        if (!result.success)
+          return { data: [], pagination: { total: 0, pages: 0 } };
+        return result;
+      },
+      enabled: !!userId && isAuthenticated,
+      retry: false,
+    });
+  };
+
+  const useGetUserActivity = (userId: string, page: number = 1, limit: number = 20) => {
+  const { isAuthenticated } = useAuthStore();
+  return useQuery({
+    queryKey: ["users", userId, "activity", page, limit],
+    queryFn: async () => {
+      const result = await apiClient.fetch(
+        `/users/${userId}/activity?page=${page}&limit=${limit}`
+      );
+      if (!result.success) return { data: [], pagination: { total: 0, pages: 0 } };
+      return result;
+    },
+    enabled: !!userId && isAuthenticated,
+    retry: false,
+  });
+};
+
   return {
     useGetUsers,
+    useGetUserById, 
     useGetUserProperties,
     useGetUserAuctions,
-    useGetUserBids, 
+    useGetUserBids,
+    useGetUserDocuments,
+    useVerifyDocument,
+    useGetUserPayments,
+    useGetUserActivity, 
     useUpdateUserStatus,
     useDeleteUser,
     useUpdateUser,

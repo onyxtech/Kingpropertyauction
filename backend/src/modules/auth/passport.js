@@ -24,7 +24,7 @@ const ensureGoogleStrategy = async () => {
       {
         clientID: google.clientId || "dummy",
         clientSecret: google.clientSecret || "dummy",
-        callbackURL: "http://localhost:5173/api/auth/google/callback",
+        callbackURL: "https://kingpropertyauction.co.uk/api/auth/google/callback",
         passReqToCallback: true,
       },
       async (req, accessToken, refreshToken, profile, done) => {
@@ -83,7 +83,7 @@ const ensureGitHubStrategy = async () => {
       {
         clientID: github.clientId || "dummy",
         clientSecret: github.clientSecret || "dummy",
-        callbackURL: "http://localhost:5173/api/auth/github/callback",
+        callbackURL: "https://kingpropertyauction.co.uk/api/auth/github/callback",
         passReqToCallback: true,
       },
       async (req, accessToken, refreshToken, profile, done) => {
@@ -158,7 +158,7 @@ const ensureFacebookStrategy = async () => {
   passport.use('facebook', new FacebookStrategy({
     clientID: facebook.clientId || 'dummy',
     clientSecret: facebook.clientSecret || 'dummy',
-    callbackURL: 'http://localhost:5173/api/auth/facebook/callback',
+    callbackURL: 'https://kingpropertyauction.co.uk/api/auth/facebook/callback',
     profileFields: ['id', 'displayName', 'emails', 'name'],
     passReqToCallback: true,
   }, async (req, accessToken, refreshToken, profile, done) => {

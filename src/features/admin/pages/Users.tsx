@@ -334,7 +334,9 @@ export default function Users() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => setSelectedUser(user)}
+                            onClick={() => {
+                              setSelectedUser(user);
+                            }}
                             className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors"
                             title="View Profile"
                           >
@@ -372,8 +374,12 @@ export default function Users() {
       </div>
 
       {showAddModal && <AddUserModal onClose={() => setShowAddModal(false)} />}
-      {showAddAgentModal && <AddAgentModal onClose={() => setShowAddAgentModal(false)} />}
-      {editUser && <EditUserModal user={editUser} onClose={() => setEditUser(null)} />}
+      {showAddAgentModal && (
+        <AddAgentModal onClose={() => setShowAddAgentModal(false)} />
+      )}
+      {editUser && (
+        <EditUserModal user={editUser} onClose={() => setEditUser(null)} />
+      )}
       {selectedUser && (
         <UserActivityView
           user={selectedUser}

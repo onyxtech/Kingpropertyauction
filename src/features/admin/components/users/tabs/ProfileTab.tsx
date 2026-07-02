@@ -29,11 +29,13 @@ export function ProfileTab({ user }: { user: UserRecord }) {
   const displayLocation =
     user.location || user.address?.city || "Not specified";
 
-  // KYC status from approvalStatus
-  const kycStatus =
-    user.approvalStatus === "approved"
+  // ─── KYC Status ──────────────────────────────────────────────────────────
+  // Use kycStatus from backend
+  const kycStatus = user.kycStatus || "pending";
+  const kycDisplay =
+    kycStatus === "verified"
       ? "Verified"
-      : user.approvalStatus === "rejected"
+      : kycStatus === "rejected"
         ? "Not Verified"
         : "Pending";
 
@@ -51,7 +53,6 @@ export function ProfileTab({ user }: { user: UserRecord }) {
 
     // Seller (Owner) - shows as "Owner"
     if (user.role === "seller") {
-      // If seller has canBid, they are also a buyer
       if (user.permissions?.canBid) {
         return "Owner & Buyer";
       }
@@ -60,7 +61,6 @@ export function ProfileTab({ user }: { user: UserRecord }) {
 
     // Buyer
     if (user.role === "buyer") {
-      // If buyer has canListProperties, they are also an owner
       if (user.permissions?.canListProperties) {
         return "Buyer & Owner";
       }
@@ -77,7 +77,7 @@ export function ProfileTab({ user }: { user: UserRecord }) {
     role: getFormattedRole(),
     joined: user.createdAt,
     status: user.isActive ? "active" : "suspended",
-    kyc: kycStatus,
+    kyc: kycDisplay,
     location: displayLocation,
     address: fullAddress,
     nationality: "British",

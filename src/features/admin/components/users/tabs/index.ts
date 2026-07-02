@@ -1,4 +1,5 @@
 // src\features\admin\components\users\tabs\index.ts
+export { OverviewTab } from './OverviewTab';
 export { ProfileTab } from './ProfileTab';
 export { PropertiesTab } from './PropertiesTab';
 export { AuctionsTab } from './AuctionsTab';
